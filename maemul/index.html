@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0F5A41">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="매물노트">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<title>RITZ 매물노트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: app shell — left rail on desktop, bottom tab bar + raised center add button on phone. Light by default, night-green when the phone is in dark mode. */
+:root{
+  --bg:#F3F6F4; --surface:#FFFFFF; --sunk:#EAF0EC; --line:#D9E2DD;
+  --ink:#0E1B16; --ink-2:#3F5148; --ink-3:#5F7168;
+  --accent:#0F7A55; --accent-2:#13946A; --accent-soft:#E2F2EA; --on-accent:#FFFFFF;
+  --hero-a:#0F5A41; --hero-b:#0A2E23; --hero-line:#0F5A41; --hero-sub:#B5E3CF; --hero-ink:#FFFFFF; --hero-track:#062219;
+  --rail:#FFFFFF; --rail-ink:#3F5148; --rail-active:#0E1B16; --hover:#EEF3F0; --current:#E2F2EA; --glow-o:.10;
+  --ok:#047857; --ok-soft:#E2F2EA; --warn:#A15C07; --warn-soft:#FEF3C7; --bad:#C2410C; --bad-soft:#FFF1E8; --bad-line:#FCCFB0;
+  --wolse:#0284C7; --wolse-soft:#E0F2FE; --jeonse:#CA8A04; --jeonse-soft:#FEF6CC; --maemae:#EA580C; --maemae-soft:#FFEDD5; --dangi:#7C3AED; --dangi-soft:#EDE9FE;
+  --lock:#BE123C; --lock-soft:#FFF1F3;
+  --shadow:0 1px 2px rgba(14,27,22,.05),0 10px 28px -14px rgba(14,27,22,.22);
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:18px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+
+  --bg:#08100D; --surface:#101A16; --sunk:#16231E; --line:#1F3029;
+  --ink:#ECF4F0; --ink-2:#A9BCB3; --ink-3:#6E837A;
+  --accent:#34D399; --accent-2:#6EE7B7; --accent-soft:#12302A; --on-accent:#05130E;
+  --hero-a:#0F4433; --hero-b:#0B1B16; --hero-line:#1E5C47; --hero-sub:#9FD8C0;
+  --rail:#060C0A; --rail-ink:#86998F; --rail-active:#FFFFFF;
+  --ok:#34D399; --ok-soft:#12302A; --warn:#FBBF5A; --warn-soft:#33270F; --bad:#FB923C; --bad-soft:#2E1A10; --bad-line:#5A2E17;
+  --wolse:#7DD3FC; --wolse-soft:#0F2836; --jeonse:#FDE047; --jeonse-soft:#2E2A0E; --maemae:#FB923C; --maemae-soft:#33200F; --dangi:#C4A5FF; --dangi-soft:#251C3D;
+  --lock:#FB7190; --lock-soft:#2A1219;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -12px rgba(0,0,0,.7);
+    --hero-ink:#ECF4F0; --hero-track:#08100D; --hover:rgba(255,255,255,.06); --current:rgba(255,255,255,.1); --glow-o:.16;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+
+  --bg:#08100D; --surface:#101A16; --sunk:#16231E; --line:#1F3029;
+  --ink:#ECF4F0; --ink-2:#A9BCB3; --ink-3:#6E837A;
+  --accent:#34D399; --accent-2:#6EE7B7; --accent-soft:#12302A; --on-accent:#05130E;
+  --hero-a:#0F4433; --hero-b:#0B1B16; --hero-line:#1E5C47; --hero-sub:#9FD8C0;
+  --rail:#060C0A; --rail-ink:#86998F; --rail-active:#FFFFFF;
+  --ok:#34D399; --ok-soft:#12302A; --warn:#FBBF5A; --warn-soft:#33270F; --bad:#FB923C; --bad-soft:#2E1A10; --bad-line:#5A2E17;
+  --wolse:#7DD3FC; --wolse-soft:#0F2836; --jeonse:#FDE047; --jeonse-soft:#2E2A0E; --maemae:#FB923C; --maemae-soft:#33200F; --dangi:#C4A5FF; --dangi-soft:#251C3D;
+  --lock:#FB7190; --lock-soft:#2A1219;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -12px rgba(0,0,0,.7);
+    --hero-ink:#ECF4F0; --hero-track:#08100D; --hover:rgba(255,255,255,.06); --current:rgba(255,255,255,.1); --glow-o:.16;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* shell */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100%}
+.rail{background:var(--rail);border-right:1px solid var(--line);color:var(--rail-ink);padding:22px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 10px 22px}
+.mark{width:36px;height:36px;border-radius:12px;background:var(--accent);display:grid;place-items:center;color:var(--on-accent);font-weight:700;font-size:15px;letter-spacing:-.04em}
+.brand b{display:block;color:var(--rail-active);font-size:15px;letter-spacing:-.02em}
+.brand small{display:block;font-size:11px;letter-spacing:.14em;color:var(--rail-ink);opacity:.7}
+.nav{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:0;background:none;color:var(--rail-ink);text-align:left;width:100%;font-weight:500}
+.nav:hover{background:var(--hover);color:var(--rail-active)}
+.nav[aria-current="true"]{background:var(--current);color:var(--accent);font-weight:600}
+.nav .cnt{margin-left:auto;font-size:11px;background:var(--sunk);padding:1px 8px;border-radius:99px}
+.rail .add{margin-top:14px;background:var(--accent);color:var(--on-accent);justify-content:center;font-weight:600;box-shadow:0 10px 28px -10px var(--accent)}
+.rail .add:hover{background:var(--accent-2);color:var(--on-accent)}
+.who{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;background:var(--sunk)}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:13px;background:var(--accent-soft);color:var(--accent)}
+.who .avatar{background:var(--accent);color:var(--on-accent)}
+.who b{display:block;color:var(--rail-active);font-size:13px}
+.who small{font-size:11px}
+
+main{position:relative;overflow:hidden;min-width:0;padding-block:28px 40px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+.wrap{position:relative;max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.glow{position:absolute;top:-160px;right:-120px;width:420px;height:420px;border-radius:50%;background:var(--accent);opacity:var(--glow-o);filter:blur(90px);pointer-events:none}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+h1{margin:4px 0 0;font-size:26px;letter-spacing:-.03em;line-height:1.2;text-wrap:balance}
+h2{margin:0;font-size:15px;letter-spacing:-.01em}
+.demo{display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--warn);background:var(--warn-soft);padding:8px 12px;border-radius:10px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.muted{color:var(--ink-3)}
+.link{border:0;background:none;color:var(--accent);font-weight:600;font-size:13px;padding:0}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:12px}
+.kpi.hero{gap:14px;padding:22px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:6px;text-align:left}
+button.kpi:hover{border-color:var(--accent-2)}
+.kpi .l{font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.kpi .v{font-size:30px;font-weight:600;letter-spacing:-.04em;line-height:1}
+.kpi .v small{font-size:13px;color:var(--ink-3);font-family:var(--f-body);margin-left:2px}
+.kpi .s{font-size:12px;color:var(--ink-3)}
+.kpi.hero{background:linear-gradient(150deg,var(--hero-a),var(--hero-b));border-color:var(--hero-line);color:var(--hero-ink)}
+.kpi.hero .l,.kpi.hero .s,.kpi.hero .v small{color:var(--hero-sub)}
+.kpi.hero .v{font-size:52px}
+.kpi.hero .track{background:var(--hero-track);height:8px}
+.kpi.hero .mix{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--hero-sub)}
+.kpi.hero .mix b{font-family:var(--f-num);font-weight:600;color:var(--hero-ink)}
+.kpi.alert{background:var(--bad-soft);border-color:var(--bad-line)}
+.kpi.alert .v{color:var(--bad)}
+.kpi.alert .l,.kpi.alert .s{color:var(--bad)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:76px 1fr 54px;gap:10px;align-items:center;font-size:13px}
+.track{height:10px;background:var(--sunk);border-radius:99px;overflow:hidden;display:flex}
+.track i{display:block;height:100%}
+.bar .n{text-align:right;color:var(--ink-2)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:14px}
+.legend span{display:flex;gap:6px;align-items:center}
+.people{display:flex;flex-direction:column}
+.person{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.person:first-child{border-top:0;padding-top:0}
+.person b{display:block;font-size:13.5px}
+.person small{color:var(--ink-3);font-size:12px}
+.pill-n{font-size:20px;font-weight:600}
+
+/* search */
+.searchbox{display:flex;align-items:center;gap:10px;background:var(--sunk);border:1.5px solid var(--line);border-radius:16px;padding:6px 6px 6px 16px;box-shadow:var(--shadow)}
+.searchbox:focus-within{border-color:var(--accent-2)}
+.searchbox input{flex:1;min-width:0;border:0;outline:0;background:none;font-size:16px;padding:10px 0}
+.searchbox .clear{border:0;background:var(--sunk);border-radius:10px;padding:8px 12px;color:var(--ink-2);font-size:13px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;color:var(--ink-2)}
+.chip:hover{border-color:var(--accent-2);color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.chiprow{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.chiprow>span{font-size:11px;letter-spacing:.12em;color:var(--ink-3);width:52px;flex:none;font-weight:600}
+.hint{font-size:12.5px;color:var(--ink-3)}
+.hint code{font-family:var(--f-num);background:var(--sunk);padding:1px 6px;border-radius:6px;color:var(--ink-2)}
+.resbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.resbar select,.seg{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 10px;font-size:13px}
+.seg{display:inline-flex;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:8px;font-size:13px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+
+/* listing cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;text-align:left;transition:border-color .15s,transform .15s}
+.card:hover{border-color:var(--accent-2)}
+.card-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--sunk);color:var(--ink-2);white-space:nowrap}
+.t-월세{background:var(--wolse-soft);color:var(--wolse)}.t-전세{background:var(--jeonse-soft);color:var(--jeonse)}.t-매매{background:var(--maemae-soft);color:var(--maemae)}.t-단기{background:var(--dangi-soft);color:var(--dangi)}
+.s-진행{background:var(--ok-soft);color:var(--ok)}.s-보류{background:var(--warn-soft);color:var(--warn)}.s-계약완료{background:var(--sunk);color:var(--ink-3)}
+.card .id{margin-left:auto;font-size:11.5px;color:var(--ink-3)}
+.price{font-size:21px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
+.price small{font-size:12px;color:var(--ink-3);font-family:var(--f-body);font-weight:500;margin-left:4px}
+.place{font-size:14px;font-weight:600}
+.place span{color:var(--ink-3);font-weight:400}
+.specs{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2)}
+.specs span{display:flex;gap:4px;align-items:center}
+.feat{font-size:12.5px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-foot{display:flex;align-items:center;gap:8px;border-top:1px dashed var(--line);padding-top:10px;font-size:12px;color:var(--ink-3)}
+.card-foot .avatar{width:24px;height:24px;font-size:11px}
+.card-foot .stale{margin-left:auto;color:var(--bad);font-weight:600}
+.card-foot .fresh{margin-left:auto}
+.card.mine{border-left:3px solid var(--accent-2)}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent-2);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary{font-weight:600;box-shadow:0 8px 22px -12px var(--accent)}
+.btn.primary:hover{background:var(--accent-2);color:var(--on-accent)}
+.btn svg.i{width:16px;height:16px}
+.empty{text-align:center;padding:48px 16px;color:var(--ink-3);background:var(--surface);border:1px dashed var(--line);border-radius:var(--r)}
+.empty b{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+
+/* sheet / drawer */
+.scrim{position:fixed;inset:0;background:rgba(2,6,4,.7);z-index:40;display:flex;justify-content:flex-end}
+.sheet{background:var(--bg);width:min(560px,100%);height:100%;overflow:auto;padding:22px max(22px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) 22px;display:flex;flex-direction:column;gap:16px;animation:slide .22s ease-out}
+@keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}.card{transition:none}}
+.sheet-h{display:flex;align-items:center;gap:10px}
+.sheet-h h2{font-size:18px}
+.x{margin-left:auto;border:0;background:var(--sunk);width:36px;height:36px;border-radius:10px;display:grid;place-items:center}
+.dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.dl div{background:var(--surface);padding:10px 12px;min-width:0}
+.dl dt{font-size:11.5px;color:var(--ink-3)}
+.dl dd{margin:2px 0 0;font-weight:500;word-break:break-word}
+.dl .full{grid-column:1/-1}
+.lockbox{border:1px solid var(--lock);background:var(--lock-soft);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.lockbox h3{margin:0;font-size:13px;color:var(--lock);display:flex;gap:6px;align-items:center}
+.lockbox .dl{border-color:transparent}
+.contact{background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:12px 14px;font-size:13px;display:flex;gap:10px;align-items:center}
+
+/* form */
+form{display:flex;flex-direction:column;gap:16px}
+fieldset{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:14px;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+legend{font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--ink-2);padding:0 6px}
+fieldset.priv{border-color:var(--lock);background:var(--lock-soft)}
+fieldset.priv legend{color:var(--lock)}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f.full{grid-column:1/-1}
+.f label{font-size:12px;color:var(--ink-2);font-weight:500}
+.f input,.f select,.f textarea{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px;font-size:15px;width:100%;min-width:0}
+.f textarea{min-height:68px;resize:vertical}
+.f input:focus,.f select:focus,.f textarea:focus{outline:0;border-color:var(--accent-2);box-shadow:0 0 0 3px var(--accent-soft)}
+.f .aux{font-size:11.5px;color:var(--ink-3)}
+.seg-in{display:flex;gap:6px;flex-wrap:wrap}
+.seg-in label{position:relative}
+.seg-in input{position:absolute;opacity:0;pointer-events:none}
+.seg-in span{display:block;border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:13px;background:var(--surface);color:var(--ink-2)}
+.seg-in input:checked+span{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.seg-in input:focus-visible+span{outline:2px solid var(--accent-2)}
+.formbar{position:sticky;bottom:0;display:flex;gap:8px;justify-content:flex-end;background:var(--bg);padding-top:8px}
+.err{color:var(--bad);font-size:13px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-size:13.5px;z-index:60;box-shadow:var(--shadow)}
+.loading{display:grid;place-items:center;min-height:60vh;color:var(--ink-3);gap:10px}
+.spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* phone */
+.tabbar{display:none}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .rail{display:none}
+  main{padding-block:18px calc(96px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi.hero{grid-column:span 2}
+  .kpi.hero .v{font-size:44px}
+  .grid2{grid-template-columns:1fr}
+  h1{font-size:22px}
+  .kpi .v{font-size:26px}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--rail);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+  .tab{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--ink-3);padding:6px 0}
+  .tab[aria-current="true"]{color:var(--accent)}
+  .tab.plus .pb{width:50px;height:50px;border-radius:16px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;margin-top:-22px;box-shadow:0 10px 30px -8px var(--accent)}
+  .sheet{padding-left:max(16px,env(safe-area-inset-left,0px))}
+  fieldset{grid-template-columns:1fr 1fr}
+  .chiprow>span{width:100%}
+}
+@media (max-width:420px){.cards{grid-template-columns:1fr}}
+</style>
+
+<div id="root"><div class="loading"><div class="spin"></div><div>매물 정보를 불러오는 중…</div></div></div>
+
+<script>
+window.__epErr=function(m){var r=document.getElementById('root');if(r)r.innerHTML='<div class="loading"><div style="text-align:center;max-width:360px;padding:0 16px"><b>화면을 여는 중 문제가 생겼어요</b><br><span style="font-size:12px;opacity:.7;word-break:break-all">'+String(m).replace(/</g,'&lt;')+'</span></div></div>';};
+window.onerror=function(m,src,l,c){window.__epErr(m+' ('+l+':'+c+')');};
+window.addEventListener('unhandledrejection',function(e){window.__epErr((e.reason&&e.reason.message)||e.reason);});
+setTimeout(function(){var r=document.getElementById('root');if(r&&r.querySelector('.spin'))window.__epErr('서버 응답이 없어요 (20초)');},20000);
+</script>
+<script>
+(function(){
+
+const IC={
+ home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+ search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+ folder:'<path d="M4 6h5l2 2h9v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+ check:'<path d="M5 12l5 5 9-10"/>',
+ edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ area:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 4v16"/>',
+ floor:'<path d="M4 20h16M6 20V9l6-5 6 5v11"/>',
+ cal:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+ alert:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+ photo:'<rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l2-2h4l2 2"/>'
+};
+const ic=(n)=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
+
+const F=['agent','id','regDate','status','type','deal','gu','dong','loc','floor','area','sale','deposit','rent','fee','moveIn','feature','photo','checked','memo','owner','phone','addr','access','commission','privMemo'];
+const STATUS=['진행','보류','계약완료'], TYPES=['원룸','투룸','쓰리룸','오피스텔','아파트','빌라','주택','상가','사무실','건물','토지','기타'], DEALS=['월세','전세','매매','단기'], GUS=['남구','해운대구','부산진구','연제구','수영구','동래구','기타'];
+const DK={월세:'wolse',전세:'jeonse',매매:'maemae',단기:'dangi'};
+
+const S={view:'home',q:'',sort:'new',mineFilter:'진행',data:null,demo:false,open:null,edit:null,busy:false,toast:''};
+const hasGAS=!new URLSearchParams(location.search).has('demo');
+
+const API='https://script.google.com/macros/s/AKfycbxTXK4vWTm5ARCY-ElhQPtwd6xU-bMbnQPsd4MAl5TuLEKnW3Ie6qiAUpL_OyxCiOxqKQ/exec';
+const KEY=(()=>{let k=new URLSearchParams(location.search).get('k')||'';try{if(k)localStorage.setItem('ritz_k',k);else k=localStorage.getItem('ritz_k')||''}catch(e){}return k})();
+async function call(fn,...args){
+  if(!hasGAS) return demoCall(fn,...args);
+  const r=await fetch(API,{method:'POST',body:JSON.stringify({fn,k:KEY,args})});
+  const j=await r.json();
+  if(!j.ok) throw new Error(j.error||'error');
+  return j.data;
+}
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>v===''||v==null?null:(isNaN(+v)?null:+v);
+const fmt=n=>n==null?'':n.toLocaleString('ko-KR');
+function won(n){
+  if(n==null) return '';
+  if(n>=10000){const e=Math.floor(n/10000),r=n%10000;return e+'억'+(r?' '+fmt(r):'');}
+  return fmt(n);
+}
+function priceLine(r){
+  const d=num(r.deposit),m=num(r.rent),s=num(r.sale);
+  if(r.deal==='매매'&&s!=null) return `<span class="num">${won(s)}</span><small>만원</small>`;
+  if(r.deal==='전세'&&d!=null) return `<span class="num">${won(d)}</span><small>만원</small>`;
+  if(d!=null||m!=null) return `<span class="num">${d!=null?won(d):'-'}</span><small>/</small> <span class="num">${m!=null?fmt(m):'-'}</span><small>만원</small>`;
+  return '<small>가격 협의</small>';
+}
+const pyeong=a=>{const v=num(a);return v==null?'':(v/3.3058).toFixed(1)};
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const daysAgo=s=>{if(!s)return null;const t=new Date(s+'T00:00:00');return Math.floor((Date.now()-t)/864e5)};
+const short=s=>s?s.slice(2).replace(/-/g,'.'):'';
+const ini=n=>esc((n||'?').slice(0,1));
+const isMine=r=>S.data&&r.agent===S.data.me.name;
+
+function toObj(arr){const o={};F.forEach((k,i)=>o[k]=arr[i]??'');return o}
+
+const KW={'보증금':'deposit','전세금':'deposit','전세':'deposit','월세':'rent','매매가':'sale','매매':'sale','관리비':'fee'};
+function search(rows,q){
+  q=(q||'').replace(/(\d)\s*만원?/g,'$1').replace(/(보증금|전세금|전세|월세|매매가|매매|관리비)\s*(\d)/g,'$1 $2').trim();
+  if(!q) return rows;
+  const t=q.split(/\s+/),U=S.data.units;
+  const conds=[];
+  for(let i=0;i<t.length;i++){
+    const tok=t[i],nx=t[i+1];
+    if(KW[tok]&&nx!=null&&!isNaN(+nx)){
+      const col=KW[tok],unit=(col==='rent'||col==='fee')?U.small:U.big,lo=Math.floor(+nx/unit)*unit;
+      conds.push(r=>{const v=num(r[col]);return v!=null&&v>=lo&&v<lo+unit});i++;
+    }else{
+      const lt=tok.toLowerCase();
+      conds.push(r=>[r.agent,r.id,r.type,r.deal,r.gu,r.dong,r.loc,r.floor,r.feature,r.memo].join(' ').toLowerCase().includes(lt));
+    }
+  }
+  return rows.filter(r=>conds.every(c=>c(r)));
+}
+function sorted(rows){
+  const k=S.sort,p=r=>num(r.deal==='매매'?r.sale:r.deposit)??Infinity;
+  const a=[...rows];
+  if(k==='new') a.sort((x,y)=>(y.regDate||'').localeCompare(x.regDate||''));
+  if(k==='low') a.sort((x,y)=>p(x)-p(y));
+  if(k==='high') a.sort((x,y)=>(p(y)===Infinity?-1:p(y))-(p(x)===Infinity?-1:p(x)));
+  return a;
+}
+
+function allRows(){
+  const d=S.data,mine=d.mine.map(toObj);
+  const others=d.all.map(toObj).filter(r=>r.agent!==d.me.name);
+  return {mine,all:[...others,...mine.map(r=>{const o={...r};F.slice(20).forEach(k=>delete o[k]);return o})]};
+}
+
+const root=document.getElementById('root');
+function render(){
+  if(!S.data) return;
+  if(S.data.error) return renderBlocked();
+  const {mine,all}=allRows();
+  const live=all.filter(r=>r.status!=='계약완료');
+  const myLive=mine.filter(r=>r.status==='진행');
+  const stale=mine.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30);
+  const navs=[['home','홈','home'],['find','매물 찾기','search'],['mine','내 매물','folder']];
+  root.innerHTML=`
+  <div class="app">
+    <aside class="rail" aria-label="메뉴">
+      <div class="brand"><div class="mark">R</div><div><b>RITZ 매물노트</b><small>REAL ESTATE</small></div></div>
+      ${navs.map(([v,l,i])=>`<button class="nav" data-go="${v}" aria-current="${S.view===v}">${ic(i)}${l}${v==='mine'?`<span class="cnt num">${mine.length}</span>`:v==='find'?`<span class="cnt num">${live.length}</span>`:''}</button>`).join('')}
+      <button class="nav add" data-new>${ic('plus')}매물 등록</button>
+      <div class="who"><div class="avatar">${ini(S.data.me.name)}</div><div><b>${esc(S.data.me.name)} ${esc(S.data.me.role)}</b><small>리츠부동산</small></div></div>
+    </aside>
+    <main><div class="glow" aria-hidden="true"></div><div class="wrap">
+      ${S.demo?`<div class="demo">${ic('alert')}지금 보이는 매물은 화면 미리보기용 예시예요. 실제 프로그램에서는 각자 시트의 매물이 나옵니다.</div>`:''}
+      ${S.view==='home'?viewHome(all,live,mine,myLive,stale):S.view==='find'?viewFind(live):viewMine(mine)}
+    </div></main>
+    <nav class="tabbar" aria-label="메뉴">
+      <button class="tab" data-go="home" aria-current="${S.view==='home'}">${ic('home')}홈</button>
+      <button class="tab" data-go="find" aria-current="${S.view==='find'}">${ic('search')}찾기</button>
+      <button class="tab plus" data-new aria-label="매물 등록"><span class="pb">${ic('plus')}</span></button>
+      <button class="tab" data-go="mine" aria-current="${S.view==='mine'}">${ic('folder')}내 매물</button>
+      <button class="tab" data-go="stale">${ic('alert')}확인 필요</button>
+    </nav>
+  </div>
+  ${S.open?viewDetail(S.open):''}
+  ${S.edit?viewForm(S.edit):''}
+  ${S.toast?`<div class="toast" role="status">${esc(S.toast)}</div>`:''}`;
+  bind();
+}
+
+function viewHome(all,live,mine,myLive,stale){
+  const ym=today().slice(0,7);
+  const newThis=all.filter(r=>(r.regDate||'').startsWith(ym)).length;
+  const h=new Date().getHours(),hi=h<12?'좋은 아침이에요':h<18?'오늘도 수고 많으세요':'늦게까지 고생 많으세요';
+
+  const byGu=GUS.map(g=>({g,rows:live.filter(r=>r.gu===g)})).filter(x=>x.rows.length);
+  const maxG=Math.max(1,...byGu.map(x=>x.rows.length));
+  const agents=S.data.agents;
+  const recent=sorted(live).slice(0,4);
+  const onAll=live.filter(r=>r.status==='진행');
+  return `
+  <div class="top"><div><div class="eyebrow">${today().replace(/-/g,'. ')}</div><h1>${esc(S.data.me.name)} ${esc(S.data.me.role)}님, ${hi}</h1></div>
+  <button class="btn primary" data-new>${ic('plus')}매물 등록</button></div>
+  <div class="kpis">
+    <button class="kpi hero" data-go="find"><span class="l">전체 진행 매물</span><span class="v num">${onAll.length}<small>건 · ${S.data.agents.length}명 공유</small></span>
+      <div class="track">${DEALS.map(dl=>{const n=onAll.filter(r=>r.deal===dl).length;return n?`<i style="width:${n/Math.max(1,onAll.length)*100}%;background:var(--${DK[dl]})"></i>`:''}).join('')}</div>
+      <span class="mix">${DEALS.map(dl=>`<span>${dl} <b>${onAll.filter(r=>r.deal===dl).length}</b></span>`).join('')}<span>이번 달 신규 <b>${newThis}</b></span></span></button>
+    <button class="kpi" data-go="mine"><span class="l">내 진행 매물</span><span class="v num">${myLive.length}<small>건</small></span><span class="s">보류 ${mine.filter(r=>r.status==='보류').length} · 완료 ${mine.filter(r=>r.status==='계약완료').length}</span></button>
+    <button class="kpi ${stale.length?'alert':''}" data-go="stale"><span class="l">${stale.length?'<span class="dot" style="color:var(--bad)"></span>':''}확인 필요</span><span class="v num">${stale.length}<small>건</small></span><span class="s">30일 넘게 확인 안 한 내 매물</span></button>
+  </div>
+  <div class="grid2">
+    <section class="panel"><div class="panel-h"><h2>구별 진행 매물</h2><span class="muted" style="font-size:12px">거래유형별</span></div>
+      ${byGu.length?`<div class="bars">${byGu.map(x=>{
+        const seg=DEALS.map(dl=>{const n=x.rows.filter(r=>r.deal===dl).length;return n?`<i style="width:${n/maxG*100}%;background:var(--${{월세:'wolse',전세:'jeonse',매매:'maemae',단기:'dangi'}[dl]})" title="${dl} ${n}건"></i>`:''}).join('');
+        return `<div class="bar"><span>${x.g}</span><div class="track">${seg}</div><span class="n num">${x.rows.length}건</span></div>`}).join('')}</div>
+      <div class="legend">${DEALS.map(dl=>`<span><i class="dot" style="color:var(--${{월세:'wolse',전세:'jeonse',매매:'maemae',단기:'dangi'}[dl]})"></i>${dl}</span>`).join('')}</div>`
+      :`<div class="muted">아직 등록된 매물이 없어요.</div>`}
+    </section>
+    <section class="panel"><div class="panel-h"><h2>담당자별 현황</h2></div><div class="people">
+      ${agents.map(a=>{const rs=all.filter(r=>r.agent===a.name);const on=rs.filter(r=>r.status==='진행').length;
+        return `<div class="person"><div class="avatar">${ini(a.name)}</div><div><b>${esc(a.name)} ${esc(a.role)}</b><small>보류 ${rs.filter(r=>r.status==='보류').length} · 완료 ${rs.filter(r=>r.status==='계약완료').length}</small></div><div><span class="pill-n num">${on}</span> <span class="muted" style="font-size:12px">진행</span></div></div>`}).join('')}
+    </div></section>
+  </div>
+  <section><div class="panel-h"><h2>최근 등록</h2><button class="link" data-go="find">전체 보기</button></div>
+    ${recent.length?`<div class="cards">${recent.map(card).join('')}</div>`:emptyBox('첫 매물을 등록해 보세요','오른쪽 위 매물 등록 버튼을 누르면 됩니다.')}
+  </section>`;
+}
+
+function viewFind(live){
+  const res=sorted(search(live,S.q));
+  const qTok=new Set(S.q.split(/\s+/).filter(Boolean));
+  const chipRow=(label,list)=>`<div class="chiprow"><span>${label}</span><div class="chips">${list.map(v=>`<button class="chip" data-tok="${v}" aria-pressed="${qTok.has(v)}">${v}</button>`).join('')}</div></div>`;
+  return `
+  <div class="top"><div><div class="eyebrow">전체 매물</div><h1>매물 찾기</h1></div></div>
+  <div class="searchbox">${ic('search')}<input id="q" type="search" placeholder="양정 원룸 보증금 500" value="${esc(S.q)}" autocomplete="off" enterkeyhint="search">${S.q?'<button class="clear" data-clear>지우기</button>':''}</div>
+  <div class="hint">단어를 띄어 쓰면 모두 맞는 매물만 나와요. 금액은 <code>보증금 500</code> → ${S.data.units.big}만원 단위(500~${500+S.data.units.big-1}), <code>월세 40</code> → ${S.data.units.small}만원 단위로 찾아요.</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    ${chipRow('구',GUS.filter(g=>g!=='기타'))}
+    ${chipRow('종류',['원룸','투룸','오피스텔','아파트','상가','사무실'])}
+    ${chipRow('거래',DEALS)}
+  </div>
+  <div class="resbar"><b><span class="num">${res.length}</span>건${S.q?` <span class="muted" style="font-weight:400">· "${esc(S.q)}"</span>`:''}</b>
+    <select id="sort" aria-label="정렬"><option value="new" ${S.sort==='new'?'selected':''}>최신 등록순</option><option value="low" ${S.sort==='low'?'selected':''}>금액 낮은순</option><option value="high" ${S.sort==='high'?'selected':''}>금액 높은순</option></select></div>
+  ${res.length?`<div class="cards">${res.map(card).join('')}</div>`:emptyBox('조건에 맞는 매물이 없어요','단어를 하나 빼거나 금액을 바꿔 보세요.')}`;
+}
+
+function viewMine(mine){
+  const f=S.mineFilter;
+  let rows=mine;
+  if(f==='확인 필요') rows=mine.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30);
+  else if(f!=='전체') rows=mine.filter(r=>r.status===f);
+  rows=sorted(rows);
+  const opts=['진행','보류','계약완료','확인 필요','전체'];
+  return `
+  <div class="top"><div><div class="eyebrow">${esc(S.data.me.name)}</div><h1>내 매물</h1></div><button class="btn primary" data-new>${ic('plus')}매물 등록</button></div>
+  <div class="seg" role="group" aria-label="상태">${opts.map(o=>`<button data-mf="${o}" aria-pressed="${f===o}">${o} <span class="num muted">${o==='전체'?mine.length:o==='확인 필요'?mine.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30).length:mine.filter(r=>r.status===o).length}</span></button>`).join('')}</div>
+  ${rows.length?`<div class="cards">${rows.map(r=>card(r,true)).join('')}</div>`:emptyBox(f==='확인 필요'?'확인이 밀린 매물이 없어요':'해당하는 매물이 없어요',f==='확인 필요'?'모든 진행 매물을 30일 안에 확인했어요.':'매물 등록 버튼으로 새 매물을 추가하세요.')}`;
+}
+
+function card(r,withActions){
+  const age=daysAgo(r.checked),stale=r.status==='진행'&&(age??999)>30,mine=isMine(r);
+  return `<article class="card ${mine?'mine':''}" data-open="${esc(r.id)}" tabindex="0" role="button" aria-label="${esc(r.id)} 자세히 보기">
+    <div class="card-top"><span class="tag t-${esc(r.deal)}">${esc(r.deal||'-')}</span><span class="tag">${esc(r.type||'-')}</span>${r.status!=='진행'?`<span class="tag s-${esc(r.status)}">${esc(r.status)}</span>`:''}<span class="id num">${esc(r.id)}</span></div>
+    <div><div class="price">${priceLine(r)}</div>${num(r.fee)!=null?`<div class="muted" style="font-size:12px">관리비 <span class="num">${fmt(num(r.fee))}</span>만원</div>`:''}</div>
+    <div class="place">${esc(r.gu)} ${esc(r.dong)} <span>${esc(r.loc)}</span></div>
+    <div class="specs">${r.floor!==''?`<span>${ic('floor')}<span class="num">${esc(r.floor)}</span>층</span>`:''}${r.area!==''?`<span>${ic('area')}<span class="num">${esc(r.area)}</span>㎡ · <span class="num">${pyeong(r.area)}</span>평</span>`:''}${r.moveIn?`<span>${ic('cal')}${esc(r.moveIn)}</span>`:''}</div>
+    ${r.feature?`<div class="feat">${esc(r.feature)}</div>`:''}
+    <div class="card-foot"><div class="avatar">${ini(r.agent)}</div>${esc(r.agent)}${stale?`<span class="stale">${age>900?'확인 기록 없음':age+'일 전 확인'}</span>`:`<span class="fresh">${r.checked?short(r.checked)+' 확인':''}</span>`}</div>
+    ${withActions?`<div class="actions"><button class="btn" data-check="${esc(r.id)}">${ic('check')}오늘 확인</button><button class="btn" data-edit="${esc(r.id)}">${ic('edit')}수정</button></div>`:''}
+  </article>`;
+}
+const emptyBox=(t,s)=>`<div class="empty"><b>${t}</b>${s}</div>`;
+
+function viewDetail(id){
+  const {mine,all}=allRows();
+  const r=mine.find(x=>x.id===id)||all.find(x=>x.id===id); if(!r) return '';
+  const me=isMine(r);
+  const row=(k,v,full)=>`<div class="${full?'full':''}"><dt>${k}</dt><dd>${v||'<span class="muted">-</span>'}</dd></div>`;
+  return `<div class="scrim" data-close><section class="sheet" role="dialog" aria-modal="true" aria-label="매물 상세">
+    <div class="sheet-h"><span class="tag t-${esc(r.deal)}">${esc(r.deal)}</span><span class="tag s-${esc(r.status)}">${esc(r.status)}</span><h2 class="num">${esc(r.id)}</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
+    <div><div class="price" style="font-size:28px">${priceLine(r)}</div><div class="place" style="margin-top:6px">${esc(r.gu)} ${esc(r.dong)} <span>${esc(r.loc)}</span></div></div>
+    <dl class="dl" style="margin:0">
+      ${row('종류',esc(r.type))}${row('층',r.floor!==''?`<span class="num">${esc(r.floor)}</span>층`:'')}
+      ${row('전용면적',r.area!==''?`<span class="num">${esc(r.area)}</span>㎡ (<span class="num">${pyeong(r.area)}</span>평)`:'')}${row('입주가능일',esc(r.moveIn))}
+      ${row('매매가',num(r.sale)!=null?`<span class="num">${won(num(r.sale))}</span>만원`:'')}${row('보증금·전세금',num(r.deposit)!=null?`<span class="num">${won(num(r.deposit))}</span>만원`:'')}
+      ${row('월세',num(r.rent)!=null?`<span class="num">${fmt(num(r.rent))}</span>만원`:'')}${row('관리비',num(r.fee)!=null?`<span class="num">${fmt(num(r.fee))}</span>만원`:'')}
+      ${row('특징',esc(r.feature),1)}${row('공유 메모',esc(r.memo),1)}
+      ${row('사진',r.photo?`<a href="${esc(r.photo)}" target="_blank" rel="noopener">사진 폴더 열기</a>`:'',1)}
+      ${row('등록일',short(r.regDate))}${row('최근 확인',short(r.checked))}
+    </dl>
+    ${me?`<div class="lockbox"><h3>${ic('lock')}나만 보는 정보</h3><dl class="dl" style="margin:0">
+      ${row('소유주·임대인',esc(r.owner))}${row('연락처',esc(r.phone))}${row('정확한 주소',esc(r.addr),1)}${row('출입 방법',esc(r.access),1)}${row('수수료 조건',esc(r.commission))}${row('내 메모',esc(r.privMemo),1)}
+    </dl></div>
+    <div class="actions"><button class="btn" data-check="${esc(r.id)}">${ic('check')}오늘 확인</button><button class="btn primary" data-edit="${esc(r.id)}">${ic('edit')}수정</button></div>`
+    :`<div class="contact">${ic('user')}<div>이 매물은 <b>${esc(r.agent)}</b> 담당이에요. 매물번호 <b class="num">${esc(r.id)}</b>로 공동중개를 요청하세요.</div></div>`}
+  </section></div>`;
+}
+
+function viewForm(rec){
+  const isNew=!rec.id;
+  const v=k=>esc(rec[k]??'');
+  const seg=(name,list)=>`<div class="seg-in">${list.map(o=>`<label><input type="radio" name="${name}" value="${o}" ${rec[name]===o?'checked':''}><span>${o}</span></label>`).join('')}</div>`;
+  const sel=(name,list)=>`<select id="f-${name}" name="${name}"><option value="">선택</option>${list.map(o=>`<option ${rec[name]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+  const inp=(name,label,type='text',extra='',full=false,aux='')=>`<div class="f ${full?'full':''}"><label for="f-${name}">${label}</label><input id="f-${name}" name="${name}" type="${type}" value="${v(name)}" ${extra}>${aux?`<span class="aux" id="aux-${name}">${aux}</span>`:''}</div>`;
+  return `<div class="scrim" data-close><section class="sheet" role="dialog" aria-modal="true" aria-label="매물 ${isNew?'등록':'수정'}">
+    <div class="sheet-h"><h2>${isNew?'새 매물 등록':'매물 수정 · <span class="num">'+v('id')+'</span>'}</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
+    <form id="lf" novalidate>
+      <fieldset><legend>기본</legend>
+        <div class="f full"><label>거래유형</label>${seg('deal',DEALS)}</div>
+        <div class="f full"><label>상태</label>${seg('status',STATUS)}</div>
+        <div class="f"><label for="f-type">종류</label>${sel('type',TYPES)}</div>
+        <div class="f"><label for="f-gu">구</label>${sel('gu',GUS)}</div>
+        ${inp('dong','동','text','placeholder="양정동"')}
+        ${inp('floor','층','text','inputmode="numeric" placeholder="3"')}
+        ${inp('loc','위치 (호수 빼고)','text','placeholder="양정역 도보 5분 ○○빌"',true)}
+      </fieldset>
+      <fieldset><legend>금액 (만원)</legend>
+        ${inp('deposit','보증금·전세금','number','inputmode="numeric" min="0" placeholder="500"','', rec.deposit?won(num(rec.deposit))+'만원':'')}
+        ${inp('rent','월세','number','inputmode="numeric" min="0" placeholder="45"')}
+        ${inp('sale','매매가','number','inputmode="numeric" min="0" placeholder="30000"','', rec.sale?won(num(rec.sale))+'만원':'')}
+        ${inp('fee','관리비','number','inputmode="numeric" min="0" placeholder="5"')}
+      </fieldset>
+      <fieldset><legend>상세</legend>
+        ${inp('area','전용면적 (㎡)','number','inputmode="decimal" min="0" step="0.1" placeholder="23"','', rec.area?pyeong(rec.area)+'평':'')}
+        ${inp('moveIn','입주가능일','text','placeholder="즉시 / 11월 초"')}
+        <div class="f full"><label for="f-feature">특징</label><textarea id="f-feature" name="feature" placeholder="풀옵션, 엘리베이터, 반려동물 가능">${v('feature')}</textarea></div>
+        ${inp('photo','사진 폴더 링크','url','placeholder="https:\/\/drive.google.com\/..."',true)}
+        <div class="f full"><label for="f-memo">공유 메모 <span class="muted">(다른 직원도 봐요)</span></label><textarea id="f-memo" name="memo">${v('memo')}</textarea></div>
+      </fieldset>
+      <fieldset class="priv"><legend>${ic('lock')} 나만 보는 정보</legend>
+        ${inp('owner','소유주·임대인')}
+        ${inp('phone','연락처','tel','placeholder="010-"')}
+        ${inp('addr','정확한 주소 (동·호수)','text','',true)}
+        ${inp('access','출입 방법·비밀번호','text','',true)}
+        ${inp('commission','수수료 조건')}
+        <div class="f full"><label for="f-privMemo">내 메모</label><textarea id="f-privMemo" name="privMemo">${v('privMemo')}</textarea></div>
+      </fieldset>
+      <div class="err" id="ferr" hidden></div>
+      <div class="formbar"><button type="button" class="btn" data-close>취소</button><button type="submit" class="btn primary" ${S.busy?'disabled':''}>${S.busy?'저장 중…':isNew?'등록하기':'저장하기'}</button></div>
+    </form>
+  </section></div>`;
+}
+
+function renderBlocked(){
+  root.innerHTML=`<div class="loading" style="padding-inline:max(16px,env(safe-area-inset-left,0px))"><div class="mark" style="width:48px;height:48px;font-size:20px">R</div>
+  <div style="text-align:center;max-width:360px"><b style="color:var(--ink);font-size:16px">링크를 확인해주세요</b><br>개인 링크가 맞지 않아요. 대표님께 매물노트 링크를 다시 받아주세요.</div></div>`;
+}
+
+function bind(){
+  root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const v=b.dataset.go;if(v==='stale'){S.view='mine';S.mineFilter='확인 필요'}else S.view=v;S.open=null;render();scrollTo(0,0)});
+  root.querySelectorAll('[data-new]').forEach(b=>b.onclick=e=>{e.stopPropagation();S.open=null;S.edit={status:'진행',deal:'월세'};render()});
+  root.querySelectorAll('[data-open]').forEach(c=>{c.onclick=e=>{if(e.target.closest('[data-check],[data-edit]'))return;S.open=c.dataset.open;render()};c.onkeydown=e=>{if(e.key==='Enter'){S.open=c.dataset.open;render()}}});
+  root.querySelectorAll('[data-close]').forEach(b=>b.onclick=e=>{if(e.target!==b&&!e.target.closest('button[data-close]'))return;S.open=null;S.edit=null;render()});
+  root.querySelectorAll('[data-check]').forEach(b=>b.onclick=async e=>{e.stopPropagation();await act('markChecked',b.dataset.check,'오늘 확인으로 기록했어요')});
+  root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=allRows().mine.find(x=>x.id===b.dataset.edit);S.open=null;S.edit={...r};render()});
+  root.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{S.mineFilter=b.dataset.mf;render()});
+  root.querySelectorAll('[data-tok]').forEach(b=>b.onclick=()=>{const t=b.dataset.tok,set=S.q.split(/\s+/).filter(Boolean);const i=set.indexOf(t);i>=0?set.splice(i,1):set.push(t);S.q=set.join(' ');render()});
+  const q=document.getElementById('q');
+  if(q){q.oninput=()=>{S.q=q.value;const p=q.selectionStart;render();const n=document.getElementById('q');n.focus();n.setSelectionRange(p,p)}}
+  const cl=root.querySelector('[data-clear]'); if(cl) cl.onclick=()=>{S.q='';render()};
+  const so=document.getElementById('sort'); if(so) so.onchange=()=>{S.sort=so.value;render()};
+  const f=document.getElementById('lf');
+  if(f){
+    ['deposit','sale','area'].forEach(k=>{const el=f.elements[k];if(el) el.addEventListener('input',()=>{const a=document.getElementById('aux-'+k)||(()=>{const s=document.createElement('span');s.className='aux';s.id='aux-'+k;el.after(s);return s})();a.textContent=el.value?(k==='area'?pyeong(el.value)+'평':won(+el.value)+'만원'):''})});
+    f.onsubmit=async e=>{e.preventDefault();
+      const fd=new FormData(f),rec={...S.edit};fd.forEach((val,k)=>rec[k]=String(val).trim());
+      const err=document.getElementById('ferr');
+      if(!rec.deal||!rec.type||!rec.gu){err.textContent='거래유형, 종류, 구는 꼭 골라 주세요.';err.hidden=false;return}
+      S.edit=rec;S.busy=true;render();
+      try{S.data=await call('saveListing',rec);S.edit=null;S.busy=false;toast(rec.id?'저장했어요':'등록했어요. 다른 직원 화면에는 1분 안에 보여요')}
+      catch(x){S.busy=false;render();const er=document.getElementById('ferr');er.textContent='저장하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요. ('+(x&&x.message||x)+')';er.hidden=false}
+    };
+  }
+}
+async function act(fn,id,msg){
+  try{S.data=await call(fn,id);toast(msg)}catch(x){toast('처리하지 못했어요. 다시 시도해 주세요.')}
+}
+function toast(m){S.toast=m;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{S.toast='';render()},2600)}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(S.open||S.edit)){S.open=null;S.edit=null;render()}});
+
+let DEMO=null;
+function demoInit(){
+  const d=(n)=>{const t=new Date(Date.now()-n*864e5);return t.toISOString().slice(0,10)};
+  const row=(o)=>F.map(k=>o[k]??'');
+  const mine=[
+    {agent:'권성환',id:'권-0001',regDate:d(2),status:'진행',type:'원룸',deal:'월세',gu:'부산진구',dong:'양정동',loc:'양정역 도보 5분',floor:3,area:23,deposit:500,rent:45,fee:5,moveIn:'즉시',feature:'풀옵션, 엘리베이터, 남향 채광',checked:d(1),owner:'(예시) 김○○',phone:'010-0000-0000',addr:'(예시) 302호',access:'(예시) 공동현관 1234',commission:'법정',privMemo:'(예시) 주말 연락 선호'},
+    {agent:'권성환',id:'권-0002',regDate:d(12),status:'진행',type:'상가',deal:'월세',gu:'수영구',dong:'광안동',loc:'광안리 해변로 이면',floor:1,area:49.5,deposit:3000,rent:180,fee:15,moveIn:'11월 초',feature:'코너 자리, 전면 유리, 권리금 협의',checked:d(41)},
+    {agent:'권성환',id:'권-0003',regDate:d(30),status:'보류',type:'오피스텔',deal:'전세',gu:'해운대구',dong:'재송동',loc:'센텀 인근',floor:12,area:29.7,deposit:13500,fee:12,feature:'신축, 주차 가능',checked:d(9)}
+  ];
+  const all=[
+    {agent:'조원경',id:'조-0001',regDate:d(1),status:'진행',type:'아파트',deal:'매매',gu:'부산진구',dong:'양정동',loc:'양정 ○○아파트',floor:10,area:84,sale:42000,fee:18,feature:'남향, 올수리, 학군 좋음',checked:d(1)},
+    {agent:'조원경',id:'조-0002',regDate:d(5),status:'진행',type:'투룸',deal:'전세',gu:'연제구',dong:'연산동',loc:'연산역 도보 7분',floor:4,area:39.6,deposit:9000,fee:7,feature:'분리형, 베란다',checked:d(36)},
+    {agent:'김윤미',id:'김-0001',regDate:d(3),status:'진행',type:'원룸',deal:'월세',gu:'남구',dong:'대연동',loc:'경성대 앞',floor:2,area:19.8,deposit:300,rent:38,fee:5,moveIn:'즉시',feature:'학생 선호, 풀옵션',checked:d(3)},
+    {agent:'김윤미',id:'김-0002',regDate:d(8),status:'진행',type:'사무실',deal:'월세',gu:'부산진구',dong:'전포동',loc:'서면 전포카페거리',floor:3,area:66,deposit:2000,rent:120,fee:20,feature:'인테리어 완료, 회의실 포함',checked:d(8)},
+    {agent:'김윤미',id:'김-0003',regDate:d(20),status:'계약완료',type:'원룸',deal:'단기',gu:'수영구',dong:'수영동',loc:'수영역 인근',floor:5,area:16.5,deposit:100,rent:60,feature:'1개월 단위',checked:d(20)}
+  ];
+  DEMO={me:{name:'권성환',role:'대표',email:'demo'},units:{big:500,small:10},agents:[{name:'권성환',role:'대표'},{name:'조원경',role:'소장'},{name:'김윤미',role:'실장'},{name:'조수광',role:'소장'}],
+    mine:mine.map(row),all:[...all,...mine].map(o=>{const r=row(o);return r.slice(0,20)})};
+  return DEMO;
+}
+function demoCall(fn,arg){
+  if(!DEMO) demoInit();
+  const mine=DEMO.mine;
+  if(fn==='getBootstrap') return JSON.parse(JSON.stringify(DEMO));
+  if(fn==='markChecked'){const r=mine.find(x=>x[1]===arg);if(r)r[18]=today();}
+  if(fn==='saveListing'){
+    const rec={...arg,agent:DEMO.me.name};
+    if(!rec.regDate) rec.regDate=today(); if(!rec.checked) rec.checked=today();
+    let r=mine.find(x=>x[1]===rec.id);
+    if(!r){const n=mine.length+1;rec.id='권-'+String(n).padStart(4,'0');r=F.map(()=>'');mine.push(r)}
+    F.forEach((k,i)=>r[i]=rec[k]??'');
+  }
+  DEMO.all=[...DEMO.all.filter(x=>x[0]!==DEMO.me.name),...mine.map(x=>x.slice(0,20))];
+  return JSON.parse(JSON.stringify(DEMO));
+}
+
+(async()=>{
+  try{S.demo=!hasGAS;S.data=await call('getBootstrap');render()}
+  catch(e){root.innerHTML=`<div class="loading"><div style="text-align:center;max-width:360px;padding-inline:16px"><b style="color:var(--ink)">매물 정보를 불러오지 못했어요</b><br>시트 접근 권한을 확인하고 새로고침해 주세요.<br><span class="muted" style="font-size:12px">${esc(e&&e.message||e)}</span></div></div>`}
+})();
+})();
+</script>
+
+</html>
