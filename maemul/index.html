@@ -250,7 +250,7 @@ fieldset.priv legend{color:var(--lock)}
 @media (max-width:420px){.cards{grid-template-columns:1fr}}
 [hidden]{display:none!important}.req{color:#c2410c}
 .feegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.fa{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2,#555)}.seg-in input[type=checkbox]{position:absolute;opacity:0}
-.af{border:1px dashed var(--accent-2,#2e8b57);border-radius:14px;padding:12px 14px;background:var(--accent-soft,#e7f5ee)}.af summary{cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:6px;list-style:none}.af summary::-webkit-details-marker{display:none}.af summary .muted{font-size:12px;flex-basis:100%}.af-body{display:flex;flex-direction:column;gap:8px;margin-top:10px}.af-drop{display:block;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px}.af-drop input{position:absolute;opacity:0;width:1px;height:1px}#af-text{min-height:70px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit;background:var(--surface)}
+.af{border:1px dashed var(--accent-2,#2e8b57);border-radius:14px;padding:12px 14px;background:var(--accent-soft,#e7f5ee)}.af summary{cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:6px;list-style:none}.af summary::-webkit-details-marker{display:none}.af summary .muted{font-size:12px;flex-basis:100%}.af-body{display:flex;flex-direction:column;gap:8px;margin-top:10px}.af-drop{display:block;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px}.af-drop input{position:absolute;opacity:0;width:1px;height:1px}#af-text,#bk-text{min-height:70px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit;background:var(--surface)}
 .bk-sum{font-size:14px}.bk-list{display:flex;flex-direction:column;gap:8px}.bk-row{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;cursor:pointer}.bk-row.dup{opacity:.6}.bk-row input{margin-top:4px;width:18px;height:18px;flex:0 0 auto}.bk-miss{font-size:12px;color:#c2410c;margin-top:3px}.bk-ok{font-size:12px;color:var(--accent-2,#2e8b57);margin-top:3px}
 </style>
 
@@ -498,7 +498,7 @@ function viewMine(mine){
   rows=sorted(rows);
   const opts=['진행','보류','계약완료','확인 필요','전체'];
   return `
-  <div class="top"><div><div class="eyebrow">${esc(S.data.me.name)}</div><h1>내 매물</h1></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-bulk>${ic('folder')}엑셀로 한꺼번에</button><button class="btn" data-export="${esc(f)}">${ic('check')}광고용 엑셀 받기</button><button class="btn primary" data-new>${ic('plus')}매물 등록</button></div></div>
+  <div class="top"><div><div class="eyebrow">${esc(S.data.me.name)}</div><h1>내 매물</h1></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-bulk>${ic('folder')}한꺼번에 등록</button><button class="btn" data-export="${esc(f)}">${ic('check')}광고용 엑셀 받기</button><button class="btn primary" data-new>${ic('plus')}매물 등록</button></div></div>
   <div class="seg" role="group" aria-label="상태">${opts.map(o=>`<button data-mf="${o}" aria-pressed="${f===o}">${o} <span class="num muted">${o==='전체'?mine.length:o==='확인 필요'?mine.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30).length:mine.filter(r=>r.status===o).length}</span></button>`).join('')}</div>
   ${rows.length?`<div class="cards">${rows.map(r=>card(r,true)).join('')}</div>`:emptyBox(f==='확인 필요'?'확인이 밀린 매물이 없어요':'해당하는 매물이 없어요',f==='확인 필요'?'모든 진행 매물을 30일 안에 확인했어요.':'매물 등록 버튼으로 새 매물을 추가하세요.')}`;
 }
@@ -569,7 +569,7 @@ function viewForm(rec){
           <textarea id="af-text" placeholder="또는 등록 내용을 복사해서 붙여넣기"></textarea>
           <button type="button" class="btn primary" id="af-go">자동 채우기</button>
           <div class="muted" style="font-size:12px">채운 뒤 빈칸·틀린 곳만 확인하고 등록하면 돼요.</div>
-          <button type="button" class="link" data-bulk style="align-self:flex-start">여러 건이면 엑셀로 한꺼번에 등록 →</button>
+          <button type="button" class="link" data-bulk style="align-self:flex-start">여러 건이면 한꺼번에 등록 (엑셀·사진 여러 장) →</button>
         </div>
       </details>
       <p class="muted" style="margin:0;font-size:12.5px"><span class="req">*</span> 표시는 꼭 채워야 하는 항목이에요. 종류에 맞는 칸만 보여요.</p>
@@ -669,18 +669,36 @@ function fromDanggeun(o){const g=k=>String(o[k]??'').trim();const r={},memo=[],f
   if(!r.buildUse)r.buildUse={'아파트':'공동주택','빌라':'공동주택','오피스텔':'업무시설','주택':'단독주택'}[r.type]||'';
   r.feature=feat.join(' / ');r.memo=memo.join(' / ');return r}
 function missOf(r){return RULES.filter(x=>x.k!=='feeAmt'&&x.k!=='feeChk'&&x.show(r)&&x.req(r)&&!String(r[x.k]??'').trim()).map(x=>x.l)}
+
+const shrink=file=>new Promise((ok,no)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const m=1600,sc=Math.min(1,m/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',0.85))};img.onerror=no;img.src=u});
+function aiToRec(r,base){const o={...(base||{})};Object.keys(r||{}).forEach(k=>{const x=r[k];if(x===null||x===undefined||x===''||k==='gu'||k==='dong')return;if(F.includes(k))o[k]=String(x)});
+  if(r&&r.gu){const sd=SIDOS.includes(r.sido)?r.sido:'부산광역시',g=String(r.gu).trim();if((REG[sd]||{})[g]){o.gu=sd==='부산광역시'?g:sd+' '+g;o.dong=(REG[sd][g]||[]).includes(r.dong)?r.dong:''}else{const a=parseAddr([r.sido,r.gu,r.dong].filter(Boolean).join(' '));if(a.gu){o.gu=a.sido==='부산광역시'?a.gu:a.sido+' '+a.gu;o.dong=a.dong}}}
+  if(!o.dirBase&&o.direction&&HOUSE.includes(o.type))o.dirBase='거실';
+  if(!o.buildUse)o.buildUse={'아파트':'공동주택','빌라':'공동주택','오피스텔':'업무시설','주택':'단독주택'}[o.type]||'';
+  return o}
+function mkRow(rec){const mine=allRows().mine;const dup=!!rec.addr&&mine.some(m=>m.addr===rec.addr&&String(m.deposit)===String(rec.deposit||'')&&String(m.rent)===String(rec.rent||'')&&String(m.sale)===String(rec.sale||''));return{rec,miss:missOf(rec),dup,on:!dup}}
+async function readPhotos(files,onStep){const out=[];let i=0,fail=0;const work=async()=>{while(i<files.length){const f=files[i++];try{const img=await shrink(f);const r=await call('autofill',{images:[img]});out.push(mkRow(aiToRec(r,{})))}catch(e){fail++}onStep(out.length+fail)}};await Promise.all([work(),work()]);return{rows:out,fail}}
+async function readMany(text,files){const images=await Promise.all([...files].slice(0,6).map(shrink));const r=await call('autofill',{text,images,many:true});const items=Array.isArray(r)?r:(r&&r.items)||[r];return items.filter(Boolean).slice(0,30).map(x=>mkRow(aiToRec(x,{})))}
 function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/xlsx\/0.18.5\/xlsx.full.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)})}
 async function readBulk(file){await loadXLSX();const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
   if(!rows.length||!('매물유형' in rows[0])||!('보증금/매매가(만원)' in rows[0]))throw new Error('지원하는 양식이 아니에요. 매물 일괄 등록 양식(첫 줄 제목 그대로)으로 넣어 주세요.');
-  const mine=allRows().mine;
-  return rows.filter(o=>String(o['매물유형']||'').trim()&&!(o['주소']==='서울시 강남구 역삼동 123-4'&&o['상세주소']==='101동 502호')).slice(0,100).map(o=>{const rec=fromDanggeun(o);const dup=!!rec.addr&&mine.some(m=>m.addr===rec.addr&&String(m.deposit)===String(rec.deposit||'')&&String(m.rent)===String(rec.rent||'')&&String(m.sale)===String(rec.sale||''));return{rec,miss:missOf(rec),dup,on:!dup}})}
+  return rows.filter(o=>String(o['매물유형']||'').trim()&&!(o['주소']==='서울시 강남구 역삼동 123-4'&&o['상세주소']==='101동 502호')).slice(0,100).map(o=>mkRow(fromDanggeun(o)))}
 function viewBulk(){const B=S.bulk,list=B.rows||[];const on=list.filter(x=>x.on);
-  return `<div class="scrim" data-close><section class="sheet" role="dialog" aria-modal="true" aria-label="엑셀로 한꺼번에 등록">
-    <div class="sheet-h"><h2>엑셀로 한꺼번에 등록</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
-    <div class="af"><div class="af-body" style="margin:0">
-      <label class="af-drop"><input type="file" id="bk-file" accept=".xlsx,.xls,.csv"><span>${B.name?esc(B.name):'매물 일괄 등록 엑셀 고르기'}</span></label>
-      <div class="muted" style="font-size:12px">한 줄에 매물 하나, 최대 100건. 빈칸이 있는 매물은 <b>보류 + 확인 필요</b>로 들어가요. 나중에 열어서 채우면 돼요.</div>
-    </div></div>
+  return `<div class="scrim" data-close><section class="sheet" role="dialog" aria-modal="true" aria-label="한꺼번에 등록">
+    <div class="sheet-h"><h2>한꺼번에 등록</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
+    ${list.length||B.busy?'':`<div class="af"><div class="af-body" style="margin:0">
+      <b>① 엑셀</b>
+      <label class="af-drop"><input type="file" id="bk-file" accept=".xlsx,.xls,.csv"><span>매물 일괄 등록 엑셀 고르기</span></label>
+      <div class="muted" style="font-size:12px">한 줄에 매물 하나, 최대 100건</div>
+      <b style="margin-top:6px">② 매물정보 사진 여러 장</b>
+      <label class="af-drop"><input type="file" id="bk-photos" accept="image/*" multiple><span>사진 고르기 (한 장에 매물 하나, 최대 30장)</span></label>
+      <b style="margin-top:6px">③ 여러 매물이 한 번에 있는 표 사진·글</b>
+      <label class="af-drop"><input type="file" id="bk-table" accept="image/*" multiple><span id="bk-tabletxt">표 사진 고르기 (선택)</span></label>
+      <textarea id="bk-text" placeholder="또는 매물 목록 글을 붙여넣기"></textarea>
+      <button type="button" class="btn" id="bk-many">표·글 읽기</button>
+      <div class="muted" style="font-size:12px">빈칸이 있는 매물은 <b>보류 + 확인 필요</b>로 들어가요. 나중에 열어서 채우면 돼요.</div>
+    </div></div>`}
+    ${B.name?`<div class="muted">${esc(B.name)}</div>`:''}
     ${B.err?`<div class="err">${esc(B.err)}</div>`:''}
     ${list.length?`<div class="bk-sum"><b class="num">${list.length}</b>건 읽음 · 바로 등록 <b class="num">${list.filter(x=>!x.miss.length&&!x.dup).length}</b> · 빈칸 있음 <b class="num">${list.filter(x=>x.miss.length&&!x.dup).length}</b>${list.some(x=>x.dup)?` · 이미 있음 <b class="num">${list.filter(x=>x.dup).length}</b>`:''}</div>
     <div class="bk-list">${list.map((x,i)=>{const r=x.rec;return `<label class="bk-row ${x.dup?'dup':''}"><input type="checkbox" data-bk="${i}" ${x.on?'checked':''} ${B.busy?'disabled':''}><div><div><span class="tag t-${esc(r.deal)}">${esc(r.deal||'-')}</span> <span class="tag">${esc((r.type==='상가'&&r.subType)||r.type||'-')}</span> <b>${priceLine(r)}</b></div><div class="muted" style="font-size:12.5px">${esc(r.gu||'주소 확인 필요')} ${esc(r.dong)} ${r.area?`· <span class="num">${esc(r.area)}</span>㎡`:''} ${r.rooms?`· 방 ${esc(r.rooms)}`:''}</div>${x.dup?'<div class="bk-miss">이미 등록된 매물 같아요</div>':x.miss.length?`<div class="bk-miss">빈칸: ${esc(x.miss.join(', '))}</div>`:'<div class="bk-ok">바로 등록 가능</div>'}</div></label>`}).join('')}</div>`:''}
@@ -709,6 +727,11 @@ function bind(){
   root.querySelectorAll('[data-bulk]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();S.open=null;S.edit=null;S.bulk={rows:[]};render()});
   const bf=document.getElementById('bk-file');if(bf)bf.onchange=async()=>{const fl=bf.files[0];if(!fl)return;S.bulk={rows:[],name:fl.name+' 읽는 중…'};render();try{const rows=await readBulk(fl);S.bulk={rows,name:fl.name}}catch(x){S.bulk={rows:[],name:fl.name,err:x&&x.message||String(x)}}render()};
   root.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{const f=b.dataset.export,m=allRows().mine;let rows=f==='전체'?m:f==='확인 필요'?m.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30):m.filter(r=>r.status===f);exportAd(sorted(rows),f).catch(x=>toast('엑셀을 만들지 못했어요: '+(x&&x.message||x)))});
+  const bp=document.getElementById('bk-photos');if(bp)bp.onchange=async()=>{const fs=[...bp.files].slice(0,30);if(!fs.length)return;S.bulk={rows:[],name:`사진 읽는 중… 0/${fs.length}`,busy:true};render();
+    try{const r=await readPhotos(fs,n=>{S.bulk.name=`사진 읽는 중… ${n}/${fs.length} (장당 10초쯤)`;render()});S.bulk={rows:r.rows,name:`사진 ${fs.length}장 읽음${r.fail?` · ${r.fail}장 실패`:''}`}}catch(x){S.bulk={rows:[],err:x&&x.message||String(x)}}render()};
+  const bt=document.getElementById('bk-table');if(bt)bt.onchange=()=>{document.getElementById('bk-tabletxt').textContent=bt.files.length?bt.files.length+'장 골랐어요':'표 사진 고르기 (선택)'};
+  const bm=document.getElementById('bk-many');if(bm)bm.onclick=async()=>{const text=document.getElementById('bk-text').value.trim(),fs=[...(bt.files||[])];if(!text&&!fs.length){toast('표 사진이나 글을 먼저 넣어 주세요');return}S.bulk={rows:[],name:'표·글 읽는 중… (30초~1분)',busy:true};render();
+    try{const rows=await readMany(text,fs);S.bulk={rows,name:`${rows.length}건 찾았어요`}}catch(x){S.bulk={rows:[],err:x&&x.message||String(x)}}render()};
   root.querySelectorAll('[data-bk]').forEach(c=>c.onchange=()=>{S.bulk.rows[+c.dataset.bk].on=c.checked;render()});
   const bg=document.getElementById('bk-go');if(bg)bg.onclick=async()=>{const B=S.bulk,todo=B.rows.filter(x=>x.on);B.busy=true;B.done=0;B.total=todo.length;render();let fail=0;
     for(const x of todo){const r={...x.rec};r.status=x.miss.length?'보류':'진행';if(x.miss.length)r.memo='[확인 필요] 빈칸: '+x.miss.join(', ')+(r.memo?' / '+r.memo:'');try{S.data=await call('saveListing',r)}catch(e){fail++}B.done++;render()}
@@ -733,14 +756,12 @@ function bind(){
     const snap=()=>{const fd=new FormData(f),r={...S.edit};fd.forEach((x,k)=>{if(k!=='feeChk')r[k]=String(x).trim()});const amt=[];f.querySelectorAll('[data-fa]').forEach(i=>{if(i.value!=='')amt.push(i.dataset.fa+' '+i.value)});r.feeItems=amt.length?amt.join(', '):fd.getAll('feeChk').join(', ');if(r.gu&&r.sido&&r.sido!=='부산광역시')r.gu=r.sido+' '+r.gu;delete r.sido;return r};
     const ai=document.getElementById('af-img'),at=document.getElementById('af-imgtxt');
     if(ai)ai.onchange=()=>{at.textContent=ai.files.length?ai.files.length+'장 골랐어요':'캡처 사진 고르기 (여러 장 가능)'};
-    const shrink=file=>new Promise((ok,no)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const m=1600,sc=Math.min(1,m/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',0.85))};img.onerror=no;img.src=u});
     const ag=document.getElementById('af-go');
     if(ag)ag.onclick=async()=>{const text=document.getElementById('af-text').value.trim(),files=[...(ai.files||[])].slice(0,6);
       if(!text&&!files.length){toast('캡처나 글을 먼저 넣어 주세요');return}
       ag.disabled=true;ag.textContent='읽는 중… (10~20초)';
       try{const images=await Promise.all(files.map(shrink));const r=await call('autofill',{text,images});const cur=snap();
-        Object.keys(r||{}).forEach(k=>{const x=r[k];if(x===null||x===undefined||x==='')return;if(F.includes(k))cur[k]=String(x)});
-        if(r.gu){const sd=SIDOS.includes(r.sido)?r.sido:'부산광역시',g=String(r.gu).trim();if((REG[sd]||{})[g]){cur.gu=sd==='부산광역시'?g:sd+' '+g;cur.dong=(REG[sd][g]||[]).includes(r.dong)?r.dong:''}else{cur.gu=S.edit.gu||'';cur.dong=S.edit.dong||''}}
+        Object.assign(cur,aiToRec(r,cur));
         S.edit=cur;render();toast('채웠어요. 빈칸·틀린 곳만 확인해 주세요')}
       catch(x){ag.disabled=false;ag.textContent='자동 채우기';toast('읽지 못했어요: '+(x&&x.message||x))}};
     const bindGu=()=>{const g=document.getElementById('f-gu');g.onchange=()=>{document.getElementById('dongbox').innerHTML=dongField(f.elements.sido.value,g.value,'')}};bindGu();
@@ -796,6 +817,7 @@ function demoCall(fn,arg){
   const mine=DEMO.mine;
   if(fn==='getBootstrap') return JSON.parse(JSON.stringify(DEMO));
   if(fn==='logExport') return true;
+  if(fn==='autofill'&&arg&&arg.many) return {items:[{type:'원룸',deal:'월세',sido:'부산광역시',gu:'남구',dong:'대연동',deposit:300,rent:38,area:19.8,rooms:1,baths:1},{type:'아파트',deal:'전세',gu:'해운대구',dong:'좌동',deposit:25000,area:59,rooms:3,baths:2,floor:7,totalFloor:20}]};
   if(fn==='autofill') return {type:'원룸',deal:'월세',sido:'부산광역시',gu:'수영구',dong:'광안동',deposit:500,rent:45,feeType:'정액관리비',feeTier:'10만원 미만',feeBasis:'직전 월 관리비',fee:7,feeItems:'수도, 인터넷',rooms:1,baths:1,roomShape:'분리형',duplex:'단층',floor:3,totalFloor:5,elevator:'있음',parking:'불가',dirBase:'거실',direction:'남향',area:23.5,moveIn:'즉시',title:'광안역 5분 분리형 원룸',feature:'풀옵션, 에어컨, 세탁기'};
   if(fn==='markChecked'){const r=mine.find(x=>x[1]===arg);if(r)r[18]=today();}
   if(fn==='saveListing'){
