@@ -257,6 +257,7 @@ window.onerror=function(m,src,l,c){window.__epErr(m+' ('+l+':'+c+')');};
 window.addEventListener('unhandledrejection',function(e){window.__epErr((e.reason&&e.reason.message)||e.reason);});
 setTimeout(function(){var r=document.getElementById('root');if(r&&r.querySelector('.spin'))window.__epErr('서버 응답이 없어요 (20초)');},20000);
 </script>
+<script src="regions.js"></script>
 <script>
 (function(){
 
@@ -279,7 +280,12 @@ const IC={
 const ic=(n)=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
 
 const F=['agent','id','regDate','status','type','deal','gu','dong','loc','floor','area','sale','deposit','rent','fee','moveIn','feature','photo','checked','memo','owner','phone','addr','access','commission','privMemo'];
-const STATUS=['진행','보류','계약완료'], TYPES=['원룸','투룸','쓰리룸','오피스텔','아파트','빌라','주택','상가','사무실','건물','토지','기타'], DEALS=['월세','전세','매매','단기'], GUS=['남구','해운대구','부산진구','연제구','수영구','동래구','기타'];
+const STATUS=['진행','보류','계약완료'], TYPES=['아파트','상가','원룸','건물','투룸','쓰리룸','오피스텔','빌라','주택','사무실','토지','기타'], DEALS=['월세','전세','매매','단기'];
+const REG=window.REGIONS||{'부산광역시':{}}, SIDOS=Object.keys(REG), GUS=Object.keys(REG['부산광역시']||{});
+function splitGu(g){g=String(g||'');const sd=SIDOS.find(x=>x!=='부산광역시'&&g.startsWith(x+' '));return sd?{sido:sd,gu:g.slice(sd.length+1)}:{sido:'부산광역시',gu:g}}
+function opts(list,val,ph){return `<option value="">${ph}</option>${list.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}${val&&!list.includes(val)?`<option selected>${esc(val)}</option>`:''}`}
+function guField(sido,val){return `<select id="f-gu" name="gu">${opts(Object.keys(REG[sido]||{}),val,'시·군·구 선택')}</select>`}
+function dongField(sido,gu,val){const l=(REG[sido]||{})[gu];return `<select id="f-dong" name="dong" ${l?'':'disabled'}>${opts(l||[],val,l?'동·읍·면 선택':'구를 먼저 골라 주세요')}</select>`}
 const DK={월세:'wolse',전세:'jeonse',매매:'maemae',단기:'dangi'};
 
 const S={view:'home',q:'',sort:'new',mineFilter:'진행',data:null,demo:false,open:null,edit:null,busy:false,toast:''};
@@ -392,7 +398,7 @@ function viewHome(all,live,mine,myLive,stale){
   const newThis=all.filter(r=>(r.regDate||'').startsWith(ym)).length;
   const h=new Date().getHours(),hi=h<12?'좋은 아침이에요':h<18?'오늘도 수고 많으세요':'늦게까지 고생 많으세요';
 
-  const byGu=GUS.map(g=>({g,rows:live.filter(r=>r.gu===g)})).filter(x=>x.rows.length);
+  const byGu=[...GUS.map(g=>({g,rows:live.filter(r=>r.gu===g)})),{g:'기타',rows:live.filter(r=>!GUS.includes(r.gu))}].filter(x=>x.rows.length);
   const maxG=Math.max(1,...byGu.map(x=>x.rows.length));
   const agents=S.data.agents;
   const recent=sorted(live).slice(0,4);
@@ -434,7 +440,7 @@ function viewFind(live){
   <div class="searchbox">${ic('search')}<input id="q" type="search" placeholder="양정 원룸 보증금 500" value="${esc(S.q)}" autocomplete="off" enterkeyhint="search">${S.q?'<button class="clear" data-clear>지우기</button>':''}</div>
   <div class="hint">단어를 띄어 쓰면 모두 맞는 매물만 나와요. 금액은 <code>보증금 500</code> → ${S.data.units.big}만원 단위(500~${500+S.data.units.big-1}), <code>월세 40</code> → ${S.data.units.small}만원 단위로 찾아요.</div>
   <div style="display:flex;flex-direction:column;gap:8px">
-    ${chipRow('구',GUS.filter(g=>g!=='기타'))}
+    ${chipRow('구',[...new Set(live.map(r=>r.gu).filter(Boolean))].sort((a,b)=>(GUS.indexOf(a)+1||99)-(GUS.indexOf(b)+1||99)))}
     ${chipRow('종류',['원룸','투룸','오피스텔','아파트','상가','사무실'])}
     ${chipRow('거래',DEALS)}
   </div>
@@ -497,6 +503,7 @@ function viewDetail(id){
 
 function viewForm(rec){
   const isNew=!rec.id;
+  const loc=splitGu(rec.gu);
   const v=k=>esc(rec[k]??'');
   const seg=(name,list)=>`<div class="seg-in">${list.map(o=>`<label><input type="radio" name="${name}" value="${o}" ${rec[name]===o?'checked':''}><span>${o}</span></label>`).join('')}</div>`;
   const sel=(name,list)=>`<select id="f-${name}" name="${name}"><option value="">선택</option>${list.map(o=>`<option ${rec[name]===o?'selected':''}>${o}</option>`).join('')}</select>`;
@@ -505,11 +512,12 @@ function viewForm(rec){
     <div class="sheet-h"><h2>${isNew?'새 매물 등록':'매물 수정 · <span class="num">'+v('id')+'</span>'}</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
     <form id="lf" novalidate>
       <fieldset><legend>기본</legend>
+        <div class="f full"><label>종류</label>${seg('type',TYPES)}</div>
         <div class="f full"><label>거래유형</label>${seg('deal',DEALS)}</div>
         <div class="f full"><label>상태</label>${seg('status',STATUS)}</div>
-        <div class="f"><label for="f-type">종류</label>${sel('type',TYPES)}</div>
-        <div class="f"><label for="f-gu">구</label>${sel('gu',GUS)}</div>
-        ${inp('dong','동','text','placeholder="양정동"')}
+        <div class="f"><label for="f-sido">시·도</label><select id="f-sido" name="sido">${SIDOS.map(x=>`<option ${loc.sido===x?'selected':''}>${x}</option>`).join('')}</select></div>
+        <div class="f"><label for="f-gu">시·군·구</label><span id="gubox" style="display:block">${guField(loc.sido,loc.gu)}</span></div>
+        <div class="f"><label for="f-dong">동 <span class="muted">(법정동)</span></label><span id="dongbox" style="display:block">${dongField(loc.sido,loc.gu,rec.dong)}</span></div>
         ${inp('floor','층','text','inputmode="numeric" placeholder="3"')}
         ${inp('loc','위치 (호수 빼고)','text','placeholder="양정역 도보 5분 ○○빌"',true)}
       </fieldset>
@@ -560,11 +568,13 @@ function bind(){
   const so=document.getElementById('sort'); if(so) so.onchange=()=>{S.sort=so.value;render()};
   const f=document.getElementById('lf');
   if(f){
+    const bindGu=()=>{const g=document.getElementById('f-gu');g.onchange=()=>{document.getElementById('dongbox').innerHTML=dongField(f.elements.sido.value,g.value,'')}};bindGu();
+    f.elements.sido.onchange=()=>{const sd=f.elements.sido.value;document.getElementById('gubox').innerHTML=guField(sd,'');document.getElementById('dongbox').innerHTML=dongField(sd,'','');bindGu()};
     ['deposit','sale','area'].forEach(k=>{const el=f.elements[k];if(el) el.addEventListener('input',()=>{const a=document.getElementById('aux-'+k)||(()=>{const s=document.createElement('span');s.className='aux';s.id='aux-'+k;el.after(s);return s})();a.textContent=el.value?(k==='area'?pyeong(el.value)+'평':won(+el.value)+'만원'):''})});
     f.onsubmit=async e=>{e.preventDefault();
-      const fd=new FormData(f),rec={...S.edit};fd.forEach((val,k)=>rec[k]=String(val).trim());
+      const fd=new FormData(f),rec={...S.edit};fd.forEach((val,k)=>rec[k]=String(val).trim());if(rec.gu&&rec.sido&&rec.sido!=='부산광역시')rec.gu=rec.sido+' '+rec.gu;delete rec.sido;
       const err=document.getElementById('ferr');
-      if(!rec.deal||!rec.type||!rec.gu){err.textContent='거래유형, 종류, 구는 꼭 골라 주세요.';err.hidden=false;return}
+      if(!rec.deal||!rec.type||!rec.gu||!rec.dong){err.textContent='종류, 거래유형, 구, 동은 꼭 골라 주세요.';err.hidden=false;return}
       S.edit=rec;S.busy=true;render();
       try{S.data=await call('saveListing',rec);S.edit=null;S.busy=false;toast(rec.id?'저장했어요':'등록했어요. 다른 직원 화면에는 1분 안에 보여요')}
       catch(x){S.busy=false;render();const er=document.getElementById('ferr');er.textContent='저장하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요. ('+(x&&x.message||x)+')';er.hidden=false}
