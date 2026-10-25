@@ -255,6 +255,10 @@ fieldset.priv legend{color:var(--lock)}
 .admin{display:flex;flex-direction:column;gap:16px;margin-top:8px;padding-top:18px;border-top:2px dashed var(--line)}.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:820px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}.kpi .track{height:6px;border-radius:9px;background:var(--line);overflow:hidden;display:flex}.kpi a{color:inherit;text-decoration:underline}
 .tbl{overflow-x:auto}.tbl table{width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap}.tbl th{font-size:12px;color:var(--ink-3);font-weight:500;text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}.tbl td{padding:9px 10px;border-bottom:1px solid var(--line)}.tbl tr:last-child td{border-bottom:0}
 .cols{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;align-items:end;height:150px}.col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;font-size:12px}.col i{display:block;width:70%;min-height:2px;border-radius:6px 6px 2px 2px;background:var(--accent-2,#2e8b57)}.col small{color:var(--ink-3);font-size:11px}
+.ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}.ph{position:relative;display:block;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--line)}.ph img{width:100%;height:100%;object-fit:cover;display:block}.ph button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:16px;line-height:1;cursor:pointer}
+.card-ph{width:calc(100% + 32px);margin:-16px -16px 0;max-width:none;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r) var(--r) 0 0;display:block}
+.addst{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}.addst input,.addst select,.tbl select{border:1px solid var(--line);border-radius:8px;padding:6px 9px;font:inherit;background:var(--surface)}.addst input{width:120px}.tbl tr.left td{opacity:.55}.btn.sm{padding:5px 10px;font-size:12.5px}
+.seg.mini button{padding:4px 10px;font-size:12px}.cols .col small{white-space:nowrap}
 </style>
 
 <div id="root"><div class="loading"><div class="spin"></div><div>매물 정보를 불러오는 중…</div></div></div>
@@ -323,6 +327,8 @@ const RULES=[
  {k:'approvalDate',l:'사용승인일',show:notLand,req:no},
  {k:'moveIn',l:'입주가능일',show:yes,req:yes}
 ];
+function photoInfo(p){const t=String(p||'');const i=t.indexOf('#ids=');const url=i>=0?t.slice(0,i):t;const m=url.match(/folders\/([^\/?#]+)/);return{url,folder:m?m[1]:'',ids:i>=0?t.slice(i+5).split(',').filter(Boolean):[]}}
+const thumb=(id,w)=>`https:\/\/drive.google.com\/thumbnail?id=${encodeURIComponent(id)}&sz=w${w||400}`;
 function parseFeeItems(t){const o={amt:{},chk:[]};String(t||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>{const m=x.match(/^(.+?)\s+([\d.]+)$/);if(m)o.amt[m[1]]=m[2];else o.chk.push(x)});return o}
 const REG=window.REGIONS||{'부산광역시':{}}, SIDOS=Object.keys(REG), GUS=Object.keys(REG['부산광역시']||{});
 function splitGu(g){g=String(g||'');const sd=SIDOS.find(x=>x!=='부산광역시'&&g.startsWith(x+' '));return sd?{sido:sd,gu:g.slice(sd.length+1)}:{sido:'부산광역시',gu:g}}
@@ -481,7 +487,11 @@ function viewAdmin(all){
   const reg=m=>all.filter(r=>(r.regDate||'').startsWith(m)).length;
   const staleAll=all.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30);
   const held=all.filter(r=>r.status==='보류');
-  const weeks=[...Array(8)].map((_,i)=>{const end=new Date();end.setHours(0,0,0,0);end.setDate(end.getDate()-7*(7-i));const st=new Date(end);st.setDate(st.getDate()-6);const iso=d=>d.toISOString().slice(0,10);return{l:(st.getMonth()+1)+'/'+st.getDate(),n:all.filter(r=>r.regDate>=iso(st)&&r.regDate<=iso(end)).length}});
+  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const TR=S.trend||'week';
+  const weeks=TR==='day'?[...Array(14)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-(13-i));const k=iso(d);return{l:(d.getMonth()+1)+'/'+d.getDate(),n:all.filter(r=>r.regDate===k).length}})
+    :TR==='month'?[...Array(6)].map((_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-(5-i));const k=iso(d).slice(0,7);return{l:(d.getMonth()+1)+'월',n:all.filter(r=>(r.regDate||'').startsWith(k)).length}})
+    :[...Array(8)].map((_,i)=>{const end=new Date();end.setDate(end.getDate()-7*(7-i));const st=new Date(end);st.setDate(st.getDate()-6);return{l:(st.getMonth()+1)+'/'+st.getDate(),n:all.filter(r=>r.regDate>=iso(st)&&r.regDate<=iso(end)).length}});
   const maxW=Math.max(1,...weeks.map(w=>w.n));
   const live=all.filter(r=>r.status==='진행');
   const byType=TYPES.map(t=>({t,n:live.filter(r=>r.type===t).length})).filter(x=>x.n);const maxT=Math.max(1,...byType.map(x=>x.n));
@@ -495,14 +505,17 @@ function viewAdmin(all){
     <div class="kpi ${staleAll.length?'alert':''}"><span class="l">30일 넘게 미확인</span><span class="v num">${staleAll.length}<small>건</small></span><span class="s">진행 매물 중</span></div>
     <div class="kpi"><span class="l">자동 채우기 (${esc(ai.month||ym)})</span><span class="v num">${ai.count||0}<small>회 · $${(ai.cost||0).toFixed(2)}</small></span><div class="track"><i style="width:${pct}%;background:var(--accent-2,#2e8b57)"></i></div><span class="s">월 $100 크레딧 중 · <a href="https://platform.claude.com/usage" target="_blank" rel="noopener">콘솔에서 정확히 보기</a></span></div>
   </div>
-  <section class="panel"><div class="panel-h"><h2>직원별 상세</h2><a class="link" href="https://docs.google.com/spreadsheets/d/1OOqyUVnKNEM2d53uLoj_LU0BUNi33rUluCTfIsP-iY4" target="_blank" rel="noopener">접근 관리·기록 시트 열기</a></div>
-    <div class="tbl"><table><thead><tr><th>직원</th><th>상태</th><th>진행</th><th>보류</th><th>완료</th><th>이번 달 등록</th><th>30일 미확인</th><th>마지막 등록</th><th>자동 채우기</th></tr></thead><tbody>
-    ${S.data.agents.map(a=>{const rs=all.filter(r=>r.agent===a.name);const last=rs.map(r=>r.regDate).filter(Boolean).sort().pop();const st=acc[a.name]||'재직';const sl=rs.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30).length;
-      return `<tr><td><b>${esc(a.name)}</b> <span class="muted">${esc(a.role)}</span></td><td>${st==='퇴사'?'<span class="tag s-보류">퇴사·차단</span>':'재직'}</td><td class="num">${rs.filter(r=>r.status==='진행').length}</td><td class="num">${rs.filter(r=>r.status==='보류').length}</td><td class="num">${rs.filter(r=>r.status==='계약완료').length}</td><td class="num">${rs.filter(r=>(r.regDate||'').startsWith(ym)).length}</td><td class="num" style="${sl?'color:var(--bad)':''}">${sl}</td><td class="num">${last?short(last):'-'}</td><td class="num">${(ai.byName||{})[a.name]||0}</td></tr>`}).join('')}
-    </tbody></table></div></section>
+  <section class="panel"><div class="panel-h"><h2>직원 관리</h2><a class="link" href="https:\/\/docs.google.com\/spreadsheets\/d\/1OOqyUVnKNEM2d53uLoj_LU0BUNi33rUluCTfIsP-iY4" target="_blank" rel="noopener">기록 시트 열기</a></div>
+    <div class="tbl"><table><thead><tr><th>직원</th><th>상태</th><th>진행</th><th>보류</th><th>완료</th><th>이번 달 등록</th><th>30일 미확인</th><th>마지막 등록</th><th>자동 채우기</th><th>개인 링크</th></tr></thead><tbody>
+    ${(A.staff||S.data.agents.map(a=>({...a,status:acc[a.name]||'재직'}))).map(a=>{const rs=all.filter(r=>r.agent===a.name);const last=rs.map(r=>r.regDate).filter(Boolean).sort().pop();const sl=rs.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30).length;const boss=a.role==='대표';
+      return `<tr class="${a.status==='퇴사'?'left':''}"><td><b>${esc(a.name)}</b> <span class="muted">${esc(a.role)}</span></td><td>${boss?'대표':`<select data-st="${esc(a.name)}" aria-label="${esc(a.name)} 상태"><option ${a.status!=='퇴사'?'selected':''}>재직</option><option ${a.status==='퇴사'?'selected':''}>퇴사</option></select>`}</td><td class="num">${rs.filter(r=>r.status==='진행').length}</td><td class="num">${rs.filter(r=>r.status==='보류').length}</td><td class="num">${rs.filter(r=>r.status==='계약완료').length}</td><td class="num">${rs.filter(r=>(r.regDate||'').startsWith(ym)).length}</td><td class="num" style="${sl?'color:var(--bad)':''}">${sl}</td><td class="num">${last?short(last):'-'}</td><td class="num">${(ai.byName||{})[a.name]||0}</td><td>${a.code&&a.status!=='퇴사'?`<button class="btn sm" data-copy="${esc(a.code)}" data-nm="${esc(a.name)}">링크 복사</button>${boss?'':` <button class="btn sm" data-reset="${esc(a.name)}">새 링크</button>`}`:'-'}</td></tr>`}).join('')}
+    </tbody></table></div>
+    <div class="addst"><b>+ 직원 추가</b><input id="ns-name" placeholder="이름" autocomplete="off"><select id="ns-role">${['소장','실장','팀장','과장','대리','사원','중개보조원'].map(x=>`<option>${x}</option>`).join('')}</select><button class="btn primary sm" id="ns-go">추가하고 링크 받기</button></div>
+    <p class="muted" style="font-size:12px;margin:8px 0 0">퇴사로 바꾸면 1분 안에 접속이 막혀요. 링크가 새어 나갔으면 '새 링크'를 누르세요(예전 링크는 바로 막혀요). 개인 링크는 카톡 1:1로만 보내 주세요.</p>
+  </section>
   <div class="grid2">
-    <section class="panel"><div class="panel-h"><h2>주간 등록 추이</h2><span class="muted" style="font-size:12px">최근 8주</span></div>
-      <div class="cols">${weeks.map(w=>`<div class="col"><span class="num">${w.n}</span><i style="height:${w.n/maxW*100}%"></i><small>${w.l}</small></div>`).join('')}</div></section>
+    <section class="panel"><div class="panel-h"><h2>등록 추이</h2><div class="seg mini" role="group" aria-label="기간">${[['day','일간'],['week','주간'],['month','월간']].map(([k,l])=>`<button data-tr="${k}" aria-pressed="${TR===k}">${l}</button>`).join('')}</div></div>
+      <div class="cols" style="grid-template-columns:repeat(${weeks.length},1fr)">${weeks.map(w=>`<div class="col"><span class="num">${w.n}</span><i style="height:${w.n/maxW*100}%"></i><small>${w.l}</small></div>`).join('')}</div></section>
     <section class="panel"><div class="panel-h"><h2>종류별 진행 매물</h2></div>
       ${byType.length?`<div class="bars">${byType.map(x=>`<div class="bar"><span>${x.t}</span><div class="track"><i style="width:${x.n/maxT*100}%;background:var(--accent-2,#2e8b57)"></i></div><span class="n num">${x.n}건</span></div>`).join('')}</div>`:'<div class="muted">진행 매물이 없어요.</div>'}</section>
   </div>
@@ -547,7 +560,8 @@ function viewMine(mine){
 
 function card(r,withActions){
   const age=daysAgo(r.checked),stale=r.status==='진행'&&(age??999)>30,mine=isMine(r);
-  return `<article class="card ${mine?'mine':''}" data-open="${esc(r.id)}" tabindex="0" role="button" aria-label="${esc(r.id)} 자세히 보기">
+  const ph=photoInfo(r.photo).ids[0];
+  return `<article class="card ${mine?'mine':''}" data-open="${esc(r.id)}" tabindex="0" role="button" aria-label="${esc(r.id)} 자세히 보기">${ph?`<img class="card-ph" src="${thumb(ph,600)}" alt="" loading="lazy">`:''}
     <div class="card-top"><span class="tag t-${esc(r.deal)}">${esc(r.deal||'-')}</span><span class="tag">${esc((r.type==='상가'&&r.subType)||r.type||'-')}</span>${r.status!=='진행'?`<span class="tag s-${esc(r.status)}">${esc(r.status)}</span>`:''}<span class="id num">${esc(r.id)}</span></div>
     <div><div class="price">${priceLine(r)}</div>${num(r.fee)!=null?`<div class="muted" style="font-size:12px">관리비 <span class="num">${fmt(num(r.fee))}</span>만원</div>`:''}</div>
     <div class="place">${esc(r.gu)} ${esc(r.dong)} <span>${esc(r.loc)}</span></div>
@@ -579,7 +593,7 @@ function viewDetail(id){
       ${row('매매가',num(r.sale)!=null?`<span class="num">${won(num(r.sale))}</span>만원`:'')}${row('보증금·전세금',num(r.deposit)!=null?`<span class="num">${won(num(r.deposit))}</span>만원`:'')}
       ${row('월세',num(r.rent)!=null?`<span class="num">${fmt(num(r.rent))}</span>만원`:'')}
       ${row('특징',esc(r.feature),1)}${row('공유 메모',esc(r.memo),1)}
-      ${row('사진',r.photo?`<a href="${esc(r.photo)}" target="_blank" rel="noopener">사진 폴더 열기</a>`:'',1)}
+      ${(()=>{const p=photoInfo(r.photo);return row('사진',p.ids.length?`<div class="ph-grid">${p.ids.map(id=>`<a class="ph" href="https:\/\/drive.google.com\/file\/d\/${esc(id)}\/view" target="_blank" rel="noopener"><img src="${thumb(id)}" alt="" loading="lazy"></a>`).join('')}</div>`:p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener">사진 폴더 열기</a>`:'',1)})()}
       ${row('등록일',short(r.regDate))}${row('최근 확인',short(r.checked))}
     </dl>
     ${me?`<div class="lockbox"><h3>${ic('lock')}나만 보는 정보</h3><dl class="dl" style="margin:0">
@@ -661,7 +675,11 @@ function viewForm(rec){
       <fieldset><legend>상세 설명</legend>
         <div class="f full"><label for="f-title">제목 <span class="muted">(광고 올릴 때, 40자)</span></label>${txt('title','양정역 5분 풀옵션 분리형 원룸','maxlength="40"')}</div>
         <div class="f full"><label for="f-feature">특징·상세 설명</label><textarea id="f-feature" name="feature" placeholder="풀옵션, 반려동물 가능 / 위반건축물이면 꼭 적기">${v('feature')}</textarea></div>
-        <div class="f full"><label for="f-photo">사진 폴더 링크</label>${txt('photo','https:\/\/drive.google.com\/...')}</div>
+        <div class="f full"><label>사진 <span class="muted">(최대 20장 · 폰 사진 바로 올리기)</span></label>
+          <input type="hidden" name="photo" id="f-photo" value="${v('photo')}">
+          <div class="ph-grid" id="ph-grid">${photoInfo(rec.photo).ids.map(id=>`<div class="ph"><img src="${thumb(id)}" alt="" loading="lazy"><button type="button" data-phdel="${esc(id)}" aria-label="사진 빼기">×</button></div>`).join('')}</div>
+          <label class="af-drop"><input type="file" id="ph-add" accept="image/*" multiple><span id="ph-txt">${ic('plus')} 사진 올리기</span></label>
+        </div>
         <div class="f full"><label for="f-memo">공유 메모 <span class="muted">(다른 직원도 봐요)</span></label><textarea id="f-memo" name="memo">${v('memo')}</textarea></div>
       </fieldset>
       <fieldset class="priv"><legend>${ic('lock')} 나만 보는 정보</legend>
@@ -774,6 +792,13 @@ function bind(){
   const bt=document.getElementById('bk-table');if(bt)bt.onchange=()=>{document.getElementById('bk-tabletxt').textContent=bt.files.length?bt.files.length+'장 골랐어요':'표 사진 고르기 (선택)'};
   const bm=document.getElementById('bk-many');if(bm)bm.onclick=async()=>{const text=document.getElementById('bk-text').value.trim(),fs=[...(bt.files||[])];if(!text&&!fs.length){toast('표 사진이나 글을 먼저 넣어 주세요');return}S.bulk={rows:[],name:'표·글 읽는 중… (30초~1분)',busy:true};render();
     try{const rows=await readMany(text,fs);S.bulk={rows,name:`${rows.length}건 찾았어요`}}catch(x){S.bulk={rows:[],err:x&&x.message||String(x)}}render()};
+  root.querySelectorAll('[data-tr]').forEach(b=>b.onclick=()=>{S.trend=b.dataset.tr;render()});
+  root.querySelectorAll('[data-st]').forEach(sel=>sel.onchange=async()=>{const nm=sel.dataset.st,st=sel.value;if(st==='퇴사'&&!confirm(nm+' 님을 퇴사 처리할까요? 1분 안에 매물노트 접속이 막혀요.')){sel.value='재직';return}sel.disabled=true;try{S.data=await call('setStaff',{name:nm,status:st});toast(nm+' 님 '+st+'로 바꿨어요')}catch(x){toast('바꾸지 못했어요: '+(x&&x.message||x))}render()});
+  const lk=c=>location.origin+'\/maemul\/?k='+c;
+  root.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(lk(b.dataset.copy));toast(b.dataset.nm+' 님 링크를 복사했어요. 카톡 1:1로 보내 주세요')}catch(e){prompt('이 링크를 복사하세요',lk(b.dataset.copy))}});
+  root.querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{const nm=b.dataset.reset;if(!confirm(nm+' 님 링크를 새로 만들까요? 예전 링크는 바로 막혀요.'))return;b.disabled=true;try{S.data=await call('resetCode',{name:nm});toast('새 링크를 만들었어요. 링크 복사를 눌러 다시 보내 주세요')}catch(x){toast('실패: '+(x&&x.message||x))}render()});
+  const ng=document.getElementById('ns-go');if(ng)ng.onclick=async()=>{const nm=document.getElementById('ns-name').value.trim(),rl=document.getElementById('ns-role').value;if(!nm){toast('이름을 넣어 주세요');return}ng.disabled=true;ng.textContent='만드는 중… (10초쯤)';
+    try{S.data=await call('addStaff',{name:nm,role:rl});render();const st=(S.data.admin&&S.data.admin.staff||[]).find(x=>x.name===nm);if(st){try{await navigator.clipboard.writeText(lk(st.code))}catch(e){}}toast(nm+' 님을 추가했어요. 링크를 복사해 뒀어요')}catch(x){ng.disabled=false;ng.textContent='추가하고 링크 받기';toast('추가하지 못했어요: '+(x&&x.message||x))}};
   root.querySelectorAll('[data-bk]').forEach(c=>c.onchange=()=>{S.bulk.rows[+c.dataset.bk].on=c.checked;render()});
   const bg=document.getElementById('bk-go');if(bg)bg.onclick=async()=>{const B=S.bulk,todo=B.rows.filter(x=>x.on);B.busy=true;B.done=0;B.total=todo.length;render();let fail=0;
     for(const x of todo){const r={...x.rec};r.status=x.miss.length?'보류':'진행';if(x.miss.length)r.memo='[확인 필요] 빈칸: '+x.miss.join(', ')+(r.memo?' / '+r.memo:'');try{S.data=await call('saveListing',r)}catch(e){fail++}B.done++;render()}
@@ -795,6 +820,14 @@ function bind(){
     const st=()=>({type:val('type'),deal:val('deal'),feeType:val('feeType'),feeTier:val('feeTier'),parking:val('parking')});
     const applyRules=()=>{const s_=st();RULES.forEach(r=>{const el=f.querySelector(`[data-k="${r.k}"]`);if(!el)return;const sh=r.show(s_);el.hidden=!sh;const q=el.querySelector('.req');if(q)q.hidden=!r.req(s_)});f.querySelectorAll('[data-house]').forEach(el=>el.hidden=!isH(s_))};
     f.addEventListener('change',applyRules);applyRules();
+    const phIn=document.getElementById('f-photo'),phGrid=document.getElementById('ph-grid'),phAdd=document.getElementById('ph-add'),phTxt=document.getElementById('ph-txt');
+    const phSet=(folder,ids)=>{phIn.value=(folder?'https:\/\/drive.google.com\/drive\/folders\/'+folder:photoInfo(phIn.value).url)+(ids.length?'#ids='+ids.join(','):'');S.edit.photo=phIn.value;phGrid.innerHTML=ids.map(id=>`<div class="ph"><img src="${thumb(id)}" alt=""><button type="button" data-phdel="${esc(id)}" aria-label="사진 빼기">×</button></div>`).join('');phGrid.querySelectorAll('[data-phdel]').forEach(b=>b.onclick=phDel)};
+    const phDel=e=>{const p=photoInfo(phIn.value);phSet(p.folder,p.ids.filter(x=>x!==e.currentTarget.dataset.phdel))};
+    phGrid.querySelectorAll('[data-phdel]').forEach(b=>b.onclick=phDel);
+    if(phAdd)phAdd.onchange=async()=>{let p=photoInfo(phIn.value);const fs=[...phAdd.files].slice(0,Math.max(0,20-p.ids.length));if(!fs.length){toast('사진은 최대 20장까지예요');return}
+      let done=0,fail=0;phAdd.disabled=true;
+      for(const fl of fs){phTxt.textContent=`올리는 중… ${done+1}/${fs.length}`;try{const data=await shrink(fl);const r=await call('uploadPhoto',{folder:p.folder,data,label:(f.elements.loc&&f.elements.loc.value)||''});p={...p,folder:r.folder,ids:[...p.ids,r.id]};phSet(p.folder,p.ids)}catch(x){fail++}done++}
+      phAdd.disabled=false;phAdd.value='';phTxt.innerHTML=`${ic('plus')} 사진 올리기`;toast(fail?`${fs.length-fail}장 올렸어요 · ${fail}장 실패`:`${fs.length}장 올렸어요`)};
     const snap=()=>{const fd=new FormData(f),r={...S.edit};fd.forEach((x,k)=>{if(k!=='feeChk')r[k]=String(x).trim()});const amt=[];f.querySelectorAll('[data-fa]').forEach(i=>{if(i.value!=='')amt.push(i.dataset.fa+' '+i.value)});r.feeItems=amt.length?amt.join(', '):fd.getAll('feeChk').join(', ');if(r.gu&&r.sido&&r.sido!=='부산광역시')r.gu=r.sido+' '+r.gu;delete r.sido;return r};
     const ai=document.getElementById('af-img'),at=document.getElementById('af-imgtxt');
     if(ai)ai.onchange=()=>{at.textContent=ai.files.length?ai.files.length+'장 골랐어요':'캡처 사진 고르기 (여러 장 가능)'};
@@ -859,8 +892,9 @@ function demoCall(fn,arg){
   if(!DEMO) demoInit();
   const mine=DEMO.mine;
   if(fn==='getBootstrap'&&DEMO.staff) return JSON.parse(JSON.stringify(DEMO));
-  if(fn==='getBootstrap') return JSON.parse(JSON.stringify(Object.assign({},DEMO,{admin:{access:[['권성환','재직'],['조원경','재직'],['김윤미','재직'],['조수광','퇴사']],exports:[['2026-10-25 13:58','김윤미',4,'진행']],ai:{month:today().slice(0,7),count:12,inTok:42000,outTok:9000,cost:0.01,byName:{'권성환':7,'김윤미':5},byMode:{}}}})));
+  if(fn==='getBootstrap') return JSON.parse(JSON.stringify(Object.assign({},DEMO,{admin:{staff:[{name:'권성환',role:'대표',status:'재직',code:'demo0'},{name:'조원경',role:'소장',status:'재직',code:'demo1'},{name:'김윤미',role:'실장',status:'재직',code:'demo2'},{name:'조수광',role:'소장',status:'퇴사',code:'demo3'}],access:[['권성환','재직'],['조원경','재직'],['김윤미','재직'],['조수광','퇴사']],exports:[['2026-10-25 13:58','김윤미',4,'진행']],ai:{month:today().slice(0,7),count:12,inTok:42000,outTok:9000,cost:0.01,byName:{'권성환':7,'김윤미':5},byMode:{}}}})));
   if(fn==='logExport') return true;
+  if(fn==='uploadPhoto') return {folder:'demoFolder',id:'demo'+Math.random().toString(36).slice(2,8)};
   if(fn==='autofill'&&arg&&arg.many) return {items:[{type:'원룸',deal:'월세',sido:'부산광역시',gu:'남구',dong:'대연동',deposit:300,rent:38,area:19.8,rooms:1,baths:1},{type:'아파트',deal:'전세',gu:'해운대구',dong:'좌동',deposit:25000,area:59,rooms:3,baths:2,floor:7,totalFloor:20}]};
   if(fn==='autofill') return {type:'원룸',deal:'월세',sido:'부산광역시',gu:'수영구',dong:'광안동',deposit:500,rent:45,feeType:'정액관리비',feeTier:'10만원 미만',feeBasis:'직전 월 관리비',fee:7,feeItems:'수도, 인터넷',rooms:1,baths:1,roomShape:'분리형',duplex:'단층',floor:3,totalFloor:5,elevator:'있음',parking:'불가',dirBase:'거실',direction:'남향',area:23.5,moveIn:'즉시',title:'광안역 5분 분리형 원룸',feature:'풀옵션, 에어컨, 세탁기'};
   if(fn==='markChecked'){const r=mine.find(x=>x[1]===arg);if(r)r[18]=today();}
