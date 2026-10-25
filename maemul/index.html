@@ -852,11 +852,13 @@ function demoInit(){
   ];
   DEMO={me:{name:'권성환',role:'대표',email:'demo'},units:{big:500,small:10},agents:[{name:'권성환',role:'대표'},{name:'조원경',role:'소장'},{name:'김윤미',role:'실장'},{name:'조수광',role:'소장'}],
     mine:mine.map(row),all:[...all,...mine].map(o=>{const r=row(o);return [...r.slice(0,20),'','','','','','',...r.slice(26,46)]})};
+  if(new URLSearchParams(location.search).get('demo')==='staff'){const me='조원경';DEMO.me={name:me,role:'소장',email:'demo'};DEMO.mine=all.filter(o=>o.agent===me).map(o=>row({...o,owner:'(예시) 박○○',phone:'010-0000-0000',addr:'(예시) 302호'}));DEMO.staff=true}
   return DEMO;
 }
 function demoCall(fn,arg){
   if(!DEMO) demoInit();
   const mine=DEMO.mine;
+  if(fn==='getBootstrap'&&DEMO.staff) return JSON.parse(JSON.stringify(DEMO));
   if(fn==='getBootstrap') return JSON.parse(JSON.stringify(Object.assign({},DEMO,{admin:{access:[['권성환','재직'],['조원경','재직'],['김윤미','재직'],['조수광','퇴사']],exports:[['2026-10-25 13:58','김윤미',4,'진행']],ai:{month:today().slice(0,7),count:12,inTok:42000,outTok:9000,cost:0.01,byName:{'권성환':7,'김윤미':5},byMode:{}}}})));
   if(fn==='logExport') return true;
   if(fn==='autofill'&&arg&&arg.many) return {items:[{type:'원룸',deal:'월세',sido:'부산광역시',gu:'남구',dong:'대연동',deposit:300,rent:38,area:19.8,rooms:1,baths:1},{type:'아파트',deal:'전세',gu:'해운대구',dong:'좌동',deposit:25000,area:59,rooms:3,baths:2,floor:7,totalFloor:20}]};
@@ -866,7 +868,7 @@ function demoCall(fn,arg){
     const rec={...arg,agent:DEMO.me.name};
     if(!rec.regDate) rec.regDate=today(); if(!rec.checked) rec.checked=today();
     let r=mine.find(x=>x[1]===rec.id);
-    if(!r){const n=mine.length+1;rec.id='권-'+String(n).padStart(4,'0');r=F.map(()=>'');mine.push(r)}
+    if(!r){const n=mine.length+1;rec.id=DEMO.me.name[0]+'-'+String(n).padStart(4,'0');r=F.map(()=>'');mine.push(r)}
     F.forEach((k,i)=>r[i]=rec[k]??'');
   }
   DEMO.all=[...DEMO.all.filter(x=>x[0]!==DEMO.me.name),...mine.map(x=>[...x.slice(0,20),'','','','','','',...x.slice(26,46)])];
