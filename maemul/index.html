@@ -561,7 +561,7 @@ function viewForm(rec){
   return `<div class="scrim" data-close><section class="sheet" role="dialog" aria-modal="true" aria-label="매물 ${isNew?'등록':'수정'}">
     <div class="sheet-h"><h2>${isNew?'새 매물 등록':'매물 수정 · <span class="num">'+v('id')+'</span>'}</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
     <form id="lf" novalidate>
-      <details class="af" ${isNew?'open':''}><summary>${ic('edit')}<b>자동 채우기</b><span class="muted">다방·당근·네이버·온하우스 화면 캡처나 글을 넣으면 칸이 채워져요</span></summary>
+      <details class="af" ${isNew?'open':''}><summary>${ic('edit')}<b>자동 채우기</b><span class="muted">매물정보 캡처나 글을 넣으면 칸이 채워져요</span></summary>
         <div class="af-body">
           <label class="af-drop"><input type="file" id="af-img" accept="image/*" multiple><span id="af-imgtxt">캡처 사진 고르기 (여러 장 가능)</span></label>
           <textarea id="af-text" placeholder="또는 등록 내용을 복사해서 붙여넣기"></textarea>
@@ -614,7 +614,7 @@ function viewForm(rec){
         ${F_('approvalDate','사용승인일',txt('approvalDate','2015-03 (건축물대장)'))}
       </fieldset>
       <fieldset><legend>상세 설명</legend>
-        <div class="f full"><label for="f-title">제목 <span class="muted">(다방 올릴 때, 40자)</span></label>${txt('title','양정역 5분 풀옵션 분리형 원룸','maxlength="40"')}</div>
+        <div class="f full"><label for="f-title">제목 <span class="muted">(광고 올릴 때, 40자)</span></label>${txt('title','양정역 5분 풀옵션 분리형 원룸','maxlength="40"')}</div>
         <div class="f full"><label for="f-feature">특징·상세 설명</label><textarea id="f-feature" name="feature" placeholder="풀옵션, 반려동물 가능 / 위반건축물이면 꼭 적기">${v('feature')}</textarea></div>
         <div class="f full"><label for="f-photo">사진 폴더 링크</label>${txt('photo','https:\/\/drive.google.com\/...')}</div>
         <div class="f full"><label for="f-memo">공유 메모 <span class="muted">(다른 직원도 봐요)</span></label><textarea id="f-memo" name="memo">${v('memo')}</textarea></div>
