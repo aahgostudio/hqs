@@ -184,6 +184,7 @@ button.kpi:hover{border-color:var(--accent-2)}
 /* sheet / drawer */
 .scrim{position:fixed;inset:0;background:rgba(2,6,4,.7);z-index:40;display:flex;justify-content:flex-end}
 .sheet{background:var(--bg);width:min(560px,100%);height:100%;overflow:auto;padding:22px max(22px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) 22px;display:flex;flex-direction:column;gap:16px;animation:slide .22s ease-out}
+.sheet>*{flex-shrink:0}
 @keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.sheet{animation:none}.card{transition:none}}
 .sheet-h{display:flex;align-items:center;gap:10px}
@@ -248,6 +249,7 @@ fieldset.priv legend{color:var(--lock)}
 }
 @media (max-width:420px){.cards{grid-template-columns:1fr}}
 [hidden]{display:none!important}.req{color:#c2410c}
+.feegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.fa{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2,#555)}.seg-in input[type=checkbox]{position:absolute;opacity:0}
 </style>
 
 <div id="root"><div class="loading"><div class="spin"></div><div>매물 정보를 불러오는 중…</div></div></div>
@@ -280,8 +282,43 @@ const IC={
 };
 const ic=(n)=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
 
-const F=['agent','id','regDate','status','type','deal','gu','dong','loc','floor','area','sale','deposit','rent','fee','moveIn','feature','photo','checked','memo','owner','phone','addr','access','commission','privMemo','rooms','baths','totalFloor','elevator','parking','direction'];
-const STATUS=['진행','보류','계약완료'], TYPES=['아파트','오피스텔','원룸','빌라','주택','상가','건물','토지'], ROOMY=['아파트','오피스텔','원룸','빌라','주택'], ROOM_REQ=['오피스텔','원룸','빌라','주택'], DIRS=['남향','남동향','남서향','동향','서향','북향','북동향','북서향'], DEALS=['월세','전세','매매','단기'];
+const F=['agent','id','regDate','status','type','deal','gu','dong','loc','floor','area','sale','deposit','rent','fee','moveIn','feature','photo','checked','memo','owner','phone','addr','access','commission','privMemo','rooms','baths','totalFloor','elevator','parking','direction','subType','roomShape','duplex','dirBase','parkCount','feeType','feeTier','feeBasis','feeItems','loan','buildUse','supplyArea','approvalDate','title'];
+const STATUS=['진행','보류','계약완료'], TYPES=['아파트','오피스텔','원룸','빌라','주택','상가','건물','토지'], HOUSE=['아파트','오피스텔','원룸','빌라','주택'], SHAPE=['오피스텔','원룸','빌라'], FEE_ITEMS=['공용관리비','전기','수도','가스','난방','인터넷','TV','기타 관리비'], USES=['단독주택','공동주택','제1종 근린생활시설','제2종 근린생활시설','업무시설','숙박시설','기타'], LOANS=['없음','시세 대비 30% 미만','시세 대비 30% 이상'], DIRS=['남향','남동향','남서향','동향','서향','북향','북동향','북서향'], DEALS=['월세','전세','매매','단기'];
+const isH=s=>HOUSE.includes(s.type), notLand=s=>s.type!=='토지', yes=()=>true, no=()=>false;
+const RULES=[
+ {k:'type',l:'종류',show:yes,req:yes},
+ {k:'subType',l:'상가·사무실 구분',show:s=>s.type==='상가',req:yes},
+ {k:'deal',l:'거래유형',show:yes,req:yes},
+ {k:'gu',l:'시·군·구',show:yes,req:yes},
+ {k:'dong',l:'동',show:yes,req:yes},
+ {k:'deposit',l:'보증금',show:s=>s.deal!=='매매',req:s=>s.deal==='월세'||s.deal==='전세'},
+ {k:'rent',l:'월세',show:s=>s.deal==='월세'||s.deal==='단기',req:yes},
+ {k:'sale',l:'매매가',show:s=>s.deal==='매매',req:yes},
+ {k:'loan',l:'융자금',show:yes,req:no},
+ {k:'feeType',l:'관리비 부과방식',show:isH,req:yes},
+ {k:'feeTier',l:'정액관리비 구간',show:s=>isH(s)&&s.feeType==='정액관리비',req:yes},
+ {k:'feeBasis',l:'관리비 기준',show:s=>isH(s)&&!!s.feeType&&s.feeType!=='확인불가',req:yes},
+ {k:'fee',l:'관리비 금액',show:s=>!isH(s)||s.feeType==='정액관리비'||s.feeType==='기타부과',req:s=>isH(s)?(s.feeType==='정액관리비'&&s.feeTier!=='10만원 이상'):(s.type==='상가'||s.type==='건물')},
+ {k:'feeChk',l:'관리비 포함 항목',show:s=>notLand(s)&&!(isH(s)&&(s.feeType==='확인불가'||!s.feeType||s.feeTier==='10만원 이상')),req:no},
+ {k:'feeAmt',l:'관리비 세부 금액',show:s=>isH(s)&&s.feeType==='정액관리비'&&s.feeTier==='10만원 이상',req:yes},
+ {k:'rooms',l:'방 수',show:isH,req:yes},
+ {k:'baths',l:'욕실 수',show:isH,req:yes},
+ {k:'roomShape',l:'방 형태(오픈형·분리형)',show:s=>SHAPE.includes(s.type),req:yes},
+ {k:'duplex',l:'복층 여부',show:s=>SHAPE.includes(s.type),req:yes},
+ {k:'floor',l:'해당 층',show:notLand,req:yes},
+ {k:'totalFloor',l:'전체 층',show:notLand,req:yes},
+ {k:'elevator',l:'엘리베이터',show:notLand,req:yes},
+ {k:'parking',l:'주차 가능 여부',show:notLand,req:yes},
+ {k:'parkCount',l:'주차 대수',show:s=>notLand(s)&&s.parking==='가능',req:no},
+ {k:'dirBase',l:'방향 기준',show:notLand,req:isH},
+ {k:'direction',l:'방향',show:notLand,req:isH},
+ {k:'buildUse',l:'건축물 용도',show:notLand,req:yes},
+ {k:'area',l:'전용면적',show:yes,req:yes},
+ {k:'supplyArea',l:'공급면적',show:notLand,req:no},
+ {k:'approvalDate',l:'사용승인일',show:notLand,req:no},
+ {k:'moveIn',l:'입주가능일',show:yes,req:yes}
+];
+function parseFeeItems(t){const o={amt:{},chk:[]};String(t||'').split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>{const m=x.match(/^(.+?)\s+([\d.]+)$/);if(m)o.amt[m[1]]=m[2];else o.chk.push(x)});return o}
 const REG=window.REGIONS||{'부산광역시':{}}, SIDOS=Object.keys(REG), GUS=Object.keys(REG['부산광역시']||{});
 function splitGu(g){g=String(g||'');const sd=SIDOS.find(x=>x!=='부산광역시'&&g.startsWith(x+' '));return sd?{sido:sd,gu:g.slice(sd.length+1)}:{sido:'부산광역시',gu:g}}
 function opts(list,val,ph){return `<option value="">${ph}</option>${list.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}${val&&!list.includes(val)?`<option selected>${esc(val)}</option>`:''}`}
@@ -339,7 +376,7 @@ function search(rows,q){
       conds.push(r=>{const v=num(r[col]);return v!=null&&v>=lo&&v<lo+unit});i++;
     }else{
       const lt=tok.toLowerCase();
-      conds.push(r=>[r.agent,r.id,r.type,r.deal,r.gu,r.dong,r.loc,r.floor,r.feature,r.memo].join(' ').toLowerCase().includes(lt));
+      conds.push(r=>[r.agent,r.id,r.type,r.subType,r.deal,r.gu,r.dong,r.loc,r.floor,r.feature,r.memo,r.title,r.roomShape,r.duplex].join(' ').toLowerCase().includes(lt));
     }
   }
   return rows.filter(r=>conds.every(c=>c(r)));
@@ -466,7 +503,7 @@ function viewMine(mine){
 function card(r,withActions){
   const age=daysAgo(r.checked),stale=r.status==='진행'&&(age??999)>30,mine=isMine(r);
   return `<article class="card ${mine?'mine':''}" data-open="${esc(r.id)}" tabindex="0" role="button" aria-label="${esc(r.id)} 자세히 보기">
-    <div class="card-top"><span class="tag t-${esc(r.deal)}">${esc(r.deal||'-')}</span><span class="tag">${esc(r.type||'-')}</span>${r.status!=='진행'?`<span class="tag s-${esc(r.status)}">${esc(r.status)}</span>`:''}<span class="id num">${esc(r.id)}</span></div>
+    <div class="card-top"><span class="tag t-${esc(r.deal)}">${esc(r.deal||'-')}</span><span class="tag">${esc((r.type==='상가'&&r.subType)||r.type||'-')}</span>${r.status!=='진행'?`<span class="tag s-${esc(r.status)}">${esc(r.status)}</span>`:''}<span class="id num">${esc(r.id)}</span></div>
     <div><div class="price">${priceLine(r)}</div>${num(r.fee)!=null?`<div class="muted" style="font-size:12px">관리비 <span class="num">${fmt(num(r.fee))}</span>만원</div>`:''}</div>
     <div class="place">${esc(r.gu)} ${esc(r.dong)} <span>${esc(r.loc)}</span></div>
     <div class="specs">${r.rooms!==''?`<span>방 <span class="num">${esc(r.rooms)}</span>${r.baths!==''?` · 욕실 <span class="num">${esc(r.baths)}</span>`:''}</span>`:''}${r.floor!==''?`<span>${ic('floor')}<span class="num">${esc(r.floor)}</span>${r.totalFloor!==''?`/<span class="num">${esc(r.totalFloor)}</span>`:''}층</span>`:''}${r.area!==''?`<span>${ic('area')}<span class="num">${esc(r.area)}</span>㎡ · <span class="num">${pyeong(r.area)}</span>평</span>`:''}${r.moveIn?`<span>${ic('cal')}${esc(r.moveIn)}</span>`:''}</div>
@@ -486,12 +523,16 @@ function viewDetail(id){
     <div class="sheet-h"><span class="tag t-${esc(r.deal)}">${esc(r.deal)}</span><span class="tag s-${esc(r.status)}">${esc(r.status)}</span><h2 class="num">${esc(r.id)}</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
     <div><div class="price" style="font-size:28px">${priceLine(r)}</div><div class="place" style="margin-top:6px">${esc(r.gu)} ${esc(r.dong)} <span>${esc(r.loc)}</span></div></div>
     <dl class="dl" style="margin:0">
-      ${row('종류',esc(r.type))}${row('층',r.floor!==''?`<span class="num">${esc(r.floor)}</span>층${r.totalFloor!==''?` / 전체 <span class="num">${esc(r.totalFloor)}</span>층`:''}`:'')}
+      ${row('종류',esc(r.type+(r.subType?' · '+r.subType:'')))}${row('층',r.floor!==''?`<span class="num">${esc(r.floor)}</span>층${r.totalFloor!==''?` / 전체 <span class="num">${esc(r.totalFloor)}</span>층`:''}`:'')}
       ${r.rooms!==''||r.baths!==''?row('방 수',r.rooms!==''?`<span class="num">${esc(r.rooms)}</span>개`:'')+row('욕실 수',r.baths!==''?`<span class="num">${esc(r.baths)}</span>개`:''):''}
-      ${row('엘리베이터',esc(r.elevator))}${row('주차',esc(r.parking))}${r.direction?row('방향',esc(r.direction)):''}
+      ${r.roomShape||r.duplex?row('방 형태',esc([r.roomShape,r.duplex].filter(Boolean).join(' · '))):''}
+      ${row('엘리베이터',esc(r.elevator))}${row('주차',esc(r.parking)+(r.parkCount!==''?` (<span class="num">${esc(r.parkCount)}</span>대)`:''))}${r.direction?row('방향',esc([r.dirBase&&r.dirBase+' 기준',r.direction].filter(Boolean).join(' '))):''}
+      ${row('관리비',esc([r.feeType,r.feeTier,r.feeBasis].filter(Boolean).join(' · '))+(num(r.fee)!=null?`<br><span class="num">${fmt(num(r.fee))}</span>만원`:'')+(r.feeItems?`<br><span class="muted">${esc(r.feeItems)}</span>`:''),1)}
+      ${r.loan?row('융자금',esc(r.loan)):''}${r.buildUse?row('건축물 용도',esc(r.buildUse)):''}${r.supplyArea!==''?row('공급면적',`<span class="num">${esc(r.supplyArea)}</span>㎡`):''}${r.approvalDate?row('사용승인일',esc(r.approvalDate)):''}
+      ${r.title?row('제목',esc(r.title),1):''}
       ${row('전용면적',r.area!==''?`<span class="num">${esc(r.area)}</span>㎡ (<span class="num">${pyeong(r.area)}</span>평)`:'')}${row('입주가능일',esc(r.moveIn))}
       ${row('매매가',num(r.sale)!=null?`<span class="num">${won(num(r.sale))}</span>만원`:'')}${row('보증금·전세금',num(r.deposit)!=null?`<span class="num">${won(num(r.deposit))}</span>만원`:'')}
-      ${row('월세',num(r.rent)!=null?`<span class="num">${fmt(num(r.rent))}</span>만원`:'')}${row('관리비',num(r.fee)!=null?`<span class="num">${fmt(num(r.fee))}</span>만원`:'')}
+      ${row('월세',num(r.rent)!=null?`<span class="num">${fmt(num(r.rent))}</span>만원`:'')}
       ${row('특징',esc(r.feature),1)}${row('공유 메모',esc(r.memo),1)}
       ${row('사진',r.photo?`<a href="${esc(r.photo)}" target="_blank" rel="noopener">사진 폴더 열기</a>`:'',1)}
       ${row('등록일',short(r.regDate))}${row('최근 확인',short(r.checked))}
@@ -507,48 +548,74 @@ function viewDetail(id){
 function viewForm(rec){
   const isNew=!rec.id;
   const loc=splitGu(rec.gu);
+  const fi=parseFeeItems(rec.feeItems);
   const v=k=>esc(rec[k]??'');
+  const R=k=>`<span class="req" data-req="${k}">*</span>`;
   const seg=(name,list)=>`<div class="seg-in">${list.map(o=>`<label><input type="radio" name="${name}" value="${o}" ${rec[name]===o?'checked':''}><span>${o}</span></label>`).join('')}</div>`;
-  const sel=(name,list)=>`<select id="f-${name}" name="${name}"><option value="">선택</option>${list.map(o=>`<option ${rec[name]===o?'selected':''}>${o}</option>`).join('')}</select>`;
-  const inp=(name,label,type='text',extra='',full=false,aux='')=>`<div class="f ${full?'full':''}"><label for="f-${name}">${label}</label><input id="f-${name}" name="${name}" type="${type}" value="${v(name)}" ${extra}>${aux?`<span class="aux" id="aux-${name}">${aux}</span>`:''}</div>`;
+  const F_=(k,label,body,full)=>`<div class="f ${full?'full':''}" data-k="${k}"><label ${body.startsWith('<input')||body.startsWith('<select')?`for="f-${k}"`:''}>${label} ${R(k)}</label>${body}</div>`;
+  const num_=(k,ph,step='1')=>`<input id="f-${k}" name="${k}" type="number" inputmode="decimal" min="0" step="${step}" value="${v(k)}" placeholder="${ph}">`;
+  const txt=(k,ph,extra='')=>`<input id="f-${k}" name="${k}" type="text" value="${v(k)}" placeholder="${ph}" ${extra}>`;
+  const selF=(k,list,ph='선택')=>`<select id="f-${k}" name="${k}">${opts(list,rec[k]||'',ph)}</select>`;
+  const typeList=rec.type&&!TYPES.includes(rec.type)?[...TYPES,rec.type]:TYPES;
   return `<div class="scrim" data-close><section class="sheet" role="dialog" aria-modal="true" aria-label="매물 ${isNew?'등록':'수정'}">
     <div class="sheet-h"><h2>${isNew?'새 매물 등록':'매물 수정 · <span class="num">'+v('id')+'</span>'}</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
     <form id="lf" novalidate>
-      <fieldset><legend>기본</legend>
-        <div class="f full"><label>종류</label>${seg('type',rec.type&&!TYPES.includes(rec.type)?[...TYPES,rec.type]:TYPES)}</div>
-        <div class="f full"><label>거래유형</label>${seg('deal',DEALS)}</div>
+      <p class="muted" style="margin:0;font-size:12.5px"><span class="req">*</span> 표시는 꼭 채워야 하는 항목이에요. 종류에 맞는 칸만 보여요.</p>
+      <fieldset><legend>매물 정보</legend>
+        ${F_('type','종류',seg('type',typeList),1)}
+        ${F_('subType','상가·사무실 구분',seg('subType',['상가','사무실']),1)}
+        ${F_('deal','거래유형',seg('deal',DEALS),1)}
         <div class="f full"><label>상태</label>${seg('status',STATUS)}</div>
         <div class="f"><label for="f-sido">시·도</label><select id="f-sido" name="sido">${SIDOS.map(x=>`<option ${loc.sido===x?'selected':''}>${x}</option>`).join('')}</select></div>
-        <div class="f"><label for="f-gu">시·군·구</label><span id="gubox" style="display:block">${guField(loc.sido,loc.gu)}</span></div>
-        <div class="f"><label for="f-dong">동 <span class="muted">(법정동)</span></label><span id="dongbox" style="display:block">${dongField(loc.sido,loc.gu,rec.dong)}</span></div>
-        ${inp('loc','위치 (호수 빼고)','text','placeholder="양정역 도보 5분 ○○빌"',true)}
+        <div class="f" data-k="gu"><label for="f-gu">시·군·구 ${R('gu')}</label><span id="gubox" style="display:block">${guField(loc.sido,loc.gu)}</span></div>
+        <div class="f" data-k="dong"><label for="f-dong">동 <span class="muted">(법정동)</span> ${R('dong')}</label><span id="dongbox" style="display:block">${dongField(loc.sido,loc.gu,rec.dong)}</span></div>
+        <div class="f full"><label for="f-loc">위치 (호수 빼고)</label>${txt('loc','양정역 도보 5분 ○○빌')}</div>
       </fieldset>
-      <fieldset><legend>금액 (만원)</legend>
-        ${inp('deposit','보증금·전세금','number','inputmode="numeric" min="0" placeholder="500"','', rec.deposit?won(num(rec.deposit))+'만원':'')}
-        ${inp('rent','월세','number','inputmode="numeric" min="0" placeholder="45"')}
-        ${inp('sale','매매가','number','inputmode="numeric" min="0" placeholder="30000"','', rec.sale?won(num(rec.sale))+'만원':'')}
-        ${inp('fee','관리비','number','inputmode="numeric" min="0" placeholder="5"')}
+      <fieldset><legend>거래 정보 (만원)</legend>
+        ${F_('deposit','보증금·전세금',num_('deposit','500')+(rec.deposit?`<span class="aux" id="aux-deposit">${won(num(rec.deposit))}만원</span>`:''))}
+        ${F_('rent','월세',num_('rent','45'))}
+        ${F_('sale','매매가',num_('sale','30000')+(rec.sale?`<span class="aux" id="aux-sale">${won(num(rec.sale))}만원</span>`:''))}
+        ${F_('loan','융자금',selF('loan',LOANS))}
+        ${F_('moveIn','입주가능일',txt('moveIn','즉시 / 11월 초 / 협의'))}
       </fieldset>
-      <fieldset><legend>상세</legend>
-        <div class="f" data-room><label for="f-rooms">방 수 <span class="req">*</span></label><input id="f-rooms" name="rooms" type="number" inputmode="numeric" min="0" value="${v('rooms')}" placeholder="1"></div>
-        <div class="f" data-room><label for="f-baths">욕실 수</label><input id="f-baths" name="baths" type="number" inputmode="numeric" min="0" value="${v('baths')}" placeholder="1"></div>
-        <div class="f" data-bld><label for="f-floor">해당 층</label><input id="f-floor" name="floor" type="text" inputmode="numeric" value="${v('floor')}" placeholder="3 (지하는 B1)"></div>
-        <div class="f" data-bld><label for="f-totalFloor">전체 층</label><input id="f-totalFloor" name="totalFloor" type="number" inputmode="numeric" min="1" value="${v('totalFloor')}" placeholder="5"></div>
-        <div class="f full" data-bld><label>엘리베이터</label>${seg('elevator',['있음','없음'])}</div>
-        <div class="f full"><label>주차</label>${seg('parking',['가능','불가'])}</div>
-        <div class="f full" data-bld><label for="f-direction">방향 <span class="muted">(거실·안방 기준)</span></label><select id="f-direction" name="direction">${opts(DIRS,rec.direction||'','선택')}</select></div>
-        ${inp('area','전용면적 (㎡)','number','inputmode="decimal" min="0" step="0.1" placeholder="23"','', rec.area?pyeong(rec.area)+'평':'')}
-        ${inp('moveIn','입주가능일','text','placeholder="즉시 / 11월 초"')}
-        <div class="f full"><label for="f-feature">특징</label><textarea id="f-feature" name="feature" placeholder="풀옵션, 엘리베이터, 반려동물 가능">${v('feature')}</textarea></div>
-        ${inp('photo','사진 폴더 링크','url','placeholder="https:\/\/drive.google.com\/..."',true)}
+      <fieldset><legend>관리비</legend>
+        <p class="muted" data-house style="margin:0;font-size:12.5px;grid-column:1/-1">주택형(아파트·오피스텔·원룸·빌라·주택)은 법정 표시 항목이에요. 정액 10만원 이상이면 항목별 금액을 모두 적어 주세요(기타 관리비 제외).</p>
+        ${F_('feeType','부과방식',seg('feeType',['정액관리비','기타부과','확인불가']),1)}
+        ${F_('feeTier','정액관리비 구간',seg('feeTier',['10만원 미만','10만원 이상','10만원 이상(세부내역 미고지)']),1)}
+        ${F_('feeBasis','관리비 기준',seg('feeBasis',['직전 월 관리비','최근 3개월 평균','최근 1년 평균','기타']),1)}
+        ${F_('fee','월 관리비 (만원)',num_('fee','7','0.1'))}
+        <div class="f full" data-k="feeChk"><label>포함 항목 ${R('feeChk')}</label><div class="seg-in">${FEE_ITEMS.map(o=>`<label><input type="checkbox" name="feeChk" value="${o}" ${fi.chk.includes(o)?'checked':''}><span>${o}</span></label>`).join('')}</div></div>
+        <div class="f full" data-k="feeAmt"><label>항목별 금액 (만원) ${R('feeAmt')}</label><div class="feegrid">${FEE_ITEMS.map(o=>`<label class="fa"><span>${o}${o==='기타 관리비'?' <span class="muted">(선택)</span>':''}</span><input type="number" inputmode="decimal" min="0" step="0.1" data-fa="${esc(o)}" value="${esc(fi.amt[o]??'')}" placeholder="0"></label>`).join('')}</div></div>
+      </fieldset>
+      <fieldset><legend>추가 정보</legend>
+        ${F_('rooms','방 수',num_('rooms','1'))}
+        ${F_('baths','욕실 수',num_('baths','1'))}
+        ${F_('roomShape','방 형태',seg('roomShape',['오픈형','분리형']),1)}
+        ${F_('duplex','복층 여부',seg('duplex',['단층','복층']),1)}
+        ${F_('floor','해당 층',txt('floor','3 (지하는 B1)','inputmode="numeric"'))}
+        ${F_('totalFloor','전체 층',num_('totalFloor','5'))}
+        ${F_('elevator','엘리베이터',seg('elevator',['있음','없음']),1)}
+        ${F_('parking','주차 가능 여부',seg('parking',['가능','불가']))}
+        ${F_('parkCount','주차 대수',num_('parkCount','1'))}
+        ${F_('dirBase','방향 기준',seg('dirBase',['거실','안방','주된 출입구']),1)}
+        ${F_('direction','방향',selF('direction',DIRS))}
+        ${F_('buildUse','건축물 용도',selF('buildUse',USES))}
+        ${F_('area','전용면적 (㎡)',num_('area','23','0.01')+(rec.area?`<span class="aux" id="aux-area">${pyeong(rec.area)}평</span>`:''))}
+        ${F_('supplyArea','공급면적 (㎡)',num_('supplyArea','33','0.01'))}
+        ${F_('approvalDate','사용승인일',txt('approvalDate','2015-03 (건축물대장)'))}
+      </fieldset>
+      <fieldset><legend>상세 설명</legend>
+        <div class="f full"><label for="f-title">제목 <span class="muted">(다방 올릴 때, 40자)</span></label>${txt('title','양정역 5분 풀옵션 분리형 원룸','maxlength="40"')}</div>
+        <div class="f full"><label for="f-feature">특징·상세 설명</label><textarea id="f-feature" name="feature" placeholder="풀옵션, 반려동물 가능 / 위반건축물이면 꼭 적기">${v('feature')}</textarea></div>
+        <div class="f full"><label for="f-photo">사진 폴더 링크</label>${txt('photo','https:\/\/drive.google.com\/...')}</div>
         <div class="f full"><label for="f-memo">공유 메모 <span class="muted">(다른 직원도 봐요)</span></label><textarea id="f-memo" name="memo">${v('memo')}</textarea></div>
       </fieldset>
       <fieldset class="priv"><legend>${ic('lock')} 나만 보는 정보</legend>
-        ${inp('owner','소유주·임대인')}
-        ${inp('phone','연락처','tel','placeholder="010-"')}
-        ${inp('addr','정확한 주소 (동·호수)','text','',true)}
-        ${inp('access','출입 방법·비밀번호','text','',true)}
-        ${inp('commission','수수료 조건')}
+        <div class="f"><label for="f-owner">소유주·임대인</label>${txt('owner','')}</div>
+        <div class="f"><label for="f-phone">연락처</label><input id="f-phone" name="phone" type="tel" value="${v('phone')}" placeholder="010-"></div>
+        <div class="f full"><label for="f-addr">정확한 주소 (번지·동·호수)</label>${txt('addr','')}</div>
+        <div class="f full"><label for="f-access">출입 방법·비밀번호</label>${txt('access','')}</div>
+        <div class="f"><label for="f-commission">수수료 조건</label>${txt('commission','')}</div>
         <div class="f full"><label for="f-privMemo">내 메모</label><textarea id="f-privMemo" name="privMemo">${v('privMemo')}</textarea></div>
       </fieldset>
       <div class="err" id="ferr" hidden></div>
@@ -577,17 +644,26 @@ function bind(){
   const so=document.getElementById('sort'); if(so) so.onchange=()=>{S.sort=so.value;render()};
   const f=document.getElementById('lf');
   if(f){
-    const applyType=()=>{const t=(f.querySelector('input[name="type"]:checked')||{}).value||'';f.querySelectorAll('[data-room]').forEach(el=>el.hidden=!!t&&!ROOMY.includes(t));f.querySelectorAll('[data-bld]').forEach(el=>el.hidden=t==='토지');f.querySelectorAll('[data-room] .req').forEach(el=>el.hidden=!ROOM_REQ.includes(t))};
-    f.querySelectorAll('input[name="type"]').forEach(r=>r.addEventListener('change',applyType));applyType();
+    const val=k=>{const c=f.querySelector(`input[name="${k}"]:checked`);if(c)return c.value;const e=f.elements[k];return e&&e.value!==undefined&&!(e instanceof RadioNodeList)?String(e.value).trim():''};
+    const st=()=>({type:val('type'),deal:val('deal'),feeType:val('feeType'),feeTier:val('feeTier'),parking:val('parking')});
+    const applyRules=()=>{const s_=st();RULES.forEach(r=>{const el=f.querySelector(`[data-k="${r.k}"]`);if(!el)return;const sh=r.show(s_);el.hidden=!sh;const q=el.querySelector('.req');if(q)q.hidden=!r.req(s_)});f.querySelectorAll('[data-house]').forEach(el=>el.hidden=!isH(s_))};
+    f.addEventListener('change',applyRules);applyRules();
     const bindGu=()=>{const g=document.getElementById('f-gu');g.onchange=()=>{document.getElementById('dongbox').innerHTML=dongField(f.elements.sido.value,g.value,'')}};bindGu();
     f.elements.sido.onchange=()=>{const sd=f.elements.sido.value;document.getElementById('gubox').innerHTML=guField(sd,'');document.getElementById('dongbox').innerHTML=dongField(sd,'','');bindGu()};
     ['deposit','sale','area'].forEach(k=>{const el=f.elements[k];if(el) el.addEventListener('input',()=>{const a=document.getElementById('aux-'+k)||(()=>{const s=document.createElement('span');s.className='aux';s.id='aux-'+k;el.after(s);return s})();a.textContent=el.value?(k==='area'?pyeong(el.value)+'평':won(+el.value)+'만원'):''})});
     f.onsubmit=async e=>{e.preventDefault();
       const fd=new FormData(f),rec={...S.edit};fd.forEach((val,k)=>rec[k]=String(val).trim());if(rec.gu&&rec.sido&&rec.sido!=='부산광역시')rec.gu=rec.sido+' '+rec.gu;delete rec.sido;
       const err=document.getElementById('ferr');
-      if(!rec.deal||!rec.type||!rec.gu||!rec.dong){err.textContent='종류, 거래유형, 구, 동은 꼭 골라 주세요.';err.hidden=false;return}
-      if(ROOM_REQ.includes(rec.type)&&!rec.rooms){err.textContent=rec.type+'은(는) 방 수를 꼭 적어 주세요.';err.hidden=false;f.elements.rooms.focus();return}
-      if(!ROOMY.includes(rec.type)){rec.rooms='';rec.baths=''}if(rec.type==='토지'){rec.floor='';rec.totalFloor='';rec.elevator='';rec.direction=''}
+      const s_=st();delete rec.feeChk;
+      const amt={};f.querySelectorAll('[data-fa]').forEach(i=>{if(i.value!=='')amt[i.dataset.fa]=i.value});
+      const shown=r=>r.show(s_);
+      const miss=RULES.filter(r=>shown(r)&&r.req(s_)).filter(r=>r.k==='feeAmt'?FEE_ITEMS.filter(x=>x!=='기타 관리비').some(x=>amt[x]===undefined):r.k==='feeChk'?false:!rec[r.k]);
+      if(miss.length){err.textContent='아직 안 채운 필수 항목: '+miss.map(r=>r.l).join(', ');err.hidden=false;const el=f.querySelector(`[data-k="${miss[0].k}"]`);if(el)el.scrollIntoView({block:'center',behavior:'smooth'});return}
+      if(isH(s_)&&s_.feeTier==='10만원 미만'&&+rec.fee>=10){err.textContent='관리비가 10만원 이상이에요. 구간을 "10만원 이상"으로 바꾸고 항목별 금액을 적어 주세요.';err.hidden=false;return}
+      RULES.forEach(r=>{if(!shown(r)&&r.k in rec&&!['type','deal','gu','dong'].includes(r.k))rec[r.k]=''});
+      const fr=RULES.find(r=>r.k==='feeAmt'),fc=RULES.find(r=>r.k==='feeChk');
+      rec.feeItems=shown(fr)?Object.entries(amt).map(([k,x])=>k+' '+x).join(', '):shown(fc)?fd.getAll('feeChk').join(', '):'';
+      if(shown(fr))rec.fee=String(Math.round(Object.values(amt).reduce((a,b)=>a+(+b||0),0)*10)/10);
       S.edit=rec;S.busy=true;render();
       try{S.data=await call('saveListing',rec);S.edit=null;S.busy=false;toast(rec.id?'저장했어요':'등록했어요. 다른 직원 화면에는 1분 안에 보여요')}
       catch(x){S.busy=false;render();const er=document.getElementById('ferr');er.textContent='저장하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요. ('+(x&&x.message||x)+')';er.hidden=false}
@@ -617,7 +693,7 @@ function demoInit(){
     {agent:'김윤미',id:'김-0003',regDate:d(20),status:'계약완료',type:'원룸',deal:'단기',gu:'수영구',dong:'수영동',loc:'수영역 인근',floor:5,area:16.5,deposit:100,rent:60,feature:'1개월 단위',checked:d(20)}
   ];
   DEMO={me:{name:'권성환',role:'대표',email:'demo'},units:{big:500,small:10},agents:[{name:'권성환',role:'대표'},{name:'조원경',role:'소장'},{name:'김윤미',role:'실장'},{name:'조수광',role:'소장'}],
-    mine:mine.map(row),all:[...all,...mine].map(o=>{const r=row(o);return [...r.slice(0,20),'','','','','','',...r.slice(26)]})};
+    mine:mine.map(row),all:[...all,...mine].map(o=>{const r=row(o);return [...r.slice(0,20),'','','','','','',...r.slice(26,46)]})};
   return DEMO;
 }
 function demoCall(fn,arg){
@@ -632,7 +708,7 @@ function demoCall(fn,arg){
     if(!r){const n=mine.length+1;rec.id='권-'+String(n).padStart(4,'0');r=F.map(()=>'');mine.push(r)}
     F.forEach((k,i)=>r[i]=rec[k]??'');
   }
-  DEMO.all=[...DEMO.all.filter(x=>x[0]!==DEMO.me.name),...mine.map(x=>[...x.slice(0,20),'','','','','','',...x.slice(26)])];
+  DEMO.all=[...DEMO.all.filter(x=>x[0]!==DEMO.me.name),...mine.map(x=>[...x.slice(0,20),'','','','','','',...x.slice(26,46)])];
   return JSON.parse(JSON.stringify(DEMO));
 }
 
