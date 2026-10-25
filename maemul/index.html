@@ -250,6 +250,7 @@ fieldset.priv legend{color:var(--lock)}
 @media (max-width:420px){.cards{grid-template-columns:1fr}}
 [hidden]{display:none!important}.req{color:#c2410c}
 .feegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.fa{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2,#555)}.seg-in input[type=checkbox]{position:absolute;opacity:0}
+.af{border:1px dashed var(--accent-2,#2e8b57);border-radius:14px;padding:12px 14px;background:var(--accent-soft,#e7f5ee)}.af summary{cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:6px;list-style:none}.af summary::-webkit-details-marker{display:none}.af summary .muted{font-size:12px;flex-basis:100%}.af-body{display:flex;flex-direction:column;gap:8px;margin-top:10px}.af-drop{display:block;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px}.af-drop input{position:absolute;opacity:0;width:1px;height:1px}#af-text{min-height:70px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit;background:var(--surface)}
 </style>
 
 <div id="root"><div class="loading"><div class="spin"></div><div>매물 정보를 불러오는 중…</div></div></div>
@@ -560,6 +561,14 @@ function viewForm(rec){
   return `<div class="scrim" data-close><section class="sheet" role="dialog" aria-modal="true" aria-label="매물 ${isNew?'등록':'수정'}">
     <div class="sheet-h"><h2>${isNew?'새 매물 등록':'매물 수정 · <span class="num">'+v('id')+'</span>'}</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
     <form id="lf" novalidate>
+      <details class="af" ${isNew?'open':''}><summary>${ic('edit')}<b>자동 채우기</b><span class="muted">다방·당근·네이버에 올린 화면 캡처나 글을 넣으면 칸이 채워져요</span></summary>
+        <div class="af-body">
+          <label class="af-drop"><input type="file" id="af-img" accept="image/*" multiple><span id="af-imgtxt">캡처 사진 고르기 (여러 장 가능)</span></label>
+          <textarea id="af-text" placeholder="또는 등록 내용을 복사해서 붙여넣기"></textarea>
+          <button type="button" class="btn primary" id="af-go">자동 채우기</button>
+          <div class="muted" style="font-size:12px">채운 뒤 빈칸·틀린 곳만 확인하고 등록하면 돼요.</div>
+        </div>
+      </details>
       <p class="muted" style="margin:0;font-size:12.5px"><span class="req">*</span> 표시는 꼭 채워야 하는 항목이에요. 종류에 맞는 칸만 보여요.</p>
       <fieldset><legend>매물 정보</legend>
         ${F_('type','종류',seg('type',typeList),1)}
@@ -648,6 +657,19 @@ function bind(){
     const st=()=>({type:val('type'),deal:val('deal'),feeType:val('feeType'),feeTier:val('feeTier'),parking:val('parking')});
     const applyRules=()=>{const s_=st();RULES.forEach(r=>{const el=f.querySelector(`[data-k="${r.k}"]`);if(!el)return;const sh=r.show(s_);el.hidden=!sh;const q=el.querySelector('.req');if(q)q.hidden=!r.req(s_)});f.querySelectorAll('[data-house]').forEach(el=>el.hidden=!isH(s_))};
     f.addEventListener('change',applyRules);applyRules();
+    const snap=()=>{const fd=new FormData(f),r={...S.edit};fd.forEach((x,k)=>{if(k!=='feeChk')r[k]=String(x).trim()});const amt=[];f.querySelectorAll('[data-fa]').forEach(i=>{if(i.value!=='')amt.push(i.dataset.fa+' '+i.value)});r.feeItems=amt.length?amt.join(', '):fd.getAll('feeChk').join(', ');if(r.gu&&r.sido&&r.sido!=='부산광역시')r.gu=r.sido+' '+r.gu;delete r.sido;return r};
+    const ai=document.getElementById('af-img'),at=document.getElementById('af-imgtxt');
+    if(ai)ai.onchange=()=>{at.textContent=ai.files.length?ai.files.length+'장 골랐어요':'캡처 사진 고르기 (여러 장 가능)'};
+    const shrink=file=>new Promise((ok,no)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const m=1600,sc=Math.min(1,m/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',0.85))};img.onerror=no;img.src=u});
+    const ag=document.getElementById('af-go');
+    if(ag)ag.onclick=async()=>{const text=document.getElementById('af-text').value.trim(),files=[...(ai.files||[])].slice(0,6);
+      if(!text&&!files.length){toast('캡처나 글을 먼저 넣어 주세요');return}
+      ag.disabled=true;ag.textContent='읽는 중… (10~20초)';
+      try{const images=await Promise.all(files.map(shrink));const r=await call('autofill',{text,images});const cur=snap();
+        Object.keys(r||{}).forEach(k=>{const x=r[k];if(x===null||x===undefined||x==='')return;if(F.includes(k))cur[k]=String(x)});
+        if(r.gu){const sd=SIDOS.includes(r.sido)?r.sido:'부산광역시',g=String(r.gu).trim();if((REG[sd]||{})[g]){cur.gu=sd==='부산광역시'?g:sd+' '+g;cur.dong=(REG[sd][g]||[]).includes(r.dong)?r.dong:''}else{cur.gu=S.edit.gu||'';cur.dong=S.edit.dong||''}}
+        S.edit=cur;render();toast('채웠어요. 빈칸·틀린 곳만 확인해 주세요')}
+      catch(x){ag.disabled=false;ag.textContent='자동 채우기';toast('읽지 못했어요: '+(x&&x.message||x))}};
     const bindGu=()=>{const g=document.getElementById('f-gu');g.onchange=()=>{document.getElementById('dongbox').innerHTML=dongField(f.elements.sido.value,g.value,'')}};bindGu();
     f.elements.sido.onchange=()=>{const sd=f.elements.sido.value;document.getElementById('gubox').innerHTML=guField(sd,'');document.getElementById('dongbox').innerHTML=dongField(sd,'','');bindGu()};
     ['deposit','sale','area'].forEach(k=>{const el=f.elements[k];if(el) el.addEventListener('input',()=>{const a=document.getElementById('aux-'+k)||(()=>{const s=document.createElement('span');s.className='aux';s.id='aux-'+k;el.after(s);return s})();a.textContent=el.value?(k==='area'?pyeong(el.value)+'평':won(+el.value)+'만원'):''})});
@@ -700,6 +722,7 @@ function demoCall(fn,arg){
   if(!DEMO) demoInit();
   const mine=DEMO.mine;
   if(fn==='getBootstrap') return JSON.parse(JSON.stringify(DEMO));
+  if(fn==='autofill') return {type:'원룸',deal:'월세',sido:'부산광역시',gu:'수영구',dong:'광안동',deposit:500,rent:45,feeType:'정액관리비',feeTier:'10만원 미만',feeBasis:'직전 월 관리비',fee:7,feeItems:'수도, 인터넷',rooms:1,baths:1,roomShape:'분리형',duplex:'단층',floor:3,totalFloor:5,elevator:'있음',parking:'불가',dirBase:'거실',direction:'남향',area:23.5,moveIn:'즉시',title:'광안역 5분 분리형 원룸',feature:'풀옵션, 에어컨, 세탁기'};
   if(fn==='markChecked'){const r=mine.find(x=>x[1]===arg);if(r)r[18]=today();}
   if(fn==='saveListing'){
     const rec={...arg,agent:DEMO.me.name};
