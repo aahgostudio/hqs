@@ -5,222 +5,35 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#16347A">
-<title>본사 홈 · 어닝플레이스</title>
+<title>HQ · 어닝플레이스</title>
 <link rel="icon" href="../logo.svg">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="../style.css">
-<style>
-.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
-.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-.brand{display:flex;align-items:center;gap:12px}
-.brand small{display:block;font-size:12px;color:var(--sub);letter-spacing:.06em}
-.brand h1{margin:0;font-size:22px;font-weight:900;letter-spacing:-.02em}
-.acts{display:flex;gap:8px;flex-wrap:wrap}
-.biz{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:14px}
-.biz-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.biz-h h2{margin:0;font-size:16px;font-weight:900;display:flex;align-items:center;gap:8px}
-.biz-h h2 i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.kp{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-@media(max-width:900px){.kp{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:520px){.kp{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.k{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--soft)}
-.k span{font-size:12px;color:var(--sub)}
-.k b{display:block;font-size:24px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.3}
-.k small{font-size:11.5px;color:var(--sub)}
-.k.warn{background:var(--warnb);border-color:#F6C9C9}.k.warn b,.k.warn span{color:var(--warn)}
-.k.wait{background:var(--waitb);border-color:#F6DDB4}.k.wait b{color:var(--wait)}
-.list{margin-top:12px;border-top:1px solid var(--line)}
-.li{display:flex;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line);font-size:14px}
-.li .d{font-variant-numeric:tabular-nums;color:var(--sub);font-size:12.5px;min-width:74px}
-.li .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tbl{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap}
-th{font-size:12px;color:var(--sub);font-weight:500;text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}
-td{padding:9px 10px;border-bottom:1px solid var(--line)}
-tr:last-child td{border-bottom:0}
-td select{border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--card)}
-.tm{font-size:11px;font-weight:700;color:#fff;border-radius:6px;padding:1px 6px}
-.soon{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:700px){.soon{grid-template-columns:1fr}}
-.soon .biz{opacity:.7}
-.login{max-width:360px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:12px}
-.note{font-size:12px;color:var(--sub);margin-top:8px}
-#errbar{position:fixed;left:0;right:0;top:0;background:var(--warn);color:#fff;padding:10px 16px;font-size:13px;z-index:99}
-</style>
+<link rel="stylesheet" href="hq.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+ <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+ <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+ <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+ <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+ <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+</svg>
 <div id="app"><div class="spin"></div></div>
-<div id="toast" class="toast" role="status"></div>
+<div class="scrim" id="scrim" role="dialog" aria-modal="true"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast" role="status"></div>
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-<script>
-(function(){
-const C = window.EP_CONFIG;
-const OWNER = 'landyswork@gmail.com';
-const MAEMUL_API = 'https:\/\/script.google.com\/macros\/s\/AKfycbxTXK4vWTm5ARCY-ElhQPtwd6xU-bMbnQPsd4MAl5TuLEKnW3Ie6qiAUpL_OyxCiOxqKQ\/exec';
-const sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_KEY);
-const $ = s => document.querySelector(s);
-const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const pad = n => String(n).padStart(2,'0');
-const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const addD = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
-const won = n => (n||0).toLocaleString('ko-KR');
-const md = s => { const [y,m,d] = s.split('-'); const w='일월화수목금토'[new Date(+y,+m-1,+d).getDay()]; return `${+m}/${+d}(${w})`; };
-function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('on'),2600); }
-function fail(e){ let b=$('#errbar'); if(!b){ b=document.createElement('div'); b.id='errbar'; document.body.appendChild(b); } b.textContent='문제가 생겼어요: '+(e&&e.message||e); }
-const ST_C = {active:'근무', leave:'휴직', left:'퇴사'};
-const ST_C_INV = {'재직':'active','근무':'active','휴직':'leave','퇴사':'left'};
-
-let S = {};
-
-async function maemul(fn, args){
-  const r = await fetch(MAEMUL_API, {method:'POST', body: JSON.stringify({fn, k:S.code, args: args||[]})});
-  const j = await r.json(); if (!j.ok) throw new Error(j.error||'매물노트 오류'); return j.data;
-}
-
-function loginView(msg){
-  $('#app').innerHTML = `<form class="login" id="lf"><div style="display:flex;align-items:center;gap:10px"><img class="logo" src="../logo.svg" alt=""><b style="font-size:17px">본사 홈</b></div>
-    <div style="font-size:13px;color:var(--sub)">대표님 전용 화면이에요.</div>
-    ${msg?`<p style="color:var(--warn);margin:0">${esc(msg)}</p>`:''}
-    <div class="field"><label>이메일</label><input type="email" name="email" autocomplete="username" required></div>
-    <div class="field"><label>비밀번호</label><input type="password" name="password" autocomplete="current-password" required></div>
-    <button class="btn" type="submit">로그인</button></form>`;
-  $('#lf').onsubmit = async e => { e.preventDefault(); const v = new FormData(e.target);
-    const {error} = await sb.auth.signInWithPassword({email:v.get('email'), password:v.get('password')}); if (error) return loginView('로그인하지 못했어요'); boot(); };
-}
-
-function codeView(msg){
-  $('#app').innerHTML = `<form class="login" id="cf"><b style="font-size:17px">매물노트 연결 (처음 한 번)</b>
-    <div style="font-size:13px;color:var(--sub);line-height:1.6">대표님 매물노트 개인 링크를 붙여넣어 주세요.<br>예) team.earningplace.kr/maemul/?k=…</div>
-    ${msg?`<p style="color:var(--warn);margin:0">${esc(msg)}</p>`:''}
-    <div class="field"><label>매물노트 내 링크</label><input name="link" required autocomplete="off"></div>
-    <button class="btn" type="submit">연결하기</button>
-    <button class="btn ghost" type="button" id="skip">지금은 건너뛰기</button></form>`;
-  $('#cf').onsubmit = async e => { e.preventDefault(); const raw = new FormData(e.target).get('link'); const m = String(raw).match(/[?&]k=([A-Za-z0-9]+)/) || String(raw).match(/^([A-Za-z0-9]{16,})$/);
-    if (!m) return codeView('링크에서 개인 코드를 찾지 못했어요');
-    S.code = m[1];
-    try { const d = await maemul('getBootstrap'); if (!d || d.error || !d.admin) throw new Error('대표 링크가 아니에요'); }
-    catch(x){ S.code=''; return codeView(x.message||'연결하지 못했어요'); }
-    const {error} = await sb.from('settings').upsert({key:'hq_maemul_code', value: S.code}); if (error) return codeView(error.message);
-    toast('매물노트를 연결했어요'); load(); };
-  $('#skip').onclick = () => { S.code=''; S.skipCode=true; load(); };
-}
-
-async function load(){
-  const T = new Date(); T.setHours(0,0,0,0);
-  const from = ymd(addD(T,-35)), to = ymd(addD(T,14));
-  const [st, jb, rp] = await Promise.all([
-    sb.from('staff').select('*').order('created_at'),
-    sb.from('jobs').select('*, assignments(*)').gte('job_date', from).lte('job_date', to).order('job_date').order('start_time',{nullsFirst:true}),
-    sb.from('reports').select('id,checked_at').is('checked_at', null)
-  ]);
-  for (const r of [st,jb,rp]) if (r.error) throw r.error;
-  S.staff = st.data; S.jobs = jb.data; S.reportsNew = rp.data.length;
-  S.mm = null;
-  if (S.code) { try { S.mm = await maemul('getBootstrap'); } catch(e){ S.mmErr = e.message; } }
-  render();
-}
-
-function render(){
-  const T = new Date(); T.setHours(0,0,0,0); const today = ymd(T), wk = ymd(addD(T,6));
-  const jobs = S.jobs.filter(j => j.status !== 'cancelled');
-  const appr = j => (j.assignments||[]).filter(a=>a.status==='approved').length;
-  const todayJ = jobs.filter(j=>j.job_date===today);
-  const weekJ = jobs.filter(j=>j.job_date>=today && j.job_date<=wk);
-  const short = jobs.filter(j=>j.job_date>=today && j.job_date<=wk && j.status==='open' && appr(j)<j.headcount);
-  const waiting = jobs.filter(j=>j.job_date>=today).reduce((n,j)=>n+(j.assignments||[]).filter(a=>a.status==='applied').length,0);
-  const unpaid = jobs.filter(j=>j.status==='done').flatMap(j=>(j.assignments||[]).filter(a=>a.status==='approved'&&!a.paid));
-  const unpaidSum = unpaid.reduce((n,a)=>n+(a.pay_amount||0)+(a.extra_amount||0),0);
-  const notClosed = jobs.filter(j=>j.job_date<today && (j.status==='open'||j.status==='full'));
-
-  const mm = S.mm; let mmHtml;
-  if (mm && mm.admin) {
-    const rows = mm.all||[]; const F=['agent','id','regDate','status'];
-    const o = r => ({agent:r[0], id:r[1], regDate:r[2], status:r[3], checked:r[18]});
-    const all = rows.map(o); const ym = today.slice(0,7);
-    const live = all.filter(r=>r.status==='진행');
-    const stale = live.filter(r=>{ if(!r.checked) return true; return (T - new Date(r.checked+'T00:00:00'))/864e5 > 30; });
-    const ai = mm.admin.ai||{};
-    mmHtml = `<div class="kp">
-      <div class="k"><span>진행 매물</span><b>${live.length}</b><small>전 직원</small></div>
-      <div class="k"><span>이번 달 등록</span><b>${all.filter(r=>(r.regDate||'').startsWith(ym)).length}</b><small>건</small></div>
-      <div class="k ${all.filter(r=>r.status==='보류').length?'wait':''}"><span>보류·빈칸</span><b>${all.filter(r=>r.status==='보류').length}</b><small>확인 필요</small></div>
-      <div class="k ${stale.length?'warn':''}"><span>30일 미확인</span><b>${stale.length}</b><small>진행 중</small></div>
-      <div class="k"><span>계약완료</span><b>${all.filter(r=>r.status==='계약완료').length}</b><small>누적</small></div>
-      <div class="k"><span>자동 채우기</span><b>${ai.count||0}</b><small>이번 달 · $${(ai.cost||0).toFixed(2)}</small></div></div>`;
-  } else {
-    mmHtml = `<div class="note">${S.mmErr?'매물노트를 불러오지 못했어요: '+esc(S.mmErr):'매물노트가 아직 연결되지 않았어요.'} <button class="btn sm ghost" id="relink">연결하기</button></div>`;
-  }
-
-  // 직원 전체: 일정판 + 매물노트 이름으로 합치기
-  const mStaff = (mm && mm.admin && mm.admin.staff) || [];
-  const names = [...new Set([...S.staff.map(s=>s.name), ...mStaff.map(s=>s.name)])];
-  const peopleRows = names.map(n => {
-    const c = S.staff.find(s=>s.name===n), m = mStaff.find(s=>s.name===n);
-    const team = c ? (S.teamColor(c.team)) : '';
-    return `<tr><td><b>${esc(n)}</b> <span style="color:var(--sub)">${esc((c&&c.role)||(m&&m.role)||'')}</span></td>
-      <td>${c?`<span class="tm" style="background:${team}">${esc(c.team)}</span>`:'-'}</td>
-      <td>${c?`<select data-cs="${c.id}">${Object.entries(ST_C).map(([v,l])=>`<option value="${v}" ${c.status===v?'selected':''}>${l}</option>`).join('')}</select>`:'<span style="color:var(--mute)">없음</span>'}</td>
-      <td>${m?(m.role==='대표'?'대표':`<select data-ms="${esc(n)}">${['재직','휴직','퇴사'].map(x=>`<option ${(m.status||'재직')===x?'selected':''}>${x}</option>`).join('')}</select>`):'<span style="color:var(--mute)">없음</span>'}</td>
-      <td style="color:var(--sub);font-size:12.5px">${c&&c.last_seen_at?new Date(c.last_seen_at).toLocaleDateString('ko-KR'):'-'}</td></tr>`;
-  }).join('');
-
-  const mmLink = S.code ? `../maemul/?k=${encodeURIComponent(S.code)}` : '';
-  $('#app').innerHTML = `<div class="wrap">
-  <div class="top"><div class="brand"><img class="logo" src="../logo.svg" alt="" style="width:42px;height:42px"><div><small>EARNINGPLACE · ${today.replace(/-/g,'.')}</small><h1>본사 홈</h1></div></div>
-    <div class="acts"><a class="btn" href="../hqs.html">청소 일정판 관리</a>${mmLink?`<a class="btn ghost" href="${mmLink}">매물노트 관리</a>`:''}<button class="btn ghost sm" id="out">로그아웃</button></div></div>
-
-  <section class="biz"><div class="biz-h"><h2><i style="background:#2453C7"></i>리츠종합클린 · 현장</h2><a class="btn sm ghost" href="../hqs.html">일정판 열기 →</a></div>
-    <div class="kp">
-      <div class="k"><span>오늘 현장</span><b>${todayJ.length}</b><small>인원 확정 ${todayJ.filter(j=>appr(j)>=j.headcount).length}</small></div>
-      <div class="k"><span>이번 7일</span><b>${weekJ.length}</b><small>오늘~${md(wk)}</small></div>
-      <div class="k ${short.length?'warn':''}"><span>인원 미달</span><b>${short.length}</b><small>7일 안</small></div>
-      <div class="k ${waiting?'wait':''}"><span>신청 대기</span><b>${waiting}</b><small>승인 필요</small></div>
-      <div class="k ${unpaid.length?'wait':''}"><span>미지급</span><b>${won(unpaidSum)}</b><small>${unpaid.length}명분 · 원</small></div>
-      <div class="k ${S.reportsNew||notClosed.length?'wait':''}"><span>안 본 보고 · 미마감</span><b>${S.reportsNew} · ${notClosed.length}</b><small>현장 보고 · 지난 일정</small></div>
-    </div>
-    ${short.length?`<div class="list">${short.slice(0,6).map(j=>`<div class="li"><span class="d">${md(j.job_date)} ${j.start_time?j.start_time.slice(0,5):''}</span><span class="t">${esc(j.title)}</span><span class="pill p-warn">${appr(j)}/${j.headcount}명</span></div>`).join('')}</div>`:''}
-  </section>
-
-  <section class="biz"><div class="biz-h"><h2><i style="background:#BE185D"></i>리츠부동산 · 매물노트</h2>${mmLink?`<a class="btn sm ghost" href="${mmLink}">매물노트 열기 →</a>`:''}</div>${mmHtml}</section>
-
-  <section class="biz"><div class="biz-h"><h2><i style="background:#16347A"></i>직원 전체</h2><span style="font-size:12px;color:var(--sub)">여기서 바꾸면 각 프로그램에 바로 반영돼요</span></div>
-    <div class="tbl"><table><thead><tr><th>이름</th><th>팀</th><th>일정판 (청소)</th><th>매물노트 (부동산)</th><th>일정판 마지막 접속</th></tr></thead><tbody>${peopleRows}</tbody></table></div>
-    <div class="note">새 직원 추가·개인 링크 발급은 각 프로그램에서 해요: 청소 → 일정판 관리 › 직원 / 부동산 → 매물노트 관리 › 직원 관리. 퇴사는 두 칸 모두 '퇴사'로 바꿔 주세요.</div>
-  </section>
-
-  <div class="soon">
-    <section class="biz"><div class="biz-h"><h2><i style="background:#F59E0B"></i>에그홈케어</h2><span class="pill p-mute">준비 중</span></div><div class="note">가정청소 예약·현장이 생기면 여기에 붙여요.</div></section>
-    <section class="biz"><div class="biz-h"><h2><i style="background:#2E8B57"></i>아고스튜디오</h2><span class="pill p-mute">준비 중</span></div><div class="note">이내만 출시·알콩달콩 주문 현황을 여기에 붙일 수 있어요.</div></section>
-  </div>
-  </div>`;
-
-  $('#out').onclick = async () => { await sb.auth.signOut(); location.reload(); };
-  const rl = $('#relink'); if (rl) rl.onclick = () => codeView();
-  document.querySelectorAll('[data-cs]').forEach(el => el.onchange = async () => {
-    if (el.value==='left' && !confirm('일정판에서 퇴사 처리할까요? 개인 링크가 막혀요.')) return render();
-    const {error} = await sb.from('staff').update({status: el.value}).eq('id', el.dataset.cs);
-    if (error) { fail(error); return; } toast('일정판 상태를 바꿨어요'); load().catch(fail); });
-  document.querySelectorAll('[data-ms]').forEach(el => el.onchange = async () => {
-    if (el.value==='퇴사' && !confirm('매물노트에서 퇴사 처리할까요? 1분 안에 접속이 막혀요.')) return render();
-    el.disabled = true; try { S.mm = await maemul('setStaff', [{name: el.dataset.ms, status: el.value}]); toast('매물노트 상태를 바꿨어요'); } catch(x){ fail(x); } render(); });
-}
-
-async function boot(){
-  const {data:{session}} = await sb.auth.getSession();
-  if (!session) return loginView();
-  if ((session.user.email||'').toLowerCase() !== OWNER) { await sb.auth.signOut(); return loginView('대표님 계정으로만 들어올 수 있어요'); }
-  const {data:isAdmin} = await sb.rpc('is_admin'); if (!isAdmin) { await sb.auth.signOut(); return loginView('관리자 계정이 아니에요'); }
-  const [tm, set] = await Promise.all([sb.from('teams').select('*'), sb.from('settings').select('*').eq('key','hq_maemul_code')]);
-  const colors = Object.fromEntries((tm.data||[]).map(t=>[t.code,t.color]));
-  S.teamColor = c => colors[c] || '#6B7280';
-  S.code = set.data && set.data[0] ? String(set.data[0].value) : '';
-  if (!S.code && !S.skipCode) return codeView();
-  await load();
-  setInterval(() => { if (document.visibilityState === 'visible') load().catch(fail); }, 120000);
-}
-boot().catch(fail);
-})();
-</script>
+<script src="core.js"></script>
+<script src="home.js"></script>
+<script src="sched.js"></script>
+<script src="ops.js"></script>
+<script src="promo.js"></script>
+<script src="money.js"></script>
+<script src="staffv.js"></script>
+<script>HQ.boot();</script>
 </body>
 </html>

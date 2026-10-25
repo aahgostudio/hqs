@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#16347A">
+<meta property="og:title" content="리츠종합클린 · 작업 현황">
+<meta property="og:description" content="작업 사진이 실시간으로 올라와요">
+<title>리츠종합클린 · 작업 현황</title>
+<link rel="icon" href="img/mark.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+:root{--navy:#16347A;--navy2:#0E2558;--org:#F28C1E;--ink:#111827;--sub:#6B7280;--line:#E5E7EB;--soft:#F5F7FA;--ok:#059669;--okb:#E7F7F1;--bg:#EEF1F6}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;word-break:keep-all}
+button,a{font:inherit}
+.app{max-width:520px;margin:0 auto;min-height:100vh;background:#fff;display:flex;flex-direction:column}
+.hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:5}
+.hd img{width:30px;height:30px;object-fit:contain}
+.hd b{font-size:17px;font-weight:900;color:var(--navy);letter-spacing:-.01em}
+.badge{margin-left:auto;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;display:inline-flex;gap:5px;align-items:center}
+.badge.live{background:#FEE2E2;color:#DC2626}.badge.live i{width:7px;height:7px;border-radius:50%;background:#DC2626;display:block;animation:bl 1.4s infinite}
+.badge.done{background:var(--okb);color:var(--ok)}.badge.closed{background:#F3F4F6;color:var(--sub)}
+@keyframes bl{50%{opacity:.3}}
+main{padding:16px 16px 40px;flex:1}
+h1{font-size:20px;margin:0;font-weight:900;letter-spacing:-.02em}
+.sub{color:var(--sub);font-size:13px}
+.steps{display:flex;gap:6px;margin:14px 0}.steps span{flex:1;text-align:center;font-size:12px;padding:6px 0;border-radius:8px;background:#F3F4F6;color:var(--sub)}
+.steps .on{background:var(--navy);color:#fff;font-weight:700}.steps .dn{background:#DCFCE7;color:#15803D}
+.tl{display:flex;justify-content:space-between;font-size:12.5px;color:var(--sub);margin:16px 0 6px}
+.tl b{color:var(--ink);font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.grid.g3{grid-template-columns:repeat(3,1fr)}
+.grid a{display:block;position:relative;border-radius:10px;overflow:hidden;background:var(--soft)}
+.grid img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+.grid span{position:absolute;left:6px;bottom:6px;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.5);border-radius:5px;padding:1px 6px}
+.memo{font-size:13.5px;color:#374151;margin-top:6px;background:var(--soft);border-radius:10px;padding:8px 10px}
+.empty{text-align:center;color:var(--sub);padding:34px 10px;font-size:14px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:14px;font-size:15.5px;font-weight:700;background:var(--navy);color:#fff;text-decoration:none;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+.btn.kakao{background:#FEE500;color:#111}
+.btn.sm{padding:9px 12px;font-size:13.5px;border-radius:10px;width:auto}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.img{width:100%;border-radius:14px;display:block;margin:14px 0}
+.card{border:1.5px solid var(--navy);border-radius:16px;padding:14px;margin-top:14px}
+.card .amt{font-size:26px;font-weight:900;color:var(--navy);font-variant-numeric:tabular-nums}
+.card .li{display:flex;justify-content:space-between;font-size:13.5px;color:#374151;padding:3px 0}
+.kb{display:inline-block;background:#FEE500;font-size:12px;font-weight:800;border-radius:6px;padding:2px 7px;margin-right:6px}
+.acct{font-size:17px;font-weight:700;margin-top:10px;font-variant-numeric:tabular-nums}
+.paid{background:var(--okb);color:#065F46;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;margin-top:10px}
+.foot{font-size:12px;color:var(--sub);text-align:center;margin-top:18px;line-height:1.7}
+.foot a{color:var(--navy)}
+.pop{position:fixed;inset:0;background:rgba(10,20,50,.6);z-index:20;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:14px}
+.popc{background:#fff;border-radius:18px;overflow:hidden;width:100%;max-width:480px;max-height:92vh;display:flex;flex-direction:column}
+.popc .im{overflow:auto;flex:1;background:#F4F6FA}.popc .im img{width:100%;display:block}
+.popc .ft{padding:12px 14px calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px}
+.dots{display:flex;gap:6px;justify-content:center}.dots i{width:7px;height:7px;border-radius:50%;background:#D1D5DB}.dots i.on{background:var(--navy);width:20px;border-radius:4px}
+.note{font-size:12px;color:var(--sub);text-align:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:30}
+.toast.on{opacity:1}
+.spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--navy);border-radius:50%;animation:sp .8s linear infinite;margin:80px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app" id="app"><div class="spin"></div></div>
+<div class="toast" id="toast" role="status"></div>
+<script src="../config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+const C = window.EP_CONFIG;
+const sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_KEY, {auth:{persistSession:false}});
+const CODE = (new URLSearchParams(location.search).get('s') || '').trim().toUpperCase();
+const $ = s => document.querySelector(s);
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const won = n => Number(n||0).toLocaleString('ko-KR') + '원';
+const pad = n => String(n).padStart(2,'0');
+const DOW = '일월화수목금토';
+const md = s => { const d = new Date(s); return `${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`; };
+const hm = s => { const d = new Date(s); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const url = p => `${C.SUPABASE_URL}/storage/v1/object/public/live/${p}`;
+const LAB = {before:'작업 전', during:'작업 중', after:'작업 후'};
+function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('on'), 2200); }
+const seenKey = 'ritz-live-' + CODE;
+const seen = () => { try { return localStorage.getItem(seenKey) === '1'; } catch(_) { return false; } };
+const setSeen = () => { try { localStorage.setItem(seenKey, '1'); } catch(_) {} };
+let D = null, slide = 0, counted = false;
+
+async function load(){
+  let first = false; try { first = !sessionStorage.getItem(seenKey + '-v'); sessionStorage.setItem(seenKey + '-v', '1'); } catch(_) { first = !counted; }
+  const {data, error} = await sb.rpc('live_view', {p_code: CODE, p_count: first && !counted});
+  counted = true;
+  if (error) throw error; D = data;
+}
+
+function header(){
+  const b = D.state === 'live' ? '<span class="badge live"><i></i>작업 중</span>' : D.state === 'done' ? '<span class="badge done">작업 완료</span>' : '<span class="badge closed">종료됨</span>';
+  return `<header class="hd"><img src="img/mark.png" alt=""><b>리츠종합클린</b>${b}</header>`;
+}
+function timeline(){
+  const ph = D.photos || [];
+  if (!ph.length) return '<div class="empty">곧 작업 사진이 올라와요 📷<br>이 페이지를 열어두면 자동으로 새로 보여요</div>';
+  // 같은 10분 안에 같은 단계로 올라온 사진은 한 묶음
+  const groups = [];
+  ph.forEach(p => { const g = groups[groups.length-1];
+    if (g && g.stage === p.stage && Math.abs(new Date(g.at) - new Date(p.at)) < 600000) { g.items.push(p); if (p.memo && !g.memo) g.memo = p.memo; }
+    else groups.push({stage:p.stage, at:p.at, memo:p.memo, items:[p]}); });
+  return groups.map((g,i) => `<div class="tl"><span><b>${hm(g.at)}</b> · ${LAB[g.stage]||''}</span><span>${i===0 && D.state==='live' ? '방금 올라온 사진' : ''}</span></div>
+    <div class="grid ${g.items.length>=3?'g3':''}">${g.items.map(p=>`<a href="${url(p.path)}" target="_blank" rel="noopener"><img loading="lazy" src="${url(p.path)}" alt="${LAB[p.stage]||'작업 사진'}"></a>`).join('')}</div>
+    ${g.memo?`<div class="memo">"${esc(g.memo)}"</div>`:''}`).join('');
+}
+function steps(){
+  const st = new Set((D.photos||[]).map(p=>p.stage));
+  const done = D.state !== 'live';
+  return `<div class="steps"><span class="${st.has('before')||st.has('during')||done?'dn':'on'}">작업 전</span><span class="${done?'dn':st.has('during')||st.has('after')?'on':''}">작업 중</span><span class="${done?'on':''}">작업 후</span></div>`;
+}
+const cfg = () => D.cfg || {};
+function reviewBtn(){ return cfg().review_url ? `<a class="btn" href="${esc(cfg().review_url)}" target="_blank" rel="noopener">⭐ 네이버 후기 남기기</a>` : ''; }
+function contact(){ const c = cfg(); return `<div class="row" style="margin-top:8px">${c.phone?`<a class="btn ghost" href="tel:${esc(c.phone.replace(/[^0-9]/g,''))}">📞 다시 문의</a>`:''}${c.kakao?`<a class="btn kakao" href="${esc(c.kakao)}" target="_blank" rel="noopener">카톡 상담</a>`:''}</div>`; }
+
+function render(){
+  const c = cfg(); let body = '';
+  if (D.state === 'live') {
+    body = `<h1>${esc(D.title)}</h1><div class="sub">${md(D.date)}${D.time?' '+D.time+' 시작':''}</div>${steps()}${timeline()}
+      <div style="margin-top:20px" class="row"><button class="btn ghost sm" data-intro="1">안내 다시 보기</button>${c.phone?`<a class="btn ghost sm" href="tel:${esc(c.phone.replace(/[^0-9]/g,''))}">📞 전화</a>`:''}</div>
+      <p class="foot">사진은 자동으로 새로 올라와요 · 사진을 누르면 크게 볼 수 있어요</p>`;
+  } else if (D.state === 'done') {
+    const ex = D.extras || [];
+    const after = (D.photos||[]).filter(p=>p.stage==='after'), before = (D.photos||[]).filter(p=>p.stage==='before');
+    body = `<h1>청소가 끝났어요 ✨</h1><div class="sub">${esc(D.title)} · ${md(D.date)}${D.done_at?' · '+hm(D.done_at)+' 완료':''}</div>
+      ${c.done_img?`<img class="img" src="${esc(c.done_img)}" alt="입금 계좌 안내">`:''}
+      ${D.pay_total!=null?`<div class="card"><div class="sub">잔금 안내</div><div class="amt">${won(D.pay_total)}</div>
+        ${ex.length?`<div class="li"><span>잔금</span><span>${won(D.balance)}</span></div>${ex.map(x=>`<div class="li"><span>추가 작업 · ${esc(x.name)}</span><span>${won(x.amount)}</span></div>`).join('')}`:''}
+        ${c.account?`<div class="acct"><span class="kb">${esc(c.bank||'')}</span>${esc(c.account)}</div><div class="sub">예금주 ${esc(c.holder||'')}</div>
+        <div class="row" style="margin-top:10px"><button class="btn sm" data-copy="${esc(c.account)}">계좌번호 복사</button>${c.phone?`<a class="btn ghost sm" href="sms:${esc(c.phone.replace(/[^0-9]/g,''))}?&body=${encodeURIComponent('[현금영수증 신청] '+D.title+' / 휴대폰(또는 사업자)번호: ')}">현금영수증 신청</a>`:''}</div>`:''}
+        ${D.paid?'<div class="paid">✓ 입금 확인됐어요. 감사합니다!</div>':''}</div>`:''}
+      ${before.length||after.length?`<div class="tl"><span><b>전 → 후</b></span><span>${before.length+after.length}장</span></div><div class="grid">${[...before.slice(0,4), ...after.slice(0,4)].map(p=>`<a href="${url(p.path)}" target="_blank" rel="noopener"><img loading="lazy" src="${url(p.path)}" alt=""><span>${LAB[p.stage]}</span></a>`).join('')}</div>`:''}
+      ${(D.photos||[]).length?`<details style="margin-top:12px"><summary class="sub" style="cursor:pointer">작업 사진 전체 ${(D.photos||[]).length}장 보기</summary>${timeline()}</details>`:''}
+      <div style="margin-top:18px">${reviewBtn()}</div>
+      <p class="foot">7일 안에 불편한 곳이 있으면 편하게 연락 주세요.${D.close_at?`<br>이 페이지는 ${md(D.close_at)}에 닫혀요 · 사진은 길게 눌러 저장하세요`:''}</p>`;
+  } else {
+    body = `${c.bye_img?`<img class="img" src="${esc(c.bye_img)}" alt="감사 인사" style="margin-top:0">`:'<h1>감사합니다</h1>'}
+      <p class="sub" style="text-align:center">작업 사진 페이지는 ${D.close_at && new Date(D.close_at) < new Date() ? md(D.close_at)+'에 ' : ''}닫혔어요</p>
+      ${reviewBtn()}${contact()}`;
+  }
+  $('#app').innerHTML = header() + `<main>${body}<p class="foot">리츠종합클린 · 공간의 가치를 관리하고 높이는 기업</p></main>`;
+}
+
+function intro(force){
+  const imgs = (cfg().intro_imgs || []).filter(Boolean);
+  if (D.state !== 'live' || !imgs.length || (!force && seen())) return;
+  slide = 0;
+  const draw = () => { let p = $('#pop'); if (!p) { p = document.createElement('div'); p.className = 'pop'; p.id = 'pop'; document.body.appendChild(p); }
+    const last = slide === imgs.length - 1;
+    p.innerHTML = `<div class="popc" role="dialog" aria-modal="true" aria-label="안내"><div class="im"><a href="${esc(imgs[slide])}" target="_blank" rel="noopener"><img src="${esc(imgs[slide])}" alt="안내 ${slide+1}"></a></div>
+      <div class="ft"><div class="dots">${imgs.map((_,i)=>`<i class="${i===slide?'on':''}"></i>`).join('')}</div>
+      <button class="btn" data-next="1">${last?'확인했어요 · 사진 보기':'다음'}</button><div class="note">${last?'아래 [안내 다시 보기]로 언제든 다시 볼 수 있어요':'그림을 누르면 크게 볼 수 있어요'}</div></div></div>`; };
+  draw(); intro.draw = draw; intro.imgs = imgs;
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.next) { if (slide < intro.imgs.length - 1) { slide++; intro.draw(); } else { $('#pop').remove(); setSeen(); } }
+  if (b.dataset.intro) intro(true);
+  if (b.dataset.copy) { try { await navigator.clipboard.writeText(b.dataset.copy); toast('계좌번호를 복사했어요'); } catch(_) { prompt('계좌번호', b.dataset.copy); } }
+});
+
+(async () => {
+  if (!CODE) { $('#app').innerHTML = '<main><div class="empty">링크를 다시 확인해 주세요.</div></main>'; return; }
+  try { await load(); render(); intro(false); }
+  catch(_) { $('#app').innerHTML = '<header class="hd"><img src="img/mark.png" alt=""><b>리츠종합클린</b></header><main><div class="empty">링크를 찾지 못했어요.<br>받으신 링크를 다시 확인해 주세요.</div></main>'; return; }
+  setInterval(async () => { if (document.visibilityState !== 'visible' || !D || D.state !== 'live' || $('#pop')) return;
+    const n = (D.photos||[]).length; try { await load(); if ((D.photos||[]).length !== n || D.state !== 'live') { render(); if ((D.photos||[]).length > n) toast('새 사진이 올라왔어요'); } } catch(_){} }, 30000);
+})();
+})();
+</script>
+</body>
+</html>

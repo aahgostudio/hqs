@@ -93,7 +93,7 @@ body{background:var(--bg)}
 .pay li{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);gap:8px}
 /* tabbar */
 .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--line);padding:6px 6px calc(8px + env(safe-area-inset-bottom));z-index:20}
-.tabbar nav{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:520px}
+.tabbar nav{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:520px;align-items:center}
 .tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--mute);padding:6px 0;border-radius:10px;position:relative}
 .tabbar button[aria-pressed=true]{color:var(--navy);font-weight:700}
 .badge{position:absolute;top:2px;left:calc(50% + 6px);background:var(--warn);color:#fff;font-size:10px;border-radius:999px;padding:0 5px;font-weight:700;min-width:16px;text-align:center}
@@ -101,6 +101,38 @@ body{background:var(--bg)}
 .err h2{margin:12px 0 6px}
 .err p{color:var(--sub)}
 .foot{font-size:11.5px;color:var(--mute);text-align:center;margin:18px 0 0}
+
+.boss{margin-top:10px;border-radius:12px;padding:8px 12px;font-size:13px;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA;display:flex;gap:6px;align-items:center}
+.boss.busy{background:#FEF2F2;color:#991B1B;border-color:#FECACA}
+.boss.ok{background:#F0FDF4;color:#166534;border-color:#BBF7D0}
+.tabbar .plus{width:46px;height:46px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;margin:-14px auto 0;box-shadow:0 6px 16px rgba(22,52,122,.35);padding:0}
+.tabbar .plus svg{width:24px;height:24px}
+.cal .grid button .av{font-size:9.5px;border-radius:4px;padding:0 4px;line-height:1.4}
+.av.ok{background:#DCFCE7;color:#15803D}.av.no{background:#FEE2E2;color:#B91C1C}
+.dots i.ev{background:#E879A8}
+.week button .av{font-size:9px}
+.card.evc{border-left:4px solid #E879A8}
+.sheetbg{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheetbox{background:var(--card);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+.sheetbox h3{margin:0 0 12px;font-size:17px}
+.menu{display:flex;flex-direction:column;gap:8px}
+.menu button{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--soft);border-radius:14px;padding:13px 14px;font-size:15px;font-weight:700;text-align:left}
+.menu button small{display:block;font-size:12px;color:var(--sub);font-weight:400}
+.segs{display:flex;gap:6px;flex-wrap:wrap}
+.segs button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:13px}
+.segs button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:700}
+.paint .grid button{border:1px solid var(--line);border-radius:10px;aspect-ratio:1/1;font-size:14px;background:var(--card)}
+.paint .grid button.ok{background:#DCFCE7;border-color:#86EFAC;color:#166534;font-weight:700}
+.paint .grid button.no{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B;font-weight:700}
+.paint .grid button.out{visibility:hidden}
+.paint .grid button.past{opacity:.35}
+.tog{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;gap:10px}
+.tog input{width:20px;height:20px}
+.phg{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.phg img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;display:block;background:var(--soft)}
+.phg figure{margin:0;position:relative}.phg figcaption{position:absolute;left:4px;bottom:4px;font-size:10px;background:rgba(0,0,0,.5);color:#fff;border-radius:4px;padding:0 4px}
+.okline{font-size:13px;background:var(--okb);color:#065F46;border-radius:10px;padding:8px 11px}
+.ics{font-size:12px;word-break:break-all;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-family:ui-monospace,Menlo,monospace}
 </style>
 </head>
 <body>
@@ -114,6 +146,7 @@ body{background:var(--bg)}
  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+ <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
  <symbol id="i-won" viewBox="0 0 24 24"><path d="M4 6l3 12 5-9 5 9 3-12M3 11h18"/></symbol>
 </svg>
 
@@ -127,6 +160,7 @@ body{background:var(--bg)}
 <script>
 (function(){
 const C = window.EP_CONFIG;
+const GAS = C.MAEMUL_API || 'https://script.google.com/macros/s/AKfycbxTXK4vWTm5ARCY-ElhQPtwd6xU-bMbnQPsd4MAl5TuLEKnW3Ie6qiAUpL_OyxCiOxqKQ/exec';
 const qs = new URLSearchParams(location.search);
 const DEMO = qs.has('demo');
 const TOKEN = (qs.get('k') || '').trim();
@@ -150,9 +184,10 @@ const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y
 const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
 const won = n => (n ?? 0).toLocaleString('ko-KR') + '원';
 const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()} ${DOW[d.getDay()]}`; };
-function toast(m){ const t = document.getElementById('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('on'), 2200); }
-const ERR = {invalid_link:'링크가 맞지 않아요. 대표님께 새 링크를 받아주세요.', closed:'이미 마감된 일정이에요.', past:'지난 일정은 바꿀 수 없어요.', not_allowed:'이 일정은 신청할 수 없어요.', empty:'내용을 한 줄 적어주세요.'};
+function toast(m){ const t = document.getElementById('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('on'), 2400); }
+const ERR = {invalid_link:'링크가 맞지 않아요. 대표님께 새 링크를 받아주세요.', closed:'이미 마감된 일정이에요.', past:'지난 일정은 바꿀 수 없어요.', not_allowed:'이 일정은 할 수 없어요.', empty:'내용을 한 줄 적어주세요.', bad_photo:'사진을 다시 골라주세요.'};
 const errMsg = e => ERR[(e && e.message) || ''] || '잠시 후 다시 시도해주세요.';
+const photoUrl = p => `${C.SUPABASE_URL}/storage/v1/object/public/live/${p}`;
 
 /* ---------- state ---------- */
 let D = null;                       // board data
@@ -162,8 +197,13 @@ let scope = 'team';                 // team | mine
 let today = new Date(); today.setHours(0,0,0,0);
 let pick = ymd(today);
 let month = new Date(today.getFullYear(), today.getMonth(), 1);
-let photos = [];                    // {file, url}
+let photos = [];                    // 보고 사진 {file, url}
 let payData = null;
+let paint = null;                   // 가능·불가일 칠하기 {mode, marks:{}}
+let evEdit = null;                  // 개인 일정 편집
+let shoot = null;                   // 현장 사진 {job, stage, files:[], memo}
+const V2 = () => D && D.v === 2;
+const isRES = () => D && D.me.team === 'RES';
 
 async function load(){
   const from = ymd(addDays(month, -7));
@@ -171,10 +211,12 @@ async function load(){
   const wkFrom = ymd(addDays(parse(pick), -7)), wkTo = ymd(addDays(parse(pick), 14));
   D = await rpc('staff_board', {p_token: TOKEN, p_from: from < wkFrom ? from : wkFrom, p_to: to > wkTo ? to : wkTo});
   if (D.today) { today = parse(D.today); }
+  D.avail = D.avail || {}; D.events = D.events || [];
 }
 
 /* ---------- views ---------- */
 function jobsOn(day){ return D.jobs.filter(j => j.date === day && (scope === 'team' || ['applied','approved'].includes(j.my_status))); }
+const evsOn = day => D.events.filter(e => e.date === day);
 const mineOK = () => D.jobs.filter(j => j.my_status === 'approved');
 
 function statusPill(j){
@@ -194,6 +236,8 @@ function card(j){
   else if (j.my_status === 'approved') btn = `<div class="acts"><button class="btn ghost sm" data-cancel="${j.id}">못 가게 됐어요 (취소)</button></div>`;
   else if (j.my_status === 'applied') btn = `<div class="acts"><button class="btn wait" data-cancel="${j.id}">승인 기다리는 중 · 취소</button></div>`;
   else if (canApply && j.status === 'open' && j.approved < j.headcount) btn = `<div class="acts"><button class="btn" data-apply="${j.id}">신청하기</button></div>`;
+  const shootable = V2() && j.my_status === 'approved' && j.status !== 'cancelled' && j.date >= ymd(addDays(today,-2)) && j.date <= ymd(addDays(today,1));
+  const shootBtn = shootable ? `<div class="acts"><button class="btn" data-shoot="${j.id}">${I('cam')}현장 사진${j.photos?` (${j.photos}장)`:''}</button>${j.work_done?'<span class="pill p-ok" style="align-self:center">작업 끝</span>':''}</div>` : '';
 
   const ack = j.need_ack ? `<div class="ack"><span>일정이 바뀌었어요. 확인해주세요</span><button class="btn sm" style="background:var(--warn)" data-ack="${j.id}">확인했어요</button></div>` : '';
   const addr = j.my_status === 'approved'
@@ -207,22 +251,28 @@ function card(j){
     <div class="t1"><div><div class="when">${md(j.date)}${j.time ? ' · '+j.time : ''}${j.kind ? ' · '+esc(j.kind) : ''}</div><h4>${esc(j.title)}</h4></div>${statusPill(j)}</div>
     ${j.public_note ? `<div class="note">${esc(j.public_note)}</div>` : ''}
     <div class="row2"><span><b>${j.approved}</b> / ${j.headcount}명 확정</span><span class="crew">${j.crew.map(n=>`<span>${esc(n)}</span>`).join('')}</span></div>
-    ${ack}${addr}${money}${pay}${btn}</article>`;
+    ${ack}${addr}${money}${pay}${shootBtn}${btn}</article>`;
 }
+function evCard(e){
+  return `<article class="card evc"><div class="t1"><div><div class="when">${md(e.date)}${e.time?' · '+e.time:''} · 내 일정</div><h4>${esc(e.kind)} ${e.maemul?`<span class="pill p-mute">${esc(e.maemul)}</span>`:''} ${esc(e.title)}</h4></div><button class="btn ghost sm" data-evedit="${e.id}">${I('edit')}수정</button></div>
+    ${e.memo?`<div class="note">${esc(e.memo)}</div>`:''}<div class="row2"><span>${e.show_boss?'대표님 일정판에 보임':'나만 보기'}${e.gcal?' · 구글 캘린더':''}</span></div></article>`;
+}
+const avTag = s => { const k = D.avail[s]; return k === 'ok' ? '<span class="av ok">가능</span>' : k === 'no' ? '<span class="av no">불가</span>' : ''; };
+const dots = s => { const js = jobsOn(s), es = evsOn(s); return `<span class="dots">${js.slice(0,3).map(j=>`<i class="${j.my_status==='approved'?'mine':j.my_status==='applied'?'wait':''}"></i>`).join('')}${es.slice(0,2).map(()=>'<i class="ev"></i>').join('')}</span>`; };
 
 function weekStrip(){
   const p = parse(pick); const start = addDays(p, -p.getDay());
   let h = '<div class="week" role="group" aria-label="이번 주">';
-  for (let i=0;i<7;i++){ const d = addDays(start,i), s = ymd(d), js = jobsOn(s);
-    h += `<button data-day="${s}" class="${s===ymd(today)?'today':''}" aria-pressed="${s===pick}">${DOW[i]}<b>${d.getDate()}</b><span class="dots">${js.slice(0,3).map(j=>`<i class="${j.my_status==='approved'?'mine':j.my_status==='applied'?'wait':''}"></i>`).join('')}</span></button>`; }
+  for (let i=0;i<7;i++){ const d = addDays(start,i), s = ymd(d);
+    h += `<button data-day="${s}" class="${s===ymd(today)?'today':''}" aria-pressed="${s===pick}">${DOW[i]}<b>${d.getDate()}</b>${dots(s)}${avTag(s)}</button>`; }
   return h + '</div>';
 }
 function monthGrid(){
   const first = new Date(month), start = addDays(first, -first.getDay());
   let h = `<div class="cal"><div class="dow">${DOW.map(d=>`<span>${d}</span>`).join('')}</div><div class="grid">`;
-  for (let i=0;i<42;i++){ const d = addDays(start,i), s = ymd(d), js = jobsOn(s);
+  for (let i=0;i<42;i++){ const d = addDays(start,i), s = ymd(d);
     if (i===35 && d.getMonth()!==month.getMonth()) break;
-    h += `<button data-day="${s}" class="${d.getMonth()!==month.getMonth()?'out':''} ${s===ymd(today)?'today':''}" aria-pressed="${s===pick}"><b>${d.getDate()}</b><span class="dots">${js.slice(0,3).map(j=>`<i class="${j.my_status==='approved'?'mine':j.my_status==='applied'?'wait':''}"></i>`).join('')}</span></button>`; }
+    h += `<button data-day="${s}" class="${d.getMonth()!==month.getMonth()?'out':''} ${s===ymd(today)?'today':''}" aria-pressed="${s===pick}"><b>${d.getDate()}</b>${dots(s)}${avTag(s)}</button>`; }
   return h + '</div></div>';
 }
 
@@ -230,28 +280,50 @@ function boardView(){
   const p = parse(pick);
   const head = `<div class="bar">
      <div class="seg" role="group" aria-label="보기"><button data-view="week" aria-pressed="${view==='week'}">주간</button><button data-view="month" aria-pressed="${view==='month'}">월간</button></div>
-     <div class="seg" role="group" aria-label="범위"><button data-scope="team" aria-pressed="${scope==='team'}">팀 전체</button><button data-scope="mine" aria-pressed="${scope==='mine'}">내 일정</button></div></div>`;
+     <div class="seg" role="group" aria-label="범위"><button data-scope="team" aria-pressed="${scope==='team'}">${isRES()?'전체':'팀 전체'}</button><button data-scope="mine" aria-pressed="${scope==='mine'}">내 일정</button></div></div>`;
   const nav = view==='month'
     ? `<div class="bar"><div class="mnav"><button data-mnav="-1" aria-label="이전 달">${I('left')}</button><b>${month.getFullYear()}.${pad(month.getMonth()+1)}</b><button data-mnav="1" aria-label="다음 달">${I('right')}</button></div><button class="btn ghost sm" data-day="${ymd(today)}">오늘</button></div>`
     : `<div class="bar"><div class="mnav"><button data-wnav="-7" aria-label="이전 주">${I('left')}</button><b>${p.getMonth()+1}월 ${Math.ceil((p.getDate()+new Date(p.getFullYear(),p.getMonth(),1).getDay())/7)}주</b><button data-wnav="7" aria-label="다음 주">${I('right')}</button></div><button class="btn ghost sm" data-day="${ymd(today)}">오늘</button></div>`;
-  const list = jobsOn(pick);
-  return head + nav + (view==='month' ? monthGrid() : weekStrip()) +
-    `<div class="dayh">${p.getMonth()+1}월 ${p.getDate()}일 ${DOW[p.getDay()]}요일 · ${list.length}건</div>` +
-    (list.map(card).join('') || `<p class="empty">${scope==='mine'?'이 날 내 일정이 없어요':'이 날은 일정이 없어요'}</p>`);
+  const list = jobsOn(pick), evs = evsOn(pick);
+  const av = D.avail[pick];
+  const avBox = V2() && !isRES() && pick >= ymd(today) ? `<div class="bar" style="margin:4px 2px 0"><span style="font-size:12.5px;color:var(--sub)">이날 나는: ${av==='ok'?'<b style="color:var(--ok)">일할 수 있어요</b>':av==='no'?'<b style="color:var(--warn)">안 돼요</b>':'표시 안 함'}</span>
+      <span class="segs"><button data-av1="ok" aria-pressed="${av==='ok'}">✓ 가능</button><button data-av1="no" aria-pressed="${av==='no'}">✕ 불가</button>${av?'<button data-av1="clear">지우기</button>':''}</span></div>` : '';
+  return head + nav + (view==='month' ? monthGrid() : weekStrip()) + avBox +
+    `<div class="dayh">${p.getMonth()+1}월 ${p.getDate()}일 ${DOW[p.getDay()]}요일 · ${list.length + evs.length}건</div>` +
+    (evs.map(evCard).join('') + list.map(card).join('') || `<p class="empty">${scope==='mine'?'이 날 내 일정이 없어요':'이 날은 일정이 없어요'}${V2()?'<br><button class="btn ghost sm" style="margin-top:10px" data-plus="1">＋ 일정 · 가능일 넣기</button>':''}</p>`);
 }
 
 function mineView(){
   const up = D.jobs.filter(j => ['applied','approved'].includes(j.my_status) && j.date >= ymd(today) && j.status!=='cancelled');
-  const payBox = payData ? (() => { const tot = payData.reduce((a,x)=>a+x.amount,0);
-      return `<div class="pay"><div class="tot"><span>${month.getMonth()+1}월 정산 (마감된 현장)</span><b>${won(tot)}</b></div>${payData.length?`<ul>${payData.map(x=>`<li><span>${md(x.date)} ${esc(x.title)}</span><span>${won(x.amount)}${x.paid?' · 지급완료':''}</span></li>`).join('')}</ul>`:''}</div>`; })() : '';
-  return `<div class="bar"><h3>다가오는 내 일정</h3></div>` + (up.map(card).join('') || '<p class="empty">신청한 일정이 없어요<br>일정판에서 골라보세요</p>') +
-    `<div class="bar" style="margin-top:18px"><h3>내 정산</h3></div>` + (payBox || '<p class="empty">불러오는 중…</p>');
+  const evs = D.events.filter(e => e.date >= ymd(today));
+  let payBox = '';
+  if (payData) {
+    const items = Array.isArray(payData) ? payData : (payData.items || []);
+    const pt = Array.isArray(payData) ? 'none' : payData.pay_type;
+    const tot = items.reduce((a,x)=>a+x.amount,0);
+    const ded = pt === 'freelance33' ? Math.floor(tot*0.033/10)*10 : pt === 'daily' ? items.reduce((a,x)=>a+Math.floor(Math.max(0,x.amount-150000)*0.06*0.45*1.1/10)*10,0) : 0;
+    const ptl = {freelance33:'3.3% 공제', daily:'일용직', salary:'급여', contract:'도급', none:'공제 없음'}[pt] || '';
+    payBox = `<div class="pay"><div class="tot"><span>${month.getMonth()+1}월 정산 (마감된 현장)</span><b>${won(tot)}</b></div>
+      ${!Array.isArray(payData) && tot ? `<div class="row2" style="margin-top:4px"><span>${ptl}${ded?' · 공제 '+won(ded):''}</span><b>${pt==="salary"?"급여로 지급":"받을 돈 "+won(tot-ded)}</b></div>` : ''}
+      ${items.length?`<ul>${items.map(x=>`<li><span>${md(x.date)} ${esc(x.title)}${x.extra?` <small style="color:var(--sub)">(추가 ${won(x.extra)})</small>`:''}</span><span>${won(x.amount)}${x.paid?' · 지급완료':''}</span></li>`).join('')}</ul>`:''}
+      <p class="foot" style="text-align:left;margin-top:8px">세금 공제 방식은 대표님과 정한 대로 표시돼요.</p></div>`;
+  }
+  const ics = V2() ? `<div class="bar" style="margin-top:18px"><h3>내 구글 캘린더에 넣기</h3></div>
+    <div class="form"><div style="font-size:13.5px;line-height:1.6">'구글 캘린더에 넣기'를 켠 내 일정과 확정된 현장이 들어가요.<br>구글 캘린더 → 다른 캘린더 <b>+</b> → <b>URL로 추가</b> → 아래 주소 붙여넣기</div>
+      <div class="ics">${esc(GAS)}?ics=${esc(TOKEN)}</div><button class="btn ghost sm" data-icscopy="1">주소 복사</button>
+      <div style="font-size:12px;color:var(--sub)">구글이 몇 시간에 한 번씩 가져가서, 반영까지 하루까지 걸릴 수 있어요. 이 주소도 나만 쓰는 거예요.</div></div>` : '';
+  return `<div class="bar"><h3>다가오는 내 일정</h3>${V2()?'<button class="btn ghost sm" data-plus="1">＋ 넣기</button>':''}</div>` + (evs.map(evCard).join('') + up.map(card).join('') || '<p class="empty">다가오는 일정이 없어요</p>') +
+    `<div class="bar" style="margin-top:18px"><h3>내 정산</h3></div>` + (payBox || '<p class="empty">불러오는 중…</p>') + ics;
 }
 
 function reportView(){
   const recent = D.jobs.filter(j => j.my_status === 'approved' && j.date <= ymd(addDays(today,1)) && j.date >= ymd(addDays(today,-14)))
                        .sort((a,b)=> b.date.localeCompare(a.date));
-  return `<div class="bar"><h3>현장 보고</h3></div>
+  const shootList = V2() ? recent.filter(j => j.date >= ymd(addDays(today,-2)) && j.status !== 'cancelled') : [];
+  return (shootList.length ? `<div class="bar"><h3>현장 사진</h3></div>${shootList.map(j=>`<div class="form" style="margin-bottom:10px;gap:8px"><div><div class="when" style="font-size:12.5px;color:var(--sub)">${md(j.date)}${j.time?' · '+j.time:''}</div><b>${esc(j.title)}</b></div>
+      <div style="display:flex;gap:8px"><button class="btn" style="flex:1" data-shoot="${j.id}">${I('cam')}사진 올리기${j.photos?` (${j.photos}장)`:''}</button>${j.work_done?'<span class="pill p-ok" style="align-self:center">작업 끝</span>':''}</div></div>`).join('')}
+      <p style="font-size:12px;color:var(--sub);margin:0 4px 16px">현장 사진은 손님 링크·사진함·홍보에 바로 들어가요. 따로 보고 안 해도 돼요.</p>` : '') +
+   `<div class="bar"><h3>현장 보고</h3></div>
    <form class="form" id="repForm">
      <div class="field"><label for="r-job">어느 현장인가요?</label><select id="r-job" name="job">${recent.map(j=>`<option value="${j.id}">${md(j.date)} ${esc(j.title)}</option>`).join('')}<option value="">현장 없이 보고</option></select></div>
      <div class="field"><label>사진 (최대 6장)</label><div class="upl" id="upl">${photos.map((p,i)=>`<span class="ph" style="background-image:url(${p.url})"><button type="button" data-rmph="${i}" aria-label="사진 빼기">✕</button></span>`).join('')}${photos.length<6?`<label class="add">${I('plus')}<input type="file" id="phin" accept="image/*" multiple></label>`:''}</div></div>
@@ -262,10 +334,81 @@ function reportView(){
 
 function noticeView(){
   return `<div class="bar"><h3>공지</h3></div>` + (D.notices.map(n => `<article class="notice ${n.read?'':'new'}">
-     <small>${n.team ? esc(D.me.team_name)+' 공지' : '전체 공지'} · ${new Date(n.at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})}${n.read?'':' · <b style="color:var(--info)">새 공지</b>'}</small>
+     <small>${n.team ? (n.team==='OPS'?'청소':n.team==='RES'?'부동산':esc(D.me.team_name))+' 공지' : '전체 공지'} · ${new Date(n.at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})}${n.read?'':' · <b style="color:var(--info)">새 공지</b>'}</small>
      ${n.title?`<h4>${esc(n.title)}</h4>`:''}<p>${esc(n.body)}</p>
      ${n.important ? (n.confirmed ? '<div style="margin-top:10px"><span class="pill p-ok">확인 완료</span></div>' : `<div class="acts"><button class="btn" data-nconf="${n.id}">확인했어요</button></div>`) : ''}
    </article>`).join('') || '<p class="empty">공지가 없어요</p>');
+}
+
+function bossBanner(){
+  const b = D.boss; if (!b) return '';
+  const st = b.state || '근무중';
+  if (st === '근무중' && !b.memo) return '';
+  const icon = {'근무중':'●','외근중':'🚗','현장':'🧹','휴가중':'🌴','부재':'⏸','Busy':'⛔'}[st] || '●';
+  const until = b.until ? new Date(b.until) : null;
+  const u = until ? (until.toDateString() === new Date().toDateString() ? `~${pad(until.getHours())}:${pad(until.getMinutes())}` : `~${until.getMonth()+1}/${until.getDate()}`) : '';
+  return `<div class="boss ${st==='Busy'?'busy':st==='근무중'?'ok':''}">대표님: ${icon} ${esc(st)} ${u}${b.memo?' · '+esc(b.memo):''}</div>`;
+}
+
+/* ---------- sheets (bottom) ---------- */
+function sheet(html){ closeSheet(); const d = document.createElement('div'); d.className = 'sheetbg'; d.id = 'sheetbg'; d.innerHTML = `<div class="sheetbox" role="dialog" aria-modal="true">${html}</div>`; d.addEventListener('click', e => { if (e.target === d) closeSheet(); }); document.body.appendChild(d); }
+function closeSheet(){ const d = document.getElementById('sheetbg'); if (d) d.remove(); }
+
+function plusMenu(){
+  const todayShoot = D.jobs.find(j => j.my_status === 'approved' && j.date === ymd(today) && j.status !== 'cancelled');
+  sheet(`<h3>무엇을 넣을까요?</h3><div class="menu">
+    ${!isRES()?`<button data-paint="1">🗓<span>일할 수 있는 날 알려주기<small>가능·불가일을 한 번에 칠해요</small></span></button>`:''}
+    <button data-evnew="1">📌<span>내 일정 추가<small>${isRES()?'계약 · 잔금 · 안내 · 기타 (매물번호 연결)':'개인 일정 · 메모'}</small></span></button>
+    ${todayShoot?`<button data-shoot="${todayShoot.id}">📷<span>오늘 현장 사진 올리기<small>${esc(todayShoot.title)}</small></span></button>`:''}
+    <button data-tab="report">📝<span>현장 보고<small>한 줄 보고 · 사진</small></span></button></div>`);
+}
+
+function paintView(){
+  const p = paint; const first = new Date(p.month), start = addDays(first, -first.getDay()); const t = ymd(today);
+  let g = '';
+  for (let i=0;i<42;i++){ const d = addDays(start,i), s = ymd(d); if (i===35 && d.getMonth()!==p.month.getMonth()) break;
+    const k = p.marks[s]; g += `<button type="button" data-pd="${s}" class="${d.getMonth()!==p.month.getMonth()?'out':''} ${s<t?'past':''} ${k||''}" ${s<t?'disabled':''}>${d.getDate()}</button>`; }
+  const okN = Object.values(p.marks).filter(v=>v==='ok').length, noN = Object.values(p.marks).filter(v=>v==='no').length;
+  return `<div class="bar"><h3>일할 수 있는 날 알려주기</h3><button class="btn ghost sm" data-tab="board">닫기</button></div>
+    <p style="font-size:13px;color:var(--sub);margin:0 4px 10px">날짜를 눌러서 바꿔요 · 초록 = 가능, 빨강 = 불가, 빈칸 = 미정</p>
+    <div class="segs" style="margin-bottom:10px"><button data-pmode="ok" aria-pressed="${p.mode==='ok'}">✓ 가능으로 칠하기</button><button data-pmode="no" aria-pressed="${p.mode==='no'}">✕ 불가로 칠하기</button><button data-pmode="clear" aria-pressed="${p.mode==='clear'}">지우기</button></div>
+    <div class="bar"><div class="mnav"><button data-pmon="-1" aria-label="이전 달">${I('left')}</button><b>${p.month.getFullYear()}.${pad(p.month.getMonth()+1)}</b><button data-pmon="1" aria-label="다음 달">${I('right')}</button></div></div>
+    <div class="cal paint"><div class="dow">${DOW.map(d=>`<span>${d}</span>`).join('')}</div><div class="grid" style="gap:4px">${g}</div></div>
+    <div style="font-size:12.5px;color:var(--sub);margin:0 4px 8px">빠른 선택</div>
+    <div class="segs" style="margin-bottom:14px"><button data-pquick="wd">평일 전부 가능</button><button data-pquick="we">주말 불가</button><button data-pquick="copy">지난달과 같게</button></div>
+    <button class="btn" style="width:100%" data-psave="1">저장하기 · ${okN}일 가능 / ${noN}일 불가</button>`;
+}
+
+function evForm(){
+  const e = evEdit;
+  const kinds = isRES() ? ['계약','잔금','안내','기타'] : ['개인','기타'];
+  return `<div class="bar"><h3>${e.id?'내 일정 수정':'내 일정 추가'}</h3><button class="btn ghost sm" data-tab="board">닫기</button></div>
+   <form class="form" id="evForm">
+    <div class="field"><label>종류</label><div class="segs">${kinds.map(k=>`<button type="button" data-evk="${k}" aria-pressed="${e.kind===k}">${k}</button>`).join('')}</div></div>
+    ${isRES()?`<div class="field"><label>매물번호 (선택)</label><input name="maemul" value="${esc(e.maemul||'')}" placeholder="조-0005"></div>`:''}
+    <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>날짜</label><input type="date" name="date" value="${e.date}" required></div><div class="field" style="flex:1"><label>시간</label><input type="time" name="time" value="${e.time||''}"></div></div>
+    <div class="field"><label>캘린더에 보일 말</label><input name="title" value="${esc(e.title||'')}" placeholder="${isRES()?'광안동 원룸 계약':'병원'}" required maxlength="80"><div class="hint">손님 이름·연락처는 넣지 말아 주세요 (매물번호·동네까지만)</div></div>
+    <div class="field"><label>메모 (나만 보기)</label><input name="memo" value="${esc(e.memo||'')}" maxlength="500"></div>
+    <label class="tog">대표님 일정판에 보이기<input type="checkbox" name="show_boss" ${e.show_boss!==false?'checked':''}></label>
+    <label class="tog">내 구글 캘린더에 넣기<input type="checkbox" name="gcal" ${e.gcal?'checked':''}></label>
+    <button class="btn" type="submit">저장하기</button>
+    ${e.id?`<button class="btn ghost" type="button" data-evdel="${e.id}">이 일정 지우기</button>`:''}
+   </form>`;
+}
+
+function shootView(){
+  const j = D.jobs.find(x => x.id === shoot.job); const lab = {before:'작업 전', during:'작업 중', after:'작업 후'};
+  return `<div class="bar"><h3>${I('cam')} 현장 사진</h3><button class="btn ghost sm" data-tab="board">닫기</button></div>
+    <div class="form">
+      <div><div style="font-size:12.5px;color:var(--sub)">${md(j.date)}${j.time?' · '+j.time:''}</div><b style="font-size:16px">${esc(j.title)}</b></div>
+      <div class="segs">${Object.entries(lab).map(([k,l])=>`<button type="button" data-stage="${k}" aria-pressed="${shoot.stage===k}">${l}</button>`).join('')}</div>
+      <label class="btn" style="width:100%;cursor:pointer">${I('cam')}사진 찍어 올리기<input type="file" id="shootin" accept="image/*" multiple style="display:none"></label>
+      <div style="font-size:12px;color:var(--sub);text-align:center;margin-top:-6px">여러 장 한 번에 · 자동으로 용량 줄여서 올라가요</div>
+      <div class="field"><label>한 줄 메모 (선택 · 손님 화면에 보여요)</label><input id="shootmemo" value="${esc(shoot.memo||'')}" placeholder="예) 줄눈 곰팡이 집중 작업 중이에요" maxlength="200"></div>
+      ${shoot.busy?`<div class="okline">올리는 중… ${shoot.busy}</div>`:''}
+      ${shoot.done.length?`<div class="okline">✓ ${shoot.done.length}장 올렸어요 · 손님 페이지에 바로 보여요</div><div class="phg">${shoot.done.slice(-9).map(x=>`<figure><img src="${x.url}" alt=""><figcaption>${lab[x.stage]}</figcaption></figure>`).join('')}</div>`:''}
+      ${j.work_done?'<div class="okline">작업 끝으로 표시됐어요 · 손님 화면이 완료 리포트로 바뀌었어요</div>':`<button class="btn" style="background:var(--ok)" data-workdone="${j.id}">작업 끝 (후 사진 다 올렸어요)</button>`}
+    </div>`;
 }
 
 function render(){
@@ -274,14 +417,20 @@ function render(){
   const open = D.jobs.filter(j=>!j.my_status && j.status==='open' && j.approved<j.headcount && j.date>=ymd(today)).length;
   const unread = D.notices.filter(n=>!n.read || (n.important && !n.confirmed)).length;
   const acks = D.jobs.filter(j=>j.need_ack).length;
-  app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${esc(C.BRAND)} 일정판</div>
+  const mm = isRES() && /^[a-f0-9]{20}$/.test(TOKEN) ? `<a class="btn ghost sm" href="../maemul/?k=${encodeURIComponent(TOKEN)}" style="margin-left:auto">매물노트로</a>` : '';
+  const evN = D.events.filter(e=>e.date>=ymd(today)).length;
+  const main = tab==='board'?boardView():tab==='mine'?mineView():tab==='report'?reportView():tab==='paint'?paintView():tab==='ev'?evForm():tab==='shoot'?shootView():noticeView();
+  app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${esc(C.BRAND)} 일정판${mm}</div>
      <div class="hi"><b>${esc(D.me.name)}님, 안녕하세요</b><small>${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}</small></div>
-     <div class="summary"><div><b>${ok}</b><span>확정된 일정</span></div><div><b style="color:var(--warn)">${open}</b><span>신청 가능</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div></header>
-   <main class="body">${tab==='board'?boardView():tab==='mine'?mineView():tab==='report'?reportView():noticeView()}
+     ${bossBanner()}
+     <div class="summary">${isRES()?`<div><b>${evN}</b><span>다가오는 내 일정</span></div>`:`<div><b>${ok}</b><span>확정된 일정</span></div>`}<div><b style="color:var(--warn)">${isRES()?ok:open}</b><span>${isRES()?'확정 현장':'신청 가능'}</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div></header>
+   <main class="body">${main}
    <p class="foot">${esc(C.BRAND)} · 이 링크는 ${esc(D.me.name)}님 전용이에요. 다른 사람과 공유하지 마세요.</p></main>`;
   const tb = document.getElementById('tabbar'); tb.classList.remove('hidden');
-  tb.querySelector('nav').innerHTML = [['board','cal','일정판',acks],['mine','check','내 일정',0],['report','cam','보고',0],['notice','bell','공지',unread]]
-    .map(([k,i,l,b])=>`<button data-tab="${k}" aria-pressed="${tab===k}">${I(i)}${l}${b?`<span class="badge">${b}</span>`:''}</button>`).join('');
+  const items = [['board','cal','일정판',acks],['mine','check','내 일정',0], V2() ? ['plus'] : null, ['report','cam','사진·보고',0],['notice','bell','공지',unread]].filter(Boolean);
+  tb.querySelector('nav').style.gridTemplateColumns = `repeat(${items.length},1fr)`;
+  tb.querySelector('nav').innerHTML = items.map(([k,i,l,b]) => k==='plus' ? `<button class="plus" data-plus="1" aria-label="넣기">${I('plus')}</button>`
+    : `<button data-tab="${k}" aria-pressed="${tab===k}">${I(i)}${l}${b?`<span class="badge">${b}</span>`:''}</button>`).join('');
 }
 
 /* ---------- events ---------- */
@@ -289,12 +438,24 @@ async function act(fn, args, msg){
   try { await rpc(fn, args); if (msg) toast(msg); await load(); render(); }
   catch(e){ toast(errMsg(e)); }
 }
+async function openPaint(){
+  const m = new Date(month); paint = {mode:'ok', month:m, marks:Object.assign({}, D.avail), orig:Object.assign({}, D.avail)};
+  closeSheet(); tab = 'paint'; render(); window.scrollTo(0,0);
+}
+async function paintMonth(n){
+  paint.month = new Date(paint.month.getFullYear(), paint.month.getMonth()+n, 1);
+  const f = ymd(addDays(paint.month,-7)), t = ymd(addDays(new Date(paint.month.getFullYear(), paint.month.getMonth()+1, 0), 7));
+  try { const b = await rpc('staff_board', {p_token:TOKEN, p_from:f, p_to:t}); Object.entries(b.avail||{}).forEach(([k,v]) => { if (!(k in paint.marks)) { paint.marks[k] = v; paint.orig[k] = v; } }); } catch(_){}
+  render();
+}
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b || !D) return; const d = b.dataset;
-  if (d.tab){ tab = d.tab; window.scrollTo(0,0);
+  if (d.tab){ closeSheet(); tab = d.tab; window.scrollTo(0,0);
     if (tab==='notice'){ const ids = D.notices.filter(n=>!n.read).map(n=>n.id); render(); if (ids.length){ try{ await rpc('staff_notice_read',{p_token:TOKEN,p_ids:ids}); D.notices.forEach(n=>n.read=true);}catch(_){} } return; }
     if (tab==='mine'){ render(); try{ payData = await rpc('staff_pay',{p_token:TOKEN,p_month:ymd(month)}); }catch(_){ payData=[]; } }
+    if (tab==='board' && (paint || shoot)){ paint = null; shoot = null; try{ await load(); }catch(_){} }
     render(); return; }
+  if (d.plus){ plusMenu(); return; }
   if (d.view){ view = d.view; render(); return; }
   if (d.scope){ scope = d.scope; render(); return; }
   if (d.day){ const old = month; pick = d.day; const p = parse(pick); month = new Date(p.getFullYear(), p.getMonth(), 1);
@@ -308,11 +469,56 @@ document.addEventListener('click', async e => {
   if (d.collect){ if (!confirm(`${d.how}으로 잔금을 받으셨나요?`)) return; return act('staff_collect',{p_token:TOKEN,p_job:+d.collect,p_how:d.how},'수금 완료로 표시했어요'); }
   if (d.nconf){ return act('staff_notice_confirm',{p_token:TOKEN,p_id:+d.nconf},'확인했어요'); }
   if (d.rmph){ URL.revokeObjectURL(photos[+d.rmph].url); photos.splice(+d.rmph,1); keepText(()=>render()); return; }
+  // 하루 가능·불가 (일정판에서 바로)
+  if (d.av1){ return act('staff_set_avail',{p_token:TOKEN,p_days:[pick],p_kind:d.av1,p_memo:null}, d.av1==='ok'?'이날 가능으로 표시했어요':d.av1==='no'?'이날 불가로 표시했어요':'지웠어요'); }
+  // 칠하기
+  if (d.paint){ return openPaint(); }
+  if (d.pmode){ paint.mode = d.pmode; render(); return; }
+  if (d.pmon){ return paintMonth(+d.pmon); }
+  if (d.pd){ if (paint.mode === 'clear') delete paint.marks[d.pd]; else paint.marks[d.pd] = paint.marks[d.pd] === paint.mode ? undefined : paint.mode; if (!paint.marks[d.pd]) delete paint.marks[d.pd]; render(); return; }
+  if (d.pquick){ const m = paint.month, t = ymd(today);
+    for (let x = new Date(m); x.getMonth() === m.getMonth(); x = addDays(x,1)) { const s = ymd(x); if (s < t) continue; const w = x.getDay();
+      if (d.pquick === 'wd' && w > 0 && w < 6) paint.marks[s] = 'ok';
+      if (d.pquick === 'we' && (w === 0 || w === 6)) paint.marks[s] = 'no'; }
+    if (d.pquick === 'copy') { const pm = new Date(m.getFullYear(), m.getMonth()-1, 1); Object.entries(paint.marks).forEach(([k,v]) => { const kd = parse(k); if (kd.getMonth() === pm.getMonth() && kd.getFullYear() === pm.getFullYear()) { const nd = new Date(m.getFullYear(), m.getMonth(), kd.getDate()); if (nd.getMonth() === m.getMonth() && ymd(nd) >= t) paint.marks[ymd(nd)] = v; } }); }
+    render(); return; }
+  if (d.psave){ b.disabled = true; const t = ymd(today);
+    const all = new Set([...Object.keys(paint.marks), ...Object.keys(paint.orig)].filter(s => s >= t));
+    const ok = [], no = [], clr = [];
+    all.forEach(s => { const n = paint.marks[s], o = paint.orig[s]; if (n === o) return; if (n === 'ok') ok.push(s); else if (n === 'no') no.push(s); else clr.push(s); });
+    try { if (ok.length) await rpc('staff_set_avail',{p_token:TOKEN,p_days:ok,p_kind:'ok',p_memo:null}); if (no.length) await rpc('staff_set_avail',{p_token:TOKEN,p_days:no,p_kind:'no',p_memo:null}); if (clr.length) await rpc('staff_set_avail',{p_token:TOKEN,p_days:clr,p_kind:'clear',p_memo:null});
+      toast('저장했어요 · 대표님이 인력 배정할 때 봐요'); paint = null; tab = 'board'; await load(); render(); } catch(err){ toast(errMsg(err)); b.disabled = false; }
+    return; }
+  // 개인 일정
+  if (d.evnew){ closeSheet(); evEdit = {date: pick < ymd(today) ? ymd(today) : pick, kind: isRES() ? '계약' : '개인', show_boss: isRES(), gcal: false}; tab = 'ev'; render(); window.scrollTo(0,0); return; }
+  if (d.evedit){ evEdit = Object.assign({}, D.events.find(x => x.id == d.evedit)); tab = 'ev'; render(); window.scrollTo(0,0); return; }
+  if (d.evk){ const f = document.getElementById('evForm'); const keep = Object.fromEntries(new FormData(f)); evEdit = Object.assign(evEdit, {kind:d.evk, date:keep.date, time:keep.time, title:keep.title, memo:keep.memo, maemul:keep.maemul, show_boss:!!keep.show_boss, gcal:!!keep.gcal}); render(); return; }
+  if (d.evdel){ if (!confirm('이 일정을 지울까요?')) return; try { await rpc('staff_event_delete',{p_token:TOKEN,p_id:+d.evdel}); toast('지웠어요'); evEdit = null; tab = 'board'; await load(); render(); } catch(err){ toast(errMsg(err)); } return; }
+  if (d.icscopy){ try { await navigator.clipboard.writeText(`${GAS}?ics=${TOKEN}`); toast('주소를 복사했어요'); } catch(_) { prompt('복사해서 쓰세요', `${GAS}?ics=${TOKEN}`); } return; }
+  // 현장 사진
+  if (d.shoot){ closeSheet(); shoot = {job:+d.shoot, stage: (D.jobs.find(x=>x.id==d.shoot)||{}).photos ? 'during' : 'before', done:[], memo:''}; tab = 'shoot'; render(); window.scrollTo(0,0); return; }
+  if (d.stage){ shoot.memo = (document.getElementById('shootmemo')||{}).value || ''; shoot.stage = d.stage; render(); return; }
+  if (d.workdone){ if (!confirm('작업이 끝났나요? 손님 화면이 완료 리포트(계좌 안내)로 바뀌어요.')) return;
+    try { await rpc('staff_work_done',{p_token:TOKEN,p_job:+d.workdone}); const j = D.jobs.find(x=>x.id==d.workdone); if (j) j.work_done = new Date().toISOString(); toast('작업 끝! 고생 많으셨어요 🙏'); render(); } catch(err){ toast(errMsg(err)); } return; }
 });
 function keepText(fn){ const t = document.getElementById('r-text'), j = document.getElementById('r-job'); const v = t && t.value, jv = j && j.value; fn(); const t2 = document.getElementById('r-text'), j2 = document.getElementById('r-job'); if (t2 && v) t2.value = v; if (j2 && jv != null) j2.value = jv; }
-document.addEventListener('change', e => {
+document.addEventListener('change', async e => {
   if (e.target.id === 'phin'){ const files = [...e.target.files].slice(0, 6 - photos.length);
     files.forEach(f => photos.push({file:f, url:URL.createObjectURL(f)})); keepText(()=>render()); }
+  if (e.target.id === 'shootin'){ const files = [...e.target.files]; if (!files.length) return;
+    shoot.memo = (document.getElementById('shootmemo')||{}).value || '';
+    try {
+      const code = DEMO ? 'DEMO' : await rpc('staff_live_target', {p_token:TOKEN, p_job:shoot.job});
+      const paths = [];
+      for (let i = 0; i < files.length; i++) { shoot.busy = `${i+1}/${files.length}`; render();
+        const blob = await shrink(files[i]); const path = `${code}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+        if (!DEMO) { const {error} = await sb.storage.from('live').upload(path, blob, {contentType:'image/jpeg'}); if (error) throw error; }
+        paths.push(path); shoot.done.push({url: DEMO ? URL.createObjectURL(files[i]) : photoUrl(path), stage: shoot.stage}); }
+      await rpc('staff_job_photo', {p_token:TOKEN, p_job:shoot.job, p_paths:paths, p_stage:shoot.stage, p_memo:shoot.memo || null});
+      const j = D.jobs.find(x=>x.id===shoot.job); if (j) j.photos = (j.photos||0) + paths.length;
+      shoot.busy = null; shoot.memo = ''; toast(`${paths.length}장 올렸어요`); render();
+    } catch(err){ shoot.busy = null; toast(errMsg(err)); render(); }
+  }
 });
 async function shrink(file){
   try{
@@ -324,6 +530,10 @@ async function shrink(file){
   }catch(_){ return file; }
 }
 document.addEventListener('submit', async e => {
+  if (e.target.id === 'evForm'){ e.preventDefault(); const v = Object.fromEntries(new FormData(e.target));
+    try { await rpc('staff_event_save', {p_token:TOKEN, p_id: evEdit.id || null, p_date:v.date, p_time:v.time || null, p_kind:evEdit.kind, p_maemul:v.maemul || null, p_title:v.title, p_memo:v.memo || null, p_show_boss:!!v.show_boss, p_gcal:!!v.gcal});
+      toast(v.show_boss ? '저장했어요 · 대표님 일정판에도 보여요' : '저장했어요'); pick = v.date; evEdit = null; tab = 'board'; await load(); render(); } catch(err){ toast(errMsg(err)); }
+    return; }
   if (e.target.id !== 'repForm') return; e.preventDefault();
   const btn = document.getElementById('repBtn'); btn.disabled = true; btn.textContent = '보내는 중…';
   const job = document.getElementById('r-job').value || null;
@@ -345,10 +555,9 @@ document.addEventListener('submit', async e => {
 /* ---------- start ---------- */
 (async () => {
   if (!TOKEN && !DEMO){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>${esc(C.BRAND)} 일정판</h2><p>개인 링크로 들어와 주세요.<br>링크는 '${esc(C.BRAND)}' 카카오톡 채널로 받을 수 있어요.</p></div>`; return; }
-  try { await load(); render(); }
+  try { await load(); if (isRES()) scope = 'mine'; render(); }
   catch(e){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>링크를 확인해주세요</h2><p>${esc(errMsg(e))}</p></div>`; }
-  // 다시 화면에 돌아오면 새로고침
-  document.addEventListener('visibilitychange', async () => { if (document.visibilityState==='visible' && D){ try{ await load(); render(); }catch(_){} } });
+  document.addEventListener('visibilitychange', async () => { if (document.visibilityState==='visible' && D && !['paint','ev','shoot'].includes(tab)){ try{ await load(); render(); }catch(_){} } });
 })();
 })();
 </script>

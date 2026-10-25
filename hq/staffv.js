@@ -1,0 +1,71 @@
+/* 직원 */
+(function(H){
+const {esc, sb} = H;
+const M2S = {'재직':'active','휴직':'leave','퇴사':'left'}, S2M = {active:'재직', leave:'휴직', left:'퇴사'};
+H.view('staff', {label:'직원',
+  async load(){ H.S.staff = await H.q(sb.from('staff').select('*').order('created_at')); if (H.S.owner) H.S.payRules = await H.q(sb.from('pay_rules').select('*')); },
+  render(){
+    const S = H.S; const mStaff = (S.mm && S.mm.admin && S.mm.admin.staff) || [];
+    const rate = id => { const r = (S.payRules||[]).find(p=>p.staff_id===id); return r && r.share_rate != null ? r.share_rate : ''; };
+    const b = S.boss || {state:'근무중'};
+    const row = s => { const m = mStaff.find(x=>x.name===s.name); const mis = s.team==='RES' && m && M2S[m.status||'재직'] !== s.status;
+      return `<tr><td><b>${esc(s.name)}</b> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}</td>
+        <td><span class="tag" style="background:${H.T(s.team).color}">${s.team}</span></td>
+        <td><select class="in sm" style="width:auto" data-c="stStatus" data-s="${s.id}">${Object.entries(H.ST).map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select>
+          ${mis?`<div class="note" style="color:var(--warn)">매물노트는 '${esc(m.status)}' <button class="btn sm ghost" style="padding:0 6px" data-a="stSync" data-s="${s.id}">맞추기</button></div>`:''}</td>
+        <td class="note">${H.PT[s.pay_type]||''}${S.owner&&s.team==='RES'?` · 배분 ${rate(s.id)!==''?rate(s.id)+'%':'미정'}`:''}</td>
+        <td class="note">${esc(s.phone||'')}</td>
+        <td class="note">${s.last_seen_at?H.ago(s.last_seen_at):'-'}</td>
+        <td style="white-space:nowrap">${s.status!=='left'?`<button class="btn sm ghost" data-a="stLink" data-s="${s.id}">링크 복사</button> `:''}<button class="btn sm ghost" data-a="stEdit" data-s="${s.id}">수정</button></td></tr>`; };
+    const groups = H.GROUPS.map(g => { const ms = S.staff.filter(s => g.teams.includes(s.team)); if (!ms.length) return '';
+      const sub = {OPS:'직영', SPT:'지원', PRT:'도급'};
+      return `<tr class="grp"><td colspan="7">${g.label} · ${ms.filter(s=>s.status!=='left').length}명</td></tr>` + g.teams.map(t => { const ts = ms.filter(s=>s.team===t).sort((a,b)=>(a.status==='left')-(b.status==='left')); if (!ts.length) return '';
+        return (g.teams.length > 1 ? `<tr><td colspan="7" class="note" style="padding:6px 8px 2px;font-weight:700">${sub[t]||t}</td></tr>` : '') + ts.map(row).join(''); }).join(''); }).join('');
+    return `<section class="box"><div class="bh"><h3>직원 전체</h3><div class="acts" style="margin:0"><button class="btn sm" data-a="stNew">+ 직원 추가</button><button class="btn sm ghost" data-a="stCopyAll">전체 링크 목록 복사</button></div></div>
+      <div class="tbl"><table><thead><tr><th>이름</th><th>팀</th><th>상태</th><th>지급 방식</th><th>연락처</th><th>마지막 접속</th><th></th></tr></thead><tbody>
+      <tr class="boss"><td><b>권성환</b> <span class="note">대표</span></td><td><span class="tag" style="background:var(--navy)">HQ</span></td><td>${H.bossChip()}</td><td colspan="4" class="note">대표 상태는 직원 화면 맨 위에 보여요</td></tr>
+      ${groups}</tbody></table></div>
+      <p class="note">휴직은 링크가 그대로 열려요. 퇴사로 바꾸면 일정판 링크가 바로 막혀요${S.owner?' · 부동산 직원은 매물노트 상태도 같이 바뀌어요':''}. 개인 링크는 카톡 1:1로만 보내 주세요.</p></section>`;
+  }
+});
+H.CHANGE.stStatus = async el => { const s = H.S.staff.find(x=>x.id===el.dataset.s); const v = el.value;
+  if (v === 'left' && !confirm(`${s.name}님을 퇴사 처리할까요? 개인 링크가 바로 막혀요.`)) { el.value = s.status; return; }
+  await H.q(sb.from('staff').update({status: v}).eq('id', s.id)); s.status = v;
+  if (s.team === 'RES' && H.S.owner && H.S.mcode) { try { H.S.mm = await H.maemul('setStaff', [{name: s.name, status: S2M[v]}]); H.toast('일정판·매물노트 상태를 같이 바꿨어요'); } catch(e){ H.toast('일정판은 바꿨어요 · 매물노트는 못 바꿨어요: ' + e.message); } }
+  else H.toast('상태를 바꿨어요');
+  H.render(); };
+H.ACT.stSync = async el => { const s = H.S.staff.find(x=>x.id===el.dataset.s); H.S.mm = await H.maemul('setStaff', [{name: s.name, status: S2M[s.status]}]); H.toast('매물노트를 일정판 상태로 맞췄어요'); H.render(); };
+const linkOf = s => `${location.origin}/clean/?k=${s.token}`;
+const linkMsg = s => `[${H.C.BRAND}] ${s.name}님 전용 일정판 링크예요.\n${linkOf(s)}\n\n· 일정 확인·신청, 일할 수 있는 날, 현장 사진, 공지를 여기서 해요.\n· 본인만 쓰는 링크라 다른 분께 보내지 말아주세요.\n· 휴대폰 홈 화면에 추가해두시면 편해요.`;
+const resMsg = s => `[${H.C.BRAND}] ${s.name}님 매물노트 링크예요.\n${location.origin}/maemul/?k=${s.maemul_code}\n\n· 매물노트 위쪽 [일정] 버튼으로 일정판(계약·잔금·안내 일정)도 같이 써요.\n· 본인만 쓰는 링크라 다른 분께 보내지 말아주세요.`;
+H.ACT.stLink = el => { const s = H.S.staff.find(x=>x.id===el.dataset.s);
+  if (s.team === 'RES' && s.maemul_code) H.copy(resMsg(s), `${s.name}님 매물노트 링크 안내문 복사 · 카톡 1:1에 붙여넣으세요`);
+  else H.copy(linkMsg(s), `${s.name}님 링크 안내문 복사 · 카톡 1:1에 붙여넣으세요`); };
+H.ACT.stCopyAll = () => H.copy(H.S.staff.filter(s=>s.status!=='left').map(s=>`${s.name}: ${s.team==='RES'&&s.maemul_code?location.origin+'/maemul/?k='+s.maemul_code:linkOf(s)}`).join('\n'), '전체 링크 목록 복사했어요 (대표님 보관용)');
+function staffSheet(s){
+  const S = H.S; s = s || {team:'OPS', status:'active', pay_type:'none', can_collect:false};
+  H.open(`<form data-f="staff"><h3>${s.id?'직원 수정':'직원 추가'}</h3><div class="fg">
+    <div class="field"><label>이름</label><input name="name" value="${esc(s.name||'')}" required></div>
+    <div class="field"><label>팀</label><select name="team">${S.teams.filter(t=>t.code!=='HQS').map(t=>`<option value="${t.code}" ${s.team===t.code?'selected':''}>${t.code} · ${esc(t.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>직책</label><input name="role" value="${esc(s.role||'')}"></div>
+    <div class="field"><label>연락처</label><input name="phone" value="${esc(s.phone||'')}"></div>
+    <div class="field full"><label>파트너 지역 · 분야 (도급)</label><input name="partner_area" value="${esc(s.partner_area||'')}"></div>
+    <div class="field"><label>지급 방식</label><select name="pay_type">${Object.entries(H.PT).map(([v,l])=>`<option value="${v}" ${s.pay_type===v?'selected':''}>${l}</option>`).join('')}</select><div class="hint">세금 방식은 세무사 확인 후 정해 주세요</div></div>
+    <div class="field"><label>상태</label><select name="status">${[['active','근무'],['leave','휴직 (링크 유지)'],['left','퇴사 (링크 막힘)']].map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="field"><label>입사 · 계약일</label><input type="date" name="joined_on" value="${s.joined_on||''}"></div>
+    <div class="field"><label>&nbsp;</label><label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink)"><input type="checkbox" name="can_collect" ${s.can_collect?'checked':''} style="width:auto">수금 담당 가능</label></div>
+    ${!s.id && S.owner && S.mcode ? `<div class="field full"><label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink)"><input type="checkbox" name="mm" style="width:auto">부동산 직원이면 매물노트 파일·링크도 같이 만들기</label></div>` : ''}
+  </div>${H.sacts('저장', s.id?`<button type="button" class="btn ghost" data-a="stToken" data-s="${s.id}" style="flex:0 0 auto">링크 새로 발급</button>`:'')}<input type="hidden" name="id" value="${s.id||''}"></form>`);
+}
+H.ACT.stNew = () => staffSheet();
+H.ACT.stEdit = el => staffSheet(H.S.staff.find(x=>x.id===el.dataset.s));
+H.ACT.stToken = async el => { if (!confirm('새 링크를 만들면 예전 링크는 바로 막혀요. 계속할까요?')) return;
+  const tok = [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');
+  await H.q(sb.from('staff').update({token: tok}).eq('id', el.dataset.s)); H.close(); H.toast('새 링크 발급 · [링크 복사]로 다시 보내주세요'); H.refresh(); };
+H.FORM.staff = async v => {
+  const row = {name:v.get('name').trim(), team:v.get('team'), role:H.nn(v.get('role')), phone:H.nn(v.get('phone')), partner_area:H.nn(v.get('partner_area')), pay_type:v.get('pay_type'), status:v.get('status'), joined_on:H.nn(v.get('joined_on')), can_collect:v.get('can_collect')==='on'};
+  const id = v.get('id'); await H.q(id ? sb.from('staff').update(row).eq('id', id) : sb.from('staff').insert(row));
+  if (!id && v.get('mm') === 'on') { try { H.S.mm = await H.maemul('addStaff', [{name: row.name, role: row.role || '사원'}]); H.S.staff = await H.q(sb.from('staff').select('*').order('created_at')); await H.syncMaemulCodes(); H.toast('매물노트 파일·링크도 만들었어요'); } catch(e){ H.toast('일정판엔 추가했어요 · 매물노트는 못 만들었어요: ' + e.message); } }
+  else H.toast('저장했어요');
+  H.close(); H.refresh(); };
+})(window.HQ);

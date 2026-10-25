@@ -157,7 +157,9 @@ button.kpi:hover{border-color:var(--accent-2)}
 .card-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--sunk);color:var(--ink-2);white-space:nowrap}
 .t-월세{background:var(--wolse-soft);color:var(--wolse)}.t-전세{background:var(--jeonse-soft);color:var(--jeonse)}.t-매매{background:var(--maemae-soft);color:var(--maemae)}.t-단기{background:var(--dangi-soft);color:var(--dangi)}
-.s-진행{background:var(--ok-soft);color:var(--ok)}.s-보류{background:var(--warn-soft);color:var(--warn)}.s-계약완료{background:var(--sunk);color:var(--ink-3)}
+.s-진행{background:var(--ok-soft);color:var(--ok)}.s-휴직{background:#EDE9FE;color:#7C3AED}
+.bossbar{display:flex;gap:8px;align-items:center;border-radius:12px;padding:9px 13px;font-size:13.5px;margin:0 0 14px;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA}.bossbar.busy{background:#FEF2F2;color:#991B1B;border-color:#FECACA}
+.schedbtn{display:inline-flex;align-items:center;gap:6px}.s-보류{background:var(--warn-soft);color:var(--warn)}.s-계약완료{background:var(--sunk);color:var(--ink-3)}
 .card .id{margin-left:auto;font-size:11.5px;color:var(--ink-3)}
 .price{font-size:21px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
 .price small{font-size:12px;color:var(--ink-3);font-family:var(--f-body);font-weight:500;margin-left:4px}
@@ -408,6 +410,15 @@ function allRows(){
   return {mine,all:[...others,...mine.map(r=>{const o={...r};F.slice(20,26).forEach(k=>delete o[k]);return o})]};
 }
 
+// 대표 상태 (일정판 서버에서 읽기 전용)
+const SB_URL='https://ldvknvmsnpbporxhnsli.supabase.co', SB_KEY='sb_publishable_7MeTgyPzwzK47RKG-mUapQ_K5ngrTw5';
+function bossBar(){ const b=S.boss; if(!b||(b.state==='근무중'&&!b.memo)) return '';
+  const icon={'근무중':'●','외근중':'🚗','현장':'🧹','휴가중':'🌴','부재':'⏸','Busy':'⛔'}[b.state]||'●';
+  let u=''; if(b.until){const d=new Date(b.until); u=d.toDateString()===new Date().toDateString()?` ~${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:` ~${d.getMonth()+1}/${d.getDate()}`;}
+  return `<div class="bossbar ${b.state==='Busy'?'busy':''}">대표님: ${icon} ${esc(b.state)}${u}${b.memo?' · '+esc(b.memo):''}</div>`; }
+async function loadBoss(){ try{ const r=await fetch(SB_URL+'/rest/v1/rpc/boss_status',{method:'POST',headers:{apikey:SB_KEY,'content-type':'application/json'},body:'{}'}); if(r.ok){ const b=await r.json(); const ch=JSON.stringify(b)!==JSON.stringify(S.boss)||!S.v2; S.boss=b; S.v2=true; if(ch&&S.data) render(); } }catch(e){} }
+setTimeout(loadBoss, 600); setInterval(()=>{ if(document.visibilityState==='visible') loadBoss(); }, 300000);
+
 const root=document.getElementById('root');
 function render(){
   if(!S.data) return;
@@ -423,9 +434,11 @@ function render(){
       <div class="brand"><div class="mark">R</div><div><b>RITZ 매물노트</b><small>REAL ESTATE</small></div></div>
       ${navs.map(([v,l,i])=>`<button class="nav" data-go="${v}" aria-current="${S.view===v}">${ic(i)}${l}${v==='mine'?`<span class="cnt num">${mine.length}</span>`:v==='find'?`<span class="cnt num">${live.length}</span>`:''}</button>`).join('')}
       <button class="nav add" data-new>${ic('plus')}매물 등록</button>
+      ${KEY&&!S.demo&&S.v2?`<a class="nav" href="../clean/?k=${encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정 (계약·잔금·안내)</a>`:''}
       <div class="who"><div class="avatar">${ini(S.data.me.name)}</div><div><b>${esc(S.data.me.name)} ${esc(S.data.me.role)}</b><small>리츠부동산</small></div></div>
     </aside>
     <main><div class="glow" aria-hidden="true"></div><div class="wrap">
+      ${bossBar()}
       ${S.demo?`<div class="demo">${ic('alert')}지금 보이는 매물은 화면 미리보기용 예시예요. 실제 프로그램에서는 각자 시트의 매물이 나옵니다.</div>`:''}
       ${S.view==='home'?viewHome(all,live,mine,myLive,stale):S.view==='find'?viewFind(live):viewMine(mine)}
     </div></main>
@@ -456,7 +469,7 @@ function viewHome(all,live,mine,myLive,stale){
   const onAll=live.filter(r=>r.status==='진행');
   return `
   <div class="top"><div><div class="eyebrow">${today().replace(/-/g,'. ')}</div><h1>${esc(S.data.me.name)} ${esc(S.data.me.role)}님, ${hi}</h1></div>
-  <button class="btn primary" data-new>${ic('plus')}매물 등록</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">${KEY&&!S.demo&&S.v2?`<a class="btn schedbtn" href="../clean/?k=${encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정</a>`:''}<button class="btn primary" data-new>${ic('plus')}매물 등록</button></div></div>
   <div class="kpis">
     <button class="kpi hero" data-go="find"><span class="l">전체 진행 매물</span><span class="v num">${onAll.length}<small>건 · ${S.data.agents.length}명 공유</small></span>
       <div class="track">${DEALS.map(dl=>{const n=onAll.filter(r=>r.deal===dl).length;return n?`<i style="width:${n/Math.max(1,onAll.length)*100}%;background:var(--${DK[dl]})"></i>`:''}).join('')}</div>
@@ -509,7 +522,7 @@ function viewAdmin(all){
   <section class="panel"><div class="panel-h"><h2>직원 관리</h2><a class="link" href="https:\/\/docs.google.com\/spreadsheets\/d\/1OOqyUVnKNEM2d53uLoj_LU0BUNi33rUluCTfIsP-iY4" target="_blank" rel="noopener">기록 시트 열기</a></div>
     <div class="tbl"><table><thead><tr><th>직원</th><th>상태</th><th>진행</th><th>보류</th><th>완료</th><th>이번 달 등록</th><th>30일 미확인</th><th>마지막 등록</th><th>자동 채우기</th><th>개인 링크</th></tr></thead><tbody>
     ${(A.staff||S.data.agents.map(a=>({...a,status:acc[a.name]||'재직'}))).map(a=>{const rs=all.filter(r=>r.agent===a.name);const last=rs.map(r=>r.regDate).filter(Boolean).sort().pop();const sl=rs.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30).length;const boss=a.role==='대표';
-      return `<tr class="${a.status==='퇴사'?'left':''}"><td><b>${esc(a.name)}</b> <span class="muted">${esc(a.role)}</span>${a.status==='휴직'?' <span class="tag s-보류">휴직</span>':''}</td><td>${boss?'대표':`<select data-st="${esc(a.name)}" aria-label="${esc(a.name)} 상태">${['재직','휴직','퇴사'].map(x=>`<option ${(a.status||'재직')===x?'selected':''}>${x}</option>`).join('')}</select>`}</td><td class="num">${rs.filter(r=>r.status==='진행').length}</td><td class="num">${rs.filter(r=>r.status==='보류').length}</td><td class="num">${rs.filter(r=>r.status==='계약완료').length}</td><td class="num">${rs.filter(r=>(r.regDate||'').startsWith(ym)).length}</td><td class="num" style="${sl?'color:var(--bad)':''}">${sl}</td><td class="num">${last?short(last):'-'}</td><td class="num">${(ai.byName||{})[a.name]||0}</td><td>${a.code&&a.status!=='퇴사'?`<button class="btn sm" data-copy="${esc(a.code)}" data-nm="${esc(a.name)}">링크 복사</button>${boss?'':` <button class="btn sm" data-reset="${esc(a.name)}">새 링크</button>`}`:'-'}</td></tr>`}).join('')}
+      return `<tr class="${a.status==='퇴사'?'left':''}"><td><b>${esc(a.name)}</b> <span class="muted">${esc(a.role)}</span>${a.status==='휴직'?' <span class="tag s-휴직">휴직</span>':''}</td><td>${boss?'대표':`<select data-st="${esc(a.name)}" aria-label="${esc(a.name)} 상태">${['재직','휴직','퇴사'].map(x=>`<option ${(a.status||'재직')===x?'selected':''}>${x}</option>`).join('')}</select>`}</td><td class="num">${rs.filter(r=>r.status==='진행').length}</td><td class="num">${rs.filter(r=>r.status==='보류').length}</td><td class="num">${rs.filter(r=>r.status==='계약완료').length}</td><td class="num">${rs.filter(r=>(r.regDate||'').startsWith(ym)).length}</td><td class="num" style="${sl?'color:var(--bad)':''}">${sl}</td><td class="num">${last?short(last):'-'}</td><td class="num">${(ai.byName||{})[a.name]||0}</td><td>${a.code&&a.status!=='퇴사'?`<button class="btn sm" data-copy="${esc(a.code)}" data-nm="${esc(a.name)}">링크 복사</button>${boss?'':` <button class="btn sm" data-reset="${esc(a.name)}">새 링크</button>`}`:'-'}</td></tr>`}).join('')}
     </tbody></table></div>
     <div class="addst"><b>+ 직원 추가</b><input id="ns-name" placeholder="이름" autocomplete="off"><select id="ns-role">${['소장','실장','팀장','과장','대리','사원','중개보조원'].map(x=>`<option>${x}</option>`).join('')}</select><button class="btn primary sm" id="ns-go">추가하고 링크 받기</button></div>
     <p class="muted" style="font-size:12px;margin:8px 0 0">휴직은 접속·매물이 그대로 유지되고 표시만 바뀌어요. 퇴사로 바꾸면 1분 안에 접속이 막혀요. 링크가 새어 나갔으면 '새 링크'를 누르세요(예전 링크는 바로 막혀요). 개인 링크는 카톡 1:1로만 보내 주세요.</p>
