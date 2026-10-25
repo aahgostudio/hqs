@@ -163,7 +163,7 @@ H.render = async () => {
   const shell = `<header class="top"><div class="topin">
       <div class="brand"><img class="logo" src="../logo.svg" alt=""><div><b>어닝플레이스 ${S.owner ? 'HQ' : 'HQS'}</b><small>${S.owner ? '대표 · 본사 홈' : '본사일정관리팀'}</small></div></div>
       <nav class="tabs" aria-label="메뉴">${tabs}</nav>
-      <div class="me"><span class="mode ${S.owner?'owner':'mgr'}">${S.owner?'대표 모드':'관리자 모드'}</span>${H.bossChip()}<span style="color:var(--sub)">${H.esc(S.name||'')}</span><button class="btn ghost sm" data-a="logout">로그아웃</button></div>
+      <div class="me">${S.isOwner ? `<button class="mode ${S.owner?'owner':'mgr'}" data-a="modeSwap" title="${S.owner?'눌러서 관리자(HQS) 화면 보기':'눌러서 대표 화면으로 돌아가기'}" style="border:0;cursor:pointer">${S.owner?'대표 모드 ⇄':'관리자 모드 · 미리보기 ⇄'}</button>` : `<span class="mode mgr">관리자 모드</span>`}${H.bossChip()}<span style="color:var(--sub)">${H.esc(S.name||'')}</span><button class="btn ghost sm" data-a="logout">로그아웃</button></div>
     </div></header><main class="wrap" id="main"><div class="spin"></div></main>`;
   if (!document.querySelector('header.top') || H._lastShell !== tabs + S.owner) { $('#app').innerHTML = shell; H._lastShell = tabs + S.owner; }
   else { const bc = document.querySelector('header .bstat'); if (bc) bc.outerHTML = H.bossChip(); }
@@ -174,6 +174,8 @@ H.render = async () => {
   } catch(e){ $('#main').innerHTML = '<p class="empty">불러오지 못했어요</p>'; H.fail(e); }
 };
 // 데이터가 바뀌었을 때 다시 그리기
+H.ACT.modeSwap = () => { try { if (H.S.owner) localStorage.setItem('hq_preview_mgr','1'); else localStorage.removeItem('hq_preview_mgr'); } catch(e){}
+  location.href = location.pathname + (location.hash || ''); };
 H.refresh = async () => { H._dirty = Date.now(); await H.loadBossStatus(); await H.render(); };
 
 /* ---------- 시트 ---------- */
@@ -262,7 +264,12 @@ H.boot = async () => {
     const ver = await sb.rpc('hq_schema_version');
     if (ver.error || (ver.data||0) < 2) return setupView();
     const own = await sb.rpc('is_owner');
-    H.S.owner = !!own.data && (session.user.email||'').toLowerCase() === OWNER_EMAIL;
+    H.S.isOwner = !!own.data && (session.user.email||'').toLowerCase() === OWNER_EMAIL;
+    // 대표님이 관리자(HQS) 화면을 미리 볼 수 있게: ?mode=hqs 로 들어오거나 모드 버튼을 누르면 전환
+    const qm = new URLSearchParams(location.search).get('mode');
+    try { if (qm === 'hqs') localStorage.setItem('hq_preview_mgr','1'); else if (qm === 'hq') localStorage.removeItem('hq_preview_mgr'); } catch(e){}
+    let pv = false; try { pv = localStorage.getItem('hq_preview_mgr') === '1'; } catch(e){}
+    H.S.owner = H.S.isOwner && !pv;
     const ad = await sb.from('admins').select('name').eq('user_id', session.user.id).maybeSingle();
     H.S.name = (ad.data && ad.data.name) || (H.S.owner ? '권성환' : '관리자');
     await Promise.all([H.loadBase(), H.loadBossStatus()]);

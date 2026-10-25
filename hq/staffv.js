@@ -2,14 +2,32 @@
 (function(H){
 const {esc, sb} = H;
 const M2S = {'재직':'active','휴직':'leave','퇴사':'left'}, S2M = {active:'재직', leave:'휴직', left:'퇴사'};
+// 정렬: 근무 → 휴직 → 퇴사, 같은 상태 안에서는 직급순 (소장 → 실장 → 팀장 → 팀원 …)
+const RANK = ['대표','소장','실장','팀장','팀원','지원','사원'];
+const rk = r => { r = r || ''; const i = RANK.findIndex(x => r.includes(x)); return i < 0 ? RANK.length : i; };
+const SO = {active:0, leave:1, left:2};
+const byOrder = (a,b) => (SO[a.status]??0) - (SO[b.status]??0) || rk(a.role) - rk(b.role) || String(a.created_at||'').localeCompare(String(b.created_at||''));
+// 퇴사 날짜는 settings 'staff_left' {직원id: 'YYYY-MM-DD'} 에 기록, 30일 지나면 목록에서 숨김
+const HIDE_DAYS = 30;
+const leftMap = () => (H.S.settings && H.S.settings.staff_left) || {};
+const ymd = d => { const p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; };
+const isOldLeft = s => { if (s.status !== 'left') return false; const d = leftMap()[s.id]; return !!d && (Date.now() - new Date(d + 'T00:00:00').getTime()) / 864e5 > HIDE_DAYS; };
+async function saveLeft(id, status){ const m = {...leftMap()};
+  if (status === 'left') { if (!m[id]) m[id] = ymd(new Date()); } else delete m[id];
+  try { await H.q(sb.from('settings').upsert({key:'staff_left', value:m})); H.S.settings.staff_left = m; } catch(e){} }
+H.saveLeft = saveLeft;
 H.view('staff', {label:'직원',
-  async load(){ H.S.staff = await H.q(sb.from('staff').select('*').order('created_at')); if (H.S.owner) H.S.payRules = await H.q(sb.from('pay_rules').select('*')); },
+  async load(){ H.S.staff = await H.q(sb.from('staff').select('*').order('created_at')); if (H.S.owner) H.S.payRules = await H.q(sb.from('pay_rules').select('*'));
+    // 퇴사 날짜가 없는 예전 퇴사자는 오늘부터 30일 계산
+    const m = leftMap(), miss = H.S.staff.filter(s => s.status === 'left' && !m[s.id]);
+    if (miss.length) { const n = {...m}; miss.forEach(s => n[s.id] = ymd(new Date())); try { await H.q(sb.from('settings').upsert({key:'staff_left', value:n})); H.S.settings.staff_left = n; } catch(e){} } },
   render(){
     const S = H.S; const mStaff = (S.mm && S.mm.admin && S.mm.admin.staff) || [];
     const rate = id => { const r = (S.payRules||[]).find(p=>p.staff_id===id); return r && r.share_rate != null ? r.share_rate : ''; };
     const b = S.boss || {state:'근무중'};
+    const leftOn = s => { const d = leftMap()[s.id]; return d ? ` <span class="note">${d.slice(5).replace('-','/')} 퇴사</span>` : ''; };
     const row = s => { const m = mStaff.find(x=>x.name===s.name); const mis = s.team==='RES' && m && M2S[m.status||'재직'] !== s.status;
-      return `<tr><td><b>${esc(s.name)}</b> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}</td>
+      return `<tr><td><b>${esc(s.name)}</b> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}${s.status==='left'?leftOn(s):''}</td>
         <td><span class="tag" style="background:${H.T(s.team).color}">${s.team}</span></td>
         <td><select class="in sm" style="width:auto" data-c="stStatus" data-s="${s.id}">${Object.entries(H.ST).map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select>
           ${mis?`<div class="note" style="color:var(--warn)">매물노트는 '${esc(m.status)}' <button class="btn sm ghost" style="padding:0 6px" data-a="stSync" data-s="${s.id}">맞추기</button></div>`:''}</td>
@@ -17,23 +35,25 @@ H.view('staff', {label:'직원',
         <td class="note">${esc(s.phone||'')}</td>
         <td class="note">${s.last_seen_at?H.ago(s.last_seen_at):'-'}</td>
         <td style="white-space:nowrap">${s.status!=='left'?`<button class="btn sm ghost" data-a="stLink" data-s="${s.id}">링크 복사</button> `:''}<button class="btn sm ghost" data-a="stEdit" data-s="${s.id}">수정</button></td></tr>`; };
-    const groups = H.GROUPS.map(g => { const ms = S.staff.filter(s => g.teams.includes(s.team)); if (!ms.length) return '';
+    const hidden = S.staff.filter(isOldLeft);
+    const groups = H.GROUPS.map(g => { const ms = S.staff.filter(s => g.teams.includes(s.team) && (S.showOldLeft || !isOldLeft(s))); if (!ms.length) return '';
       const sub = {OPS:'직영', SPT:'지원', PRT:'도급'};
-      return `<tr class="grp"><td colspan="7">${g.label} · ${ms.filter(s=>s.status!=='left').length}명</td></tr>` + g.teams.map(t => { const ts = ms.filter(s=>s.team===t).sort((a,b)=>(a.status==='left')-(b.status==='left')); if (!ts.length) return '';
+      return `<tr class="grp"><td colspan="7">${g.label} · ${ms.filter(s=>s.status!=='left').length}명</td></tr>` + g.teams.map(t => { const ts = ms.filter(s=>s.team===t).sort(byOrder); if (!ts.length) return '';
         return (g.teams.length > 1 ? `<tr><td colspan="7" class="note" style="padding:6px 8px 2px;font-weight:700">${sub[t]||t}</td></tr>` : '') + ts.map(row).join(''); }).join(''); }).join('');
     return `<section class="box"><div class="bh"><h3>직원 전체</h3><div class="acts" style="margin:0"><button class="btn sm" data-a="stNew">+ 직원 추가</button><button class="btn sm ghost" data-a="stCopyAll">전체 링크 목록 복사</button></div></div>
       <div class="tbl"><table><thead><tr><th>이름</th><th>팀</th><th>상태</th><th>지급 방식</th><th>연락처</th><th>마지막 접속</th><th></th></tr></thead><tbody>
       <tr class="boss"><td><b>권성환</b> <span class="note">대표</span></td><td><span class="tag" style="background:var(--navy)">HQ</span></td><td>${H.bossChip()}</td><td colspan="4" class="note">대표 상태는 직원 화면 맨 위에 보여요</td></tr>
       ${groups}</tbody></table></div>
-      <p class="note">휴직은 링크가 그대로 열려요. 퇴사로 바꾸면 일정판 링크가 바로 막혀요${S.owner?' · 부동산 직원은 매물노트 상태도 같이 바뀌어요':''}. 개인 링크는 카톡 1:1로만 보내 주세요.</p></section>`;
+      <p class="note">휴직은 링크가 그대로 열려요. 퇴사로 바꾸면 일정판 링크가 바로 막혀요${S.owner?' · 부동산 직원은 매물노트 상태도 같이 바뀌어요':''}. 개인 링크는 카톡 1:1로만 보내 주세요. 퇴사자는 ${HIDE_DAYS}일 뒤 목록에서 숨겨져요.${hidden.length?` <button class="btn sm ghost" data-a="stOldLeft">${S.showOldLeft?'지난 퇴사자 숨기기':`지난 퇴사자 ${hidden.length}명 보기`}</button>`:''}</p></section>`;
   }
 });
 H.CHANGE.stStatus = async el => { const s = H.S.staff.find(x=>x.id===el.dataset.s); const v = el.value;
   if (v === 'left' && !confirm(`${s.name}님을 퇴사 처리할까요? 개인 링크가 바로 막혀요.`)) { el.value = s.status; return; }
-  await H.q(sb.from('staff').update({status: v}).eq('id', s.id)); s.status = v;
+  await H.q(sb.from('staff').update({status: v}).eq('id', s.id)); s.status = v; await saveLeft(s.id, v);
   if (s.team === 'RES' && H.S.owner && H.S.mcode) { try { H.S.mm = await H.maemul('setStaff', [{name: s.name, status: S2M[v]}]); H.toast('일정판·매물노트 상태를 같이 바꿨어요'); } catch(e){ H.toast('일정판은 바꿨어요 · 매물노트는 못 바꿨어요: ' + e.message); } }
   else H.toast('상태를 바꿨어요');
   H.render(); };
+H.ACT.stOldLeft = () => { H.S.showOldLeft = !H.S.showOldLeft; H.render(); };
 H.ACT.stSync = async el => { const s = H.S.staff.find(x=>x.id===el.dataset.s); H.S.mm = await H.maemul('setStaff', [{name: s.name, status: S2M[s.status]}]); H.toast('매물노트를 일정판 상태로 맞췄어요'); H.render(); };
 const linkOf = s => `${location.origin}/clean/?k=${s.token}`;
 const linkMsg = s => `[${H.C.BRAND}] ${s.name}님 전용 일정판 링크예요.\n${linkOf(s)}\n\n· 일정 확인·신청, 일할 수 있는 날, 현장 사진, 공지를 여기서 해요.\n· 본인만 쓰는 링크라 다른 분께 보내지 말아주세요.\n· 휴대폰 홈 화면에 추가해두시면 편해요.`;
@@ -65,6 +85,7 @@ H.ACT.stToken = async el => { if (!confirm('새 링크를 만들면 예전 링�
 H.FORM.staff = async v => {
   const row = {name:v.get('name').trim(), team:v.get('team'), role:H.nn(v.get('role')), phone:H.nn(v.get('phone')), partner_area:H.nn(v.get('partner_area')), pay_type:v.get('pay_type'), status:v.get('status'), joined_on:H.nn(v.get('joined_on')), can_collect:v.get('can_collect')==='on'};
   const id = v.get('id'); await H.q(id ? sb.from('staff').update(row).eq('id', id) : sb.from('staff').insert(row));
+  if (id) await saveLeft(id, row.status);
   if (!id && v.get('mm') === 'on') { try { H.S.mm = await H.maemul('addStaff', [{name: row.name, role: row.role || '사원'}]); H.S.staff = await H.q(sb.from('staff').select('*').order('created_at')); await H.syncMaemulCodes(); H.toast('매물노트 파일·링크도 만들었어요'); } catch(e){ H.toast('일정판엔 추가했어요 · 매물노트는 못 만들었어요: ' + e.message); } }
   else H.toast('저장했어요');
   H.close(); H.refresh(); };

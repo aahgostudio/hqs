@@ -9,7 +9,7 @@ body{background:#EEF0F4}
 .tabs a{padding:7px 13px;border-radius:9px;font-size:14px;color:var(--sub);text-decoration:none;font-weight:500}
 .tabs a[aria-current=page]{background:var(--infob);color:var(--navy);font-weight:700}
 .me{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap}
-.mode{font-size:11.5px;font-weight:700;border-radius:6px;padding:3px 8px}
+.mode{font-family:inherit;line-height:1.4;font-size:11.5px;font-weight:700;border-radius:6px;padding:3px 8px}
 .mode.owner{background:var(--navy);color:#fff}.mode.mgr{background:#E0E7FF;color:#3730A3}
 .bstat{border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:#fff;display:inline-flex;gap:6px;align-items:center;font-size:13px}
 .bstat i{width:8px;height:8px;border-radius:50%;background:#10B981;display:block}
