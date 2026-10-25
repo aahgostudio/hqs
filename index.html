@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#16347A">
+<title>어닝플레이스 일정판</title>
+<link rel="icon" href="logo.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+body{background:var(--bg)}
+.app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
+.head{background:var(--card);padding:16px 16px 14px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);font-weight:500}
+.brand .logo{width:24px;height:24px;border-radius:6px}
+.hi{margin-top:10px}
+.hi b{font-size:20px;font-weight:900;letter-spacing:-.02em;display:block;line-height:1.3}
+.hi small{font-size:13px;color:var(--sub)}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.summary div{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.summary b{display:block;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}
+.summary span{font-size:11.5px;color:var(--sub)}
+.body{flex:1;padding:12px 12px 96px}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:2px 2px 10px;flex-wrap:wrap}
+.bar h3{margin:0;font-size:16px;font-weight:700}
+.seg{display:inline-grid;grid-auto-flow:column;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;border-radius:7px;padding:5px 11px;font-size:13px;color:var(--sub)}
+.seg button[aria-pressed=true]{background:var(--navy);color:#fff;font-weight:700}
+.mnav{display:flex;align-items:center;gap:4px}
+.mnav button{border:0;background:var(--card);border:1px solid var(--line);border-radius:9px;width:32px;height:32px;display:grid;place-items:center;color:var(--sub)}
+.mnav b{min-width:84px;text-align:center;font-size:15px}
+/* month grid */
+.cal{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:8px;box-shadow:var(--sh);margin-bottom:12px}
+.cal .dow,.cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal .dow span{font-size:11.5px;color:var(--mute);text-align:center;padding:4px 0}
+.cal .dow span:first-child{color:var(--warn)}
+.cal .grid button{border:0;background:none;border-radius:10px;aspect-ratio:1/1.05;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:6px;gap:3px;font-size:14px;color:var(--ink);position:relative}
+.cal .grid button.out{color:var(--mute);opacity:.5}
+.cal .grid button.today b{background:var(--ink);color:#fff;border-radius:999px;width:24px;height:24px;display:grid;place-items:center}
+.cal .grid button[aria-pressed=true]{background:var(--infob)}
+.cal .grid b{font-weight:500;font-size:14px;width:24px;height:24px;display:grid;place-items:center}
+.dots{display:flex;gap:2px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--info)}
+.dots i.mine{background:var(--ok)}
+.dots i.wait{background:var(--wait)}
+/* week strip */
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:8px;margin-bottom:12px;box-shadow:var(--sh)}
+.week button{border:0;background:none;border-radius:12px;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--sub);font-size:11.5px}
+.week button b{font-size:16px;color:var(--ink);font-weight:700}
+.week button[aria-pressed=true]{background:var(--navy);color:#fff}
+.week button[aria-pressed=true] b{color:#fff}
+.week button.today:not([aria-pressed=true]) b{color:var(--info)}
+/* cards */
+.dayh{font-size:13.5px;font-weight:700;color:var(--ink2);margin:14px 4px 8px}
+.card{background:var(--card);border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:var(--sh);border:1px solid var(--line);position:relative}
+.card.alert{border-color:var(--warn);box-shadow:0 0 0 2px var(--warnb)}
+.card .t1{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .when{font-size:12.5px;color:var(--sub);font-weight:500}
+.card h4{margin:2px 0 0;font-size:17px;font-weight:700;letter-spacing:-.01em}
+.card .note{font-size:13px;color:var(--ink2);margin-top:6px}
+.card .row2{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12.5px;color:var(--sub)}
+.card .row2 b{color:var(--ink)}
+.crew{display:flex;gap:4px;flex-wrap:wrap}
+.crew span{font-size:12px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--ink2)}
+.addr{display:flex;gap:6px;align-items:flex-start;font-size:13.5px;background:var(--okb);color:#065F46;border-radius:10px;padding:9px 11px;margin-top:10px}
+.addr.lock{background:var(--soft);color:var(--sub)}
+.addr svg.i{width:16px;height:16px;margin-top:3px}
+.addr a{color:inherit}
+.money{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--waitb);color:#7C2D12;border-radius:10px;padding:9px 11px;margin-top:8px;font-size:13.5px}
+.money b{font-size:16px}
+.acts{display:flex;gap:8px;margin-top:12px}
+.acts .btn{flex:1}
+.ack{background:var(--warnb);color:var(--warn);border-radius:10px;padding:9px 11px;margin-top:10px;font-size:13.5px;font-weight:500;display:flex;justify-content:space-between;align-items:center;gap:8px}
+/* report */
+.form{background:var(--card);border-radius:18px;padding:14px;border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.upl{display:flex;gap:6px;flex-wrap:wrap}
+.upl .ph{width:72px;height:72px;border-radius:12px;background:var(--soft) center/cover;position:relative;border:1px solid var(--line)}
+.upl .ph button{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:12px;line-height:22px;padding:0}
+.upl label.add{width:72px;height:72px;border-radius:12px;border:1.5px dashed var(--line);display:grid;place-items:center;color:var(--mute);cursor:pointer;background:var(--card)}
+.upl input{display:none}
+/* notices */
+.notice{background:var(--card);border-radius:16px;padding:14px;border:1px solid var(--line);margin-bottom:10px}
+.notice.new{border-color:var(--info)}
+.notice small{display:flex;gap:6px;align-items:center;color:var(--mute);font-size:12px;margin-bottom:4px}
+.notice h4{margin:0 0 4px;font-size:15px}
+.notice p{margin:0;white-space:pre-wrap;font-size:14.5px;color:var(--ink2)}
+.pay{background:var(--card);border-radius:16px;border:1px solid var(--line);padding:12px 14px;margin-bottom:12px}
+.pay .tot{display:flex;justify-content:space-between;align-items:baseline}
+.pay .tot b{font-size:22px;font-weight:900}
+.pay ul{list-style:none;margin:8px 0 0;padding:0;font-size:13.5px}
+.pay li{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);gap:8px}
+/* tabbar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--line);padding:6px 6px calc(8px + env(safe-area-inset-bottom));z-index:20}
+.tabbar nav{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:520px}
+.tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--mute);padding:6px 0;border-radius:10px;position:relative}
+.tabbar button[aria-pressed=true]{color:var(--navy);font-weight:700}
+.badge{position:absolute;top:2px;left:calc(50% + 6px);background:var(--warn);color:#fff;font-size:10px;border-radius:999px;padding:0 5px;font-weight:700;min-width:16px;text-align:center}
+.err{max-width:420px;margin:80px auto;padding:24px;text-align:center}
+.err h2{margin:12px 0 6px}
+.err p{color:var(--sub)}
+.foot{font-size:11.5px;color:var(--mute);text-align:center;margin:18px 0 0}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+ <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+ <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+ <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+ <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+ <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+ <symbol id="i-won" viewBox="0 0 24 24"><path d="M4 6l3 12 5-9 5 9 3-12M3 11h18"/></symbol>
+</svg>
+
+<div class="app" id="app"><div class="spin" aria-label="불러오는 중"></div></div>
+<div class="tabbar hidden" id="tabbar"><nav aria-label="메뉴"></nav></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+<script src="demo.js"></script>
+<script>
+(function(){
+const C = window.EP_CONFIG;
+const qs = new URLSearchParams(location.search);
+const DEMO = qs.has('demo');
+const TOKEN = (qs.get('k') || '').trim();
+const sb = DEMO ? null : window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_KEY, {auth:{persistSession:false}});
+
+/* ---------- api ---------- */
+async function rpc(fn, args){
+  if (DEMO) return window.EP_DEMO.rpc(fn, args);
+  const {data, error} = await sb.rpc(fn, args);
+  if (error) throw error;
+  return data;
+}
+
+/* ---------- helpers ---------- */
+const I = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DOW = ['일','월','화','수','목','금','토'];
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const won = n => (n ?? 0).toLocaleString('ko-KR') + '원';
+const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()} ${DOW[d.getDay()]}`; };
+function toast(m){ const t = document.getElementById('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('on'), 2200); }
+const ERR = {invalid_link:'링크가 맞지 않아요. 대표님께 새 링크를 받아주세요.', closed:'이미 마감된 일정이에요.', past:'지난 일정은 바꿀 수 없어요.', not_allowed:'이 일정은 신청할 수 없어요.', empty:'내용을 한 줄 적어주세요.'};
+const errMsg = e => ERR[(e && e.message) || ''] || '잠시 후 다시 시도해주세요.';
+
+/* ---------- state ---------- */
+let D = null;                       // board data
+let tab = 'board';
+let view = 'week';                  // week | month
+let scope = 'team';                 // team | mine
+let today = new Date(); today.setHours(0,0,0,0);
+let pick = ymd(today);
+let month = new Date(today.getFullYear(), today.getMonth(), 1);
+let photos = [];                    // {file, url}
+let payData = null;
+
+async function load(){
+  const from = ymd(addDays(month, -7));
+  const to = ymd(addDays(new Date(month.getFullYear(), month.getMonth()+1, 0), 14));
+  const wkFrom = ymd(addDays(parse(pick), -7)), wkTo = ymd(addDays(parse(pick), 14));
+  D = await rpc('staff_board', {p_token: TOKEN, p_from: from < wkFrom ? from : wkFrom, p_to: to > wkTo ? to : wkTo});
+  if (D.today) { today = parse(D.today); }
+}
+
+/* ---------- views ---------- */
+function jobsOn(day){ return D.jobs.filter(j => j.date === day && (scope === 'team' || ['applied','approved'].includes(j.my_status))); }
+const mineOK = () => D.jobs.filter(j => j.my_status === 'approved');
+
+function statusPill(j){
+  if (j.status === 'cancelled') return '<span class="pill p-mute">취소됨</span>';
+  if (j.status === 'done') return '<span class="pill p-mute">마감</span>';
+  if (j.my_status === 'approved') return '<span class="pill p-ok">'+I('check').replace('class="i"','class="i" style="width:14px;height:14px"')+'확정</span>';
+  if (j.my_status === 'applied') return '<span class="pill p-wait">승인 대기</span>';
+  if (j.status === 'full' || j.approved >= j.headcount) return '<span class="pill p-mute">인원 마감</span>';
+  return `<span class="pill p-warn">${Math.max(0, j.headcount - j.approved)}자리</span>`;
+}
+
+function card(j){
+  const past = j.date < ymd(today);
+  const canApply = !j.my_status || ['cancelled','rejected'].includes(j.my_status);
+  let btn = '';
+  if (j.status === 'cancelled' || j.status === 'done' || past) btn = '';
+  else if (j.my_status === 'approved') btn = `<div class="acts"><button class="btn ghost sm" data-cancel="${j.id}">못 가게 됐어요 (취소)</button></div>`;
+  else if (j.my_status === 'applied') btn = `<div class="acts"><button class="btn wait" data-cancel="${j.id}">승인 기다리는 중 · 취소</button></div>`;
+  else if (canApply && j.status === 'open' && j.approved < j.headcount) btn = `<div class="acts"><button class="btn" data-apply="${j.id}">신청하기</button></div>`;
+
+  const ack = j.need_ack ? `<div class="ack"><span>일정이 바뀌었어요. 확인해주세요</span><button class="btn sm" style="background:var(--warn)" data-ack="${j.id}">확인했어요</button></div>` : '';
+  const addr = j.my_status === 'approved'
+    ? `<div class="addr">${I('pin')}<span>${j.address ? `<a href="https://map.kakao.com/link/search/${encodeURIComponent(j.address)}" target="_blank" rel="noopener">${esc(j.address)}</a>` : '주소는 따로 알려드릴게요'}${j.private_note ? `<br><small>${esc(j.private_note)}</small>` : ''}</span></div>`
+    : (j.my_status === 'applied' ? `<div class="addr lock">${I('lock')}확정되면 상세 주소가 열려요</div>` : '');
+  const money = j.collector && j.balance != null
+    ? (j.collected_at ? `<div class="money"><span>잔금 ${won(j.balance)}</span><span class="pill p-ok">수금 완료</span></div>`
+       : `<div class="money"><span>현장 잔금 <b>${won(j.balance)}</b></span><span><button class="btn sm" data-collect="${j.id}" data-how="계좌">계좌 확인</button> <button class="btn sm ghost" data-collect="${j.id}" data-how="현금">현금</button></span></div>`) : '';
+  const pay = j.my_pay != null ? `<div class="row2"><span>내 정산</span><b>${won(j.my_pay)}</b></div>` : '';
+  return `<article class="card ${j.need_ack?'alert':''}">
+    <div class="t1"><div><div class="when">${md(j.date)}${j.time ? ' · '+j.time : ''}${j.kind ? ' · '+esc(j.kind) : ''}</div><h4>${esc(j.title)}</h4></div>${statusPill(j)}</div>
+    ${j.public_note ? `<div class="note">${esc(j.public_note)}</div>` : ''}
+    <div class="row2"><span><b>${j.approved}</b> / ${j.headcount}명 확정</span><span class="crew">${j.crew.map(n=>`<span>${esc(n)}</span>`).join('')}</span></div>
+    ${ack}${addr}${money}${pay}${btn}</article>`;
+}
+
+function weekStrip(){
+  const p = parse(pick); const start = addDays(p, -p.getDay());
+  let h = '<div class="week" role="group" aria-label="이번 주">';
+  for (let i=0;i<7;i++){ const d = addDays(start,i), s = ymd(d), js = jobsOn(s);
+    h += `<button data-day="${s}" class="${s===ymd(today)?'today':''}" aria-pressed="${s===pick}">${DOW[i]}<b>${d.getDate()}</b><span class="dots">${js.slice(0,3).map(j=>`<i class="${j.my_status==='approved'?'mine':j.my_status==='applied'?'wait':''}"></i>`).join('')}</span></button>`; }
+  return h + '</div>';
+}
+function monthGrid(){
+  const first = new Date(month), start = addDays(first, -first.getDay());
+  let h = `<div class="cal"><div class="dow">${DOW.map(d=>`<span>${d}</span>`).join('')}</div><div class="grid">`;
+  for (let i=0;i<42;i++){ const d = addDays(start,i), s = ymd(d), js = jobsOn(s);
+    if (i===35 && d.getMonth()!==month.getMonth()) break;
+    h += `<button data-day="${s}" class="${d.getMonth()!==month.getMonth()?'out':''} ${s===ymd(today)?'today':''}" aria-pressed="${s===pick}"><b>${d.getDate()}</b><span class="dots">${js.slice(0,3).map(j=>`<i class="${j.my_status==='approved'?'mine':j.my_status==='applied'?'wait':''}"></i>`).join('')}</span></button>`; }
+  return h + '</div></div>';
+}
+
+function boardView(){
+  const p = parse(pick);
+  const head = `<div class="bar">
+     <div class="seg" role="group" aria-label="보기"><button data-view="week" aria-pressed="${view==='week'}">주간</button><button data-view="month" aria-pressed="${view==='month'}">월간</button></div>
+     <div class="seg" role="group" aria-label="범위"><button data-scope="team" aria-pressed="${scope==='team'}">팀 전체</button><button data-scope="mine" aria-pressed="${scope==='mine'}">내 일정</button></div></div>`;
+  const nav = view==='month'
+    ? `<div class="bar"><div class="mnav"><button data-mnav="-1" aria-label="이전 달">${I('left')}</button><b>${month.getFullYear()}.${pad(month.getMonth()+1)}</b><button data-mnav="1" aria-label="다음 달">${I('right')}</button></div><button class="btn ghost sm" data-day="${ymd(today)}">오늘</button></div>`
+    : `<div class="bar"><div class="mnav"><button data-wnav="-7" aria-label="이전 주">${I('left')}</button><b>${p.getMonth()+1}월 ${Math.ceil((p.getDate()+new Date(p.getFullYear(),p.getMonth(),1).getDay())/7)}주</b><button data-wnav="7" aria-label="다음 주">${I('right')}</button></div><button class="btn ghost sm" data-day="${ymd(today)}">오늘</button></div>`;
+  const list = jobsOn(pick);
+  return head + nav + (view==='month' ? monthGrid() : weekStrip()) +
+    `<div class="dayh">${p.getMonth()+1}월 ${p.getDate()}일 ${DOW[p.getDay()]}요일 · ${list.length}건</div>` +
+    (list.map(card).join('') || `<p class="empty">${scope==='mine'?'이 날 내 일정이 없어요':'이 날은 일정이 없어요'}</p>`);
+}
+
+function mineView(){
+  const up = D.jobs.filter(j => ['applied','approved'].includes(j.my_status) && j.date >= ymd(today) && j.status!=='cancelled');
+  const payBox = payData ? (() => { const tot = payData.reduce((a,x)=>a+x.amount,0);
+      return `<div class="pay"><div class="tot"><span>${month.getMonth()+1}월 정산 (마감된 현장)</span><b>${won(tot)}</b></div>${payData.length?`<ul>${payData.map(x=>`<li><span>${md(x.date)} ${esc(x.title)}</span><span>${won(x.amount)}${x.paid?' · 지급완료':''}</span></li>`).join('')}</ul>`:''}</div>`; })() : '';
+  return `<div class="bar"><h3>다가오는 내 일정</h3></div>` + (up.map(card).join('') || '<p class="empty">신청한 일정이 없어요<br>일정판에서 골라보세요</p>') +
+    `<div class="bar" style="margin-top:18px"><h3>내 정산</h3></div>` + (payBox || '<p class="empty">불러오는 중…</p>');
+}
+
+function reportView(){
+  const recent = D.jobs.filter(j => j.my_status === 'approved' && j.date <= ymd(addDays(today,1)) && j.date >= ymd(addDays(today,-14)))
+                       .sort((a,b)=> b.date.localeCompare(a.date));
+  return `<div class="bar"><h3>현장 보고</h3></div>
+   <form class="form" id="repForm">
+     <div class="field"><label for="r-job">어느 현장인가요?</label><select id="r-job" name="job">${recent.map(j=>`<option value="${j.id}">${md(j.date)} ${esc(j.title)}</option>`).join('')}<option value="">현장 없이 보고</option></select></div>
+     <div class="field"><label>사진 (최대 6장)</label><div class="upl" id="upl">${photos.map((p,i)=>`<span class="ph" style="background-image:url(${p.url})"><button type="button" data-rmph="${i}" aria-label="사진 빼기">✕</button></span>`).join('')}${photos.length<6?`<label class="add">${I('plus')}<input type="file" id="phin" accept="image/*" multiple></label>`:''}</div></div>
+     <div class="field"><label for="r-text">한 줄이면 충분해요</label><textarea id="r-text" name="body" placeholder="예) 완료했어요. 베란다 곰팡이가 심해서 추가 작업 있었어요" required maxlength="1000"></textarea></div>
+     <button class="btn" type="submit" id="repBtn">보고 보내기</button>
+   </form>`;
+}
+
+function noticeView(){
+  return `<div class="bar"><h3>공지</h3></div>` + (D.notices.map(n => `<article class="notice ${n.read?'':'new'}">
+     <small>${n.team ? esc(D.me.team_name)+' 공지' : '전체 공지'} · ${new Date(n.at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})}${n.read?'':' · <b style="color:var(--info)">새 공지</b>'}</small>
+     ${n.title?`<h4>${esc(n.title)}</h4>`:''}<p>${esc(n.body)}</p>
+     ${n.important ? (n.confirmed ? '<div style="margin-top:10px"><span class="pill p-ok">확인 완료</span></div>' : `<div class="acts"><button class="btn" data-nconf="${n.id}">확인했어요</button></div>`) : ''}
+   </article>`).join('') || '<p class="empty">공지가 없어요</p>');
+}
+
+function render(){
+  const app = document.getElementById('app');
+  const ok = mineOK().filter(j=>j.date>=ymd(today)&&j.status!=='cancelled').length;
+  const open = D.jobs.filter(j=>!j.my_status && j.status==='open' && j.approved<j.headcount && j.date>=ymd(today)).length;
+  const unread = D.notices.filter(n=>!n.read || (n.important && !n.confirmed)).length;
+  const acks = D.jobs.filter(j=>j.need_ack).length;
+  app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="logo.svg" alt="">${esc(C.BRAND)} 일정판</div>
+     <div class="hi"><b>${esc(D.me.name)}님, 안녕하세요</b><small>${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}</small></div>
+     <div class="summary"><div><b>${ok}</b><span>확정된 일정</span></div><div><b style="color:var(--warn)">${open}</b><span>신청 가능</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div></header>
+   <main class="body">${tab==='board'?boardView():tab==='mine'?mineView():tab==='report'?reportView():noticeView()}
+   <p class="foot">${esc(C.BRAND)} · 이 링크는 ${esc(D.me.name)}님 전용이에요. 다른 사람과 공유하지 마세요.</p></main>`;
+  const tb = document.getElementById('tabbar'); tb.classList.remove('hidden');
+  tb.querySelector('nav').innerHTML = [['board','cal','일정판',acks],['mine','check','내 일정',0],['report','cam','보고',0],['notice','bell','공지',unread]]
+    .map(([k,i,l,b])=>`<button data-tab="${k}" aria-pressed="${tab===k}">${I(i)}${l}${b?`<span class="badge">${b}</span>`:''}</button>`).join('');
+}
+
+/* ---------- events ---------- */
+async function act(fn, args, msg){
+  try { await rpc(fn, args); if (msg) toast(msg); await load(); render(); }
+  catch(e){ toast(errMsg(e)); }
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b || !D) return; const d = b.dataset;
+  if (d.tab){ tab = d.tab; window.scrollTo(0,0);
+    if (tab==='notice'){ const ids = D.notices.filter(n=>!n.read).map(n=>n.id); render(); if (ids.length){ try{ await rpc('staff_notice_read',{p_token:TOKEN,p_ids:ids}); D.notices.forEach(n=>n.read=true);}catch(_){} } return; }
+    if (tab==='mine'){ render(); try{ payData = await rpc('staff_pay',{p_token:TOKEN,p_month:ymd(month)}); }catch(_){ payData=[]; } }
+    render(); return; }
+  if (d.view){ view = d.view; render(); return; }
+  if (d.scope){ scope = d.scope; render(); return; }
+  if (d.day){ const old = month; pick = d.day; const p = parse(pick); month = new Date(p.getFullYear(), p.getMonth(), 1);
+    if (old.getMonth()!==month.getMonth()) { await load(); } render(); return; }
+  if (d.mnav){ month = new Date(month.getFullYear(), month.getMonth()+Number(d.mnav), 1); pick = ymd(month); await load(); render(); return; }
+  if (d.wnav){ pick = ymd(addDays(parse(pick), Number(d.wnav))); const p = parse(pick); const nm = new Date(p.getFullYear(),p.getMonth(),1);
+    if (nm.getTime()!==month.getTime()){ month = nm; } await load(); render(); return; }
+  if (d.apply){ b.disabled = true; return act('staff_apply',{p_token:TOKEN,p_job:+d.apply},'신청했어요 · 대표님 승인을 기다려요'); }
+  if (d.cancel){ if (!confirm('이 일정을 취소할까요?')) return; return act('staff_cancel',{p_token:TOKEN,p_job:+d.cancel},'취소했어요'); }
+  if (d.ack){ return act('staff_ack',{p_token:TOKEN,p_job:+d.ack},'확인 완료!'); }
+  if (d.collect){ if (!confirm(`${d.how}으로 잔금을 받으셨나요?`)) return; return act('staff_collect',{p_token:TOKEN,p_job:+d.collect,p_how:d.how},'수금 완료로 표시했어요'); }
+  if (d.nconf){ return act('staff_notice_confirm',{p_token:TOKEN,p_id:+d.nconf},'확인했어요'); }
+  if (d.rmph){ URL.revokeObjectURL(photos[+d.rmph].url); photos.splice(+d.rmph,1); keepText(()=>render()); return; }
+});
+function keepText(fn){ const t = document.getElementById('r-text'), j = document.getElementById('r-job'); const v = t && t.value, jv = j && j.value; fn(); const t2 = document.getElementById('r-text'), j2 = document.getElementById('r-job'); if (t2 && v) t2.value = v; if (j2 && jv != null) j2.value = jv; }
+document.addEventListener('change', e => {
+  if (e.target.id === 'phin'){ const files = [...e.target.files].slice(0, 6 - photos.length);
+    files.forEach(f => photos.push({file:f, url:URL.createObjectURL(f)})); keepText(()=>render()); }
+});
+async function shrink(file){
+  try{
+    const bmp = await createImageBitmap(file, {imageOrientation:'from-image'});
+    const s = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width*s); c.height = Math.round(bmp.height*s);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+  }catch(_){ return file; }
+}
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'repForm') return; e.preventDefault();
+  const btn = document.getElementById('repBtn'); btn.disabled = true; btn.textContent = '보내는 중…';
+  const job = document.getElementById('r-job').value || null;
+  const body = document.getElementById('r-text').value;
+  try{
+    const paths = [];
+    for (let i=0;i<photos.length;i++){
+      const blob = await shrink(photos[i].file);
+      const path = `${TOKEN}/${job||'none'}/${Date.now()}-${i}.jpg`;
+      if (!DEMO){ const {error} = await sb.storage.from('reports').upload(path, blob, {contentType:'image/jpeg'}); if (error) throw error; }
+      paths.push(path);
+    }
+    await rpc('staff_report', {p_token:TOKEN, p_job: job ? +job : null, p_body: body, p_photos: paths});
+    photos.forEach(p=>URL.revokeObjectURL(p.url)); photos = [];
+    toast('보고 접수! 고생 많으셨어요 🙏'); tab = 'board'; render();
+  }catch(err){ toast(errMsg(err)); btn.disabled = false; btn.textContent = '보고 보내기'; }
+});
+
+/* ---------- start ---------- */
+(async () => {
+  if (!TOKEN && !DEMO){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="logo.svg" alt="" style="width:48px;height:48px"><h2>${esc(C.BRAND)} 일정판</h2><p>개인 링크로 들어와 주세요.<br>링크는 '${esc(C.BRAND)}' 카카오톡 채널로 받을 수 있어요.</p></div>`; return; }
+  try { await load(); render(); }
+  catch(e){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="logo.svg" alt="" style="width:48px;height:48px"><h2>링크를 확인해주세요</h2><p>${esc(errMsg(e))}</p></div>`; }
+  // 다시 화면에 돌아오면 새로고침
+  document.addEventListener('visibilitychange', async () => { if (document.visibilityState==='visible' && D){ try{ await load(); render(); }catch(_){} } });
+})();
+})();
+</script>
+</body>
+</html>
