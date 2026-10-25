@@ -353,7 +353,7 @@ function assignSheet(j){
 
 /* ---------- link / kakao text ---------- */
 const base = () => location.origin + location.pathname.replace(/hqs\.html$/, '');
-const linkOf = s => `${base()}?k=${s.token}`;
+const linkOf = s => `${base()}clean/?k=${s.token}`;
 const linkMsg = s => `[${C.BRAND}] ${s.name}님 전용 일정판 링크예요.\n${linkOf(s)}\n\n· 일정 확인·신청, 현장 보고, 공지를 여기서 해요.\n· 본인만 쓰는 링크라 다른 분께 보내지 말아주세요.\n· 휴대폰 홈 화면에 추가해두시면 편해요.`;
 function jobMsg(j){ const d = parse(j.job_date); return `[${C.BRAND}] 새 일정이 올라왔어요\n${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]}) ${j.start_time?j.start_time.slice(0,5):''} ${j.title}\n필요 ${j.headcount}명 · 일정판에서 신청해주세요`; }
 async function copy(t, m){ try{ await navigator.clipboard.writeText(t); toast(m || '복사했어요'); } catch(_){ prompt('복사해서 쓰세요', t); } }
