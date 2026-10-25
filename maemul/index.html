@@ -498,7 +498,7 @@ function viewMine(mine){
   rows=sorted(rows);
   const opts=['진행','보류','계약완료','확인 필요','전체'];
   return `
-  <div class="top"><div><div class="eyebrow">${esc(S.data.me.name)}</div><h1>내 매물</h1></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-bulk>${ic('folder')}엑셀로 한꺼번에</button><button class="btn primary" data-new>${ic('plus')}매물 등록</button></div></div>
+  <div class="top"><div><div class="eyebrow">${esc(S.data.me.name)}</div><h1>내 매물</h1></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-bulk>${ic('folder')}엑셀로 한꺼번에</button><button class="btn" data-export="${esc(f)}">${ic('check')}광고용 엑셀 받기</button><button class="btn primary" data-new>${ic('plus')}매물 등록</button></div></div>
   <div class="seg" role="group" aria-label="상태">${opts.map(o=>`<button data-mf="${o}" aria-pressed="${f===o}">${o} <span class="num muted">${o==='전체'?mine.length:o==='확인 필요'?mine.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30).length:mine.filter(r=>r.status===o).length}</span></button>`).join('')}</div>
   ${rows.length?`<div class="cards">${rows.map(r=>card(r,true)).join('')}</div>`:emptyBox(f==='확인 필요'?'확인이 밀린 매물이 없어요':'해당하는 매물이 없어요',f==='확인 필요'?'모든 진행 매물을 30일 안에 확인했어요.':'매물 등록 버튼으로 새 매물을 추가하세요.')}`;
 }
@@ -686,6 +686,19 @@ function viewBulk(){const B=S.bulk,list=B.rows||[];const on=list.filter(x=>x.on)
     <div class="bk-list">${list.map((x,i)=>{const r=x.rec;return `<label class="bk-row ${x.dup?'dup':''}"><input type="checkbox" data-bk="${i}" ${x.on?'checked':''} ${B.busy?'disabled':''}><div><div><span class="tag t-${esc(r.deal)}">${esc(r.deal||'-')}</span> <span class="tag">${esc((r.type==='상가'&&r.subType)||r.type||'-')}</span> <b>${priceLine(r)}</b></div><div class="muted" style="font-size:12.5px">${esc(r.gu||'주소 확인 필요')} ${esc(r.dong)} ${r.area?`· <span class="num">${esc(r.area)}</span>㎡`:''} ${r.rooms?`· 방 ${esc(r.rooms)}`:''}</div>${x.dup?'<div class="bk-miss">이미 등록된 매물 같아요</div>':x.miss.length?`<div class="bk-miss">빈칸: ${esc(x.miss.join(', '))}</div>`:'<div class="bk-ok">바로 등록 가능</div>'}</div></label>`}).join('')}</div>`:''}
     ${list.length?`<div class="formbar"><button type="button" class="btn" data-close>취소</button><button type="button" class="btn primary" id="bk-go" ${B.busy||!on.length?'disabled':''}>${B.busy?`등록 중… ${B.done}/${B.total}`:`${on.length}건 등록하기`}</button></div>`:''}
   </section></div>`}
+
+const DG_H=['매물유형','거래유형','보증금/매매가(만원)','월세(만원)','주소','상세주소','면적(㎡)','방 수','욕실 수','층','총 층','향','입주가능일','관리비 유형','총 관리비(만원)','관리비 포함항목','관리비 기준','관리비 실비근거','관리비 확인불가 사유','주차','반려동물','대출','옵션','건축년도','매물 설명','메모','토지 지목','용도지역','권리금(만원)','건물용도'];
+function toDanggeun(r){const loc=splitGu(r.gu);const inv=o=>Object.fromEntries(Object.entries(o).map(([a,b])=>[b,a]));
+  const ty=r.type==='원룸'?(r.roomShape==='오픈형'?'오픈형 원룸':'분리형 원룸'):r.type==='빌라'?'빌라(투룸 이상)':r.type==='상가'?(r.subType==='사무실'?'사무실':'상가'):r.type;
+  const feat=String(r.feature||'').split(' / ');const opt=(feat.find(x=>x.startsWith('옵션: '))||'').slice(4).split(',').map(x=>x.trim()).filter(Boolean);
+  if(r.elevator==='있음'&&!opt.includes('엘리베이터'))opt.push('엘리베이터');if(r.duplex==='복층'&&!opt.includes('복층'))opt.push('복층');
+  const pet=(feat.find(x=>x.startsWith('반려동물 '))||'').slice(5);
+  const desc=feat.filter(x=>!x.startsWith('옵션: ')&&!x.startsWith('반려동물 ')&&x!=='[연세]').join(' / ')||r.title||'';
+  const feeIt=parseFeeItems(r.feeItems);const items=[...feeIt.chk,...Object.keys(feeIt.amt)].map(x=>inv(DG_FEE)[x]).filter(Boolean).join(', ');
+  return [ty,feat.includes('[연세]')?'연세':r.deal,r.deal==='매매'?r.sale:r.deposit,r.rent,...(r.addr&&loc.gu&&String(r.addr).includes(loc.gu)?[r.addr,'']:[[loc.sido,loc.gu,r.dong].filter(Boolean).join(' '),r.addr||'']),r.area,r.rooms,r.baths,r.floor,r.totalFloor,r.direction,r.moveIn==='즉시'?'즉시입주':r.moveIn,
+    {'정액관리비':'정액 관리비','기타부과':'기타 부과','확인불가':'확인 불가'}[r.feeType]||'',r.fee,items,{'직전 월 관리비':'직전 월'}[r.feeBasis]||r.feeBasis||'','','',
+    r.parking==='가능'?'가능':r.parking==='불가'?'불가능':'확인필요',pet||'확인필요',r.loan==='없음'?'없음':r.loan?'있음':'확인필요',opt.join(', '),String(r.approvalDate||'').slice(0,4),desc,'','','','',r.type==='상가'?r.buildUse||'':''].map(v=>v===undefined||v===null?'':v)}
+async function exportAd(rows){if(!rows.length){toast('내보낼 매물이 없어요');return}await loadXLSX();const ws=XLSX.utils.aoa_to_sheet([DG_H,...rows.map(toDanggeun)]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'매물 데이터');XLSX.writeFile(wb,'매물_일괄등록_'+today()+'.xlsx');toast(rows.length+'건을 엑셀로 받았어요. 주소·상세주소만 확인하고 올리세요')}
 function renderBlocked(){
   root.innerHTML=`<div class="loading" style="padding-inline:max(16px,env(safe-area-inset-left,0px))"><div class="mark" style="width:48px;height:48px;font-size:20px">R</div>
   <div style="text-align:center;max-width:360px"><b style="color:var(--ink);font-size:16px">링크를 확인해주세요</b><br>개인 링크가 맞지 않아요. 대표님께 매물노트 링크를 다시 받아주세요.</div></div>`;
@@ -695,6 +708,7 @@ function bind(){
   root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const v=b.dataset.go;if(v==='stale'){S.view='mine';S.mineFilter='확인 필요'}else S.view=v;S.open=null;render();scrollTo(0,0)});
   root.querySelectorAll('[data-bulk]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();S.open=null;S.edit=null;S.bulk={rows:[]};render()});
   const bf=document.getElementById('bk-file');if(bf)bf.onchange=async()=>{const fl=bf.files[0];if(!fl)return;S.bulk={rows:[],name:fl.name+' 읽는 중…'};render();try{const rows=await readBulk(fl);S.bulk={rows,name:fl.name}}catch(x){S.bulk={rows:[],name:fl.name,err:x&&x.message||String(x)}}render()};
+  root.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>{const f=b.dataset.export,m=allRows().mine;let rows=f==='전체'?m:f==='확인 필요'?m.filter(r=>r.status==='진행'&&(daysAgo(r.checked)??999)>30):m.filter(r=>r.status===f);exportAd(sorted(rows)).catch(x=>toast('엑셀을 만들지 못했어요: '+(x&&x.message||x)))});
   root.querySelectorAll('[data-bk]').forEach(c=>c.onchange=()=>{S.bulk.rows[+c.dataset.bk].on=c.checked;render()});
   const bg=document.getElementById('bk-go');if(bg)bg.onclick=async()=>{const B=S.bulk,todo=B.rows.filter(x=>x.on);B.busy=true;B.done=0;B.total=todo.length;render();let fail=0;
     for(const x of todo){const r={...x.rec};r.status=x.miss.length?'보류':'진행';if(x.miss.length)r.memo='[확인 필요] 빈칸: '+x.miss.join(', ')+(r.memo?' / '+r.memo:'');try{S.data=await call('saveListing',r)}catch(e){fail++}B.done++;render()}
