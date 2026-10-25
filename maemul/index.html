@@ -434,7 +434,7 @@ function render(){
       <div class="brand"><div class="mark">R</div><div><b>RITZ 매물노트</b><small>REAL ESTATE</small></div></div>
       ${navs.map(([v,l,i])=>`<button class="nav" data-go="${v}" aria-current="${S.view===v}">${ic(i)}${l}${v==='mine'?`<span class="cnt num">${mine.length}</span>`:v==='find'?`<span class="cnt num">${live.length}</span>`:''}</button>`).join('')}
       <button class="nav add" data-new>${ic('plus')}매물 등록</button>
-      ${KEY&&!S.demo&&S.v2?`<a class="nav" href="../clean/?k=${encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정 (계약·잔금·안내)</a>`:''}
+      ${KEY&&!S.demo&&S.v2?(S.data.me.role==='대표'?`<a class="nav" href="../hq/#sched" style="text-decoration:none">${ic('cal')}본사 HQ · 일정</a>`:`<a class="nav" href="../clean/?k=${encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정 (계약·잔금·안내)</a>`):''}
       <div class="who"><div class="avatar">${ini(S.data.me.name)}</div><div><b>${esc(S.data.me.name)} ${esc(S.data.me.role)}</b><small>리츠부동산</small></div></div>
     </aside>
     <main><div class="glow" aria-hidden="true"></div><div class="wrap">
@@ -469,7 +469,7 @@ function viewHome(all,live,mine,myLive,stale){
   const onAll=live.filter(r=>r.status==='진행');
   return `
   <div class="top"><div><div class="eyebrow">${today().replace(/-/g,'. ')}</div><h1>${esc(S.data.me.name)} ${esc(S.data.me.role)}님, ${hi}</h1></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">${KEY&&!S.demo&&S.v2?`<a class="btn schedbtn" href="../clean/?k=${encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정</a>`:''}<button class="btn primary" data-new>${ic('plus')}매물 등록</button></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">${KEY&&!S.demo&&S.v2?`<a class="btn schedbtn" href="${S.data.me.role==='대표'?'../hq/#sched':'../clean/?k='+encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정</a>`:''}<button class="btn primary" data-new>${ic('plus')}매물 등록</button></div></div>
   <div class="kpis">
     <button class="kpi hero" data-go="find"><span class="l">전체 진행 매물</span><span class="v num">${onAll.length}<small>건 · ${S.data.agents.length}명 공유</small></span>
       <div class="track">${DEALS.map(dl=>{const n=onAll.filter(r=>r.deal===dl).length;return n?`<i style="width:${n/Math.max(1,onAll.length)*100}%;background:var(--${DK[dl]})"></i>`:''}).join('')}</div>
