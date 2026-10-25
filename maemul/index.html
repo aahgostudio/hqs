@@ -247,6 +247,7 @@ fieldset.priv legend{color:var(--lock)}
   .chiprow>span{width:100%}
 }
 @media (max-width:420px){.cards{grid-template-columns:1fr}}
+[hidden]{display:none!important}.req{color:#c2410c}
 </style>
 
 <div id="root"><div class="loading"><div class="spin"></div><div>매물 정보를 불러오는 중…</div></div></div>
@@ -279,8 +280,8 @@ const IC={
 };
 const ic=(n)=>`<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
 
-const F=['agent','id','regDate','status','type','deal','gu','dong','loc','floor','area','sale','deposit','rent','fee','moveIn','feature','photo','checked','memo','owner','phone','addr','access','commission','privMemo'];
-const STATUS=['진행','보류','계약완료'], TYPES=['아파트','상가','원룸','건물','투룸','쓰리룸','오피스텔','빌라','주택','사무실','토지','기타'], DEALS=['월세','전세','매매','단기'];
+const F=['agent','id','regDate','status','type','deal','gu','dong','loc','floor','area','sale','deposit','rent','fee','moveIn','feature','photo','checked','memo','owner','phone','addr','access','commission','privMemo','rooms','baths','totalFloor','elevator','parking','direction'];
+const STATUS=['진행','보류','계약완료'], TYPES=['아파트','오피스텔','원룸','빌라','주택','상가','건물','토지'], ROOMY=['아파트','오피스텔','원룸','빌라','주택'], ROOM_REQ=['오피스텔','원룸','빌라','주택'], DIRS=['남향','남동향','남서향','동향','서향','북향','북동향','북서향'], DEALS=['월세','전세','매매','단기'];
 const REG=window.REGIONS||{'부산광역시':{}}, SIDOS=Object.keys(REG), GUS=Object.keys(REG['부산광역시']||{});
 function splitGu(g){g=String(g||'');const sd=SIDOS.find(x=>x!=='부산광역시'&&g.startsWith(x+' '));return sd?{sido:sd,gu:g.slice(sd.length+1)}:{sido:'부산광역시',gu:g}}
 function opts(list,val,ph){return `<option value="">${ph}</option>${list.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}${val&&!list.includes(val)?`<option selected>${esc(val)}</option>`:''}`}
@@ -355,7 +356,7 @@ function sorted(rows){
 function allRows(){
   const d=S.data,mine=d.mine.map(toObj);
   const others=d.all.map(toObj).filter(r=>r.agent!==d.me.name);
-  return {mine,all:[...others,...mine.map(r=>{const o={...r};F.slice(20).forEach(k=>delete o[k]);return o})]};
+  return {mine,all:[...others,...mine.map(r=>{const o={...r};F.slice(20,26).forEach(k=>delete o[k]);return o})]};
 }
 
 const root=document.getElementById('root');
@@ -441,7 +442,7 @@ function viewFind(live){
   <div class="hint">단어를 띄어 쓰면 모두 맞는 매물만 나와요. 금액은 <code>보증금 500</code> → ${S.data.units.big}만원 단위(500~${500+S.data.units.big-1}), <code>월세 40</code> → ${S.data.units.small}만원 단위로 찾아요.</div>
   <div style="display:flex;flex-direction:column;gap:8px">
     ${chipRow('구',[...new Set(live.map(r=>r.gu).filter(Boolean))].sort((a,b)=>(GUS.indexOf(a)+1||99)-(GUS.indexOf(b)+1||99)))}
-    ${chipRow('종류',['원룸','투룸','오피스텔','아파트','상가','사무실'])}
+    ${chipRow('종류',TYPES)}
     ${chipRow('거래',DEALS)}
   </div>
   <div class="resbar"><b><span class="num">${res.length}</span>건${S.q?` <span class="muted" style="font-weight:400">· "${esc(S.q)}"</span>`:''}</b>
@@ -468,7 +469,7 @@ function card(r,withActions){
     <div class="card-top"><span class="tag t-${esc(r.deal)}">${esc(r.deal||'-')}</span><span class="tag">${esc(r.type||'-')}</span>${r.status!=='진행'?`<span class="tag s-${esc(r.status)}">${esc(r.status)}</span>`:''}<span class="id num">${esc(r.id)}</span></div>
     <div><div class="price">${priceLine(r)}</div>${num(r.fee)!=null?`<div class="muted" style="font-size:12px">관리비 <span class="num">${fmt(num(r.fee))}</span>만원</div>`:''}</div>
     <div class="place">${esc(r.gu)} ${esc(r.dong)} <span>${esc(r.loc)}</span></div>
-    <div class="specs">${r.floor!==''?`<span>${ic('floor')}<span class="num">${esc(r.floor)}</span>층</span>`:''}${r.area!==''?`<span>${ic('area')}<span class="num">${esc(r.area)}</span>㎡ · <span class="num">${pyeong(r.area)}</span>평</span>`:''}${r.moveIn?`<span>${ic('cal')}${esc(r.moveIn)}</span>`:''}</div>
+    <div class="specs">${r.rooms!==''?`<span>방 <span class="num">${esc(r.rooms)}</span>${r.baths!==''?` · 욕실 <span class="num">${esc(r.baths)}</span>`:''}</span>`:''}${r.floor!==''?`<span>${ic('floor')}<span class="num">${esc(r.floor)}</span>${r.totalFloor!==''?`/<span class="num">${esc(r.totalFloor)}</span>`:''}층</span>`:''}${r.area!==''?`<span>${ic('area')}<span class="num">${esc(r.area)}</span>㎡ · <span class="num">${pyeong(r.area)}</span>평</span>`:''}${r.moveIn?`<span>${ic('cal')}${esc(r.moveIn)}</span>`:''}</div>
     ${r.feature?`<div class="feat">${esc(r.feature)}</div>`:''}
     <div class="card-foot"><div class="avatar">${ini(r.agent)}</div>${esc(r.agent)}${stale?`<span class="stale">${age>900?'확인 기록 없음':age+'일 전 확인'}</span>`:`<span class="fresh">${r.checked?short(r.checked)+' 확인':''}</span>`}</div>
     ${withActions?`<div class="actions"><button class="btn" data-check="${esc(r.id)}">${ic('check')}오늘 확인</button><button class="btn" data-edit="${esc(r.id)}">${ic('edit')}수정</button></div>`:''}
@@ -485,7 +486,9 @@ function viewDetail(id){
     <div class="sheet-h"><span class="tag t-${esc(r.deal)}">${esc(r.deal)}</span><span class="tag s-${esc(r.status)}">${esc(r.status)}</span><h2 class="num">${esc(r.id)}</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
     <div><div class="price" style="font-size:28px">${priceLine(r)}</div><div class="place" style="margin-top:6px">${esc(r.gu)} ${esc(r.dong)} <span>${esc(r.loc)}</span></div></div>
     <dl class="dl" style="margin:0">
-      ${row('종류',esc(r.type))}${row('층',r.floor!==''?`<span class="num">${esc(r.floor)}</span>층`:'')}
+      ${row('종류',esc(r.type))}${row('층',r.floor!==''?`<span class="num">${esc(r.floor)}</span>층${r.totalFloor!==''?` / 전체 <span class="num">${esc(r.totalFloor)}</span>층`:''}`:'')}
+      ${r.rooms!==''||r.baths!==''?row('방 수',r.rooms!==''?`<span class="num">${esc(r.rooms)}</span>개`:'')+row('욕실 수',r.baths!==''?`<span class="num">${esc(r.baths)}</span>개`:''):''}
+      ${row('엘리베이터',esc(r.elevator))}${row('주차',esc(r.parking))}${r.direction?row('방향',esc(r.direction)):''}
       ${row('전용면적',r.area!==''?`<span class="num">${esc(r.area)}</span>㎡ (<span class="num">${pyeong(r.area)}</span>평)`:'')}${row('입주가능일',esc(r.moveIn))}
       ${row('매매가',num(r.sale)!=null?`<span class="num">${won(num(r.sale))}</span>만원`:'')}${row('보증금·전세금',num(r.deposit)!=null?`<span class="num">${won(num(r.deposit))}</span>만원`:'')}
       ${row('월세',num(r.rent)!=null?`<span class="num">${fmt(num(r.rent))}</span>만원`:'')}${row('관리비',num(r.fee)!=null?`<span class="num">${fmt(num(r.fee))}</span>만원`:'')}
@@ -512,13 +515,12 @@ function viewForm(rec){
     <div class="sheet-h"><h2>${isNew?'새 매물 등록':'매물 수정 · <span class="num">'+v('id')+'</span>'}</h2><button class="x" data-close aria-label="닫기">${ic('x')}</button></div>
     <form id="lf" novalidate>
       <fieldset><legend>기본</legend>
-        <div class="f full"><label>종류</label>${seg('type',TYPES)}</div>
+        <div class="f full"><label>종류</label>${seg('type',rec.type&&!TYPES.includes(rec.type)?[...TYPES,rec.type]:TYPES)}</div>
         <div class="f full"><label>거래유형</label>${seg('deal',DEALS)}</div>
         <div class="f full"><label>상태</label>${seg('status',STATUS)}</div>
         <div class="f"><label for="f-sido">시·도</label><select id="f-sido" name="sido">${SIDOS.map(x=>`<option ${loc.sido===x?'selected':''}>${x}</option>`).join('')}</select></div>
         <div class="f"><label for="f-gu">시·군·구</label><span id="gubox" style="display:block">${guField(loc.sido,loc.gu)}</span></div>
         <div class="f"><label for="f-dong">동 <span class="muted">(법정동)</span></label><span id="dongbox" style="display:block">${dongField(loc.sido,loc.gu,rec.dong)}</span></div>
-        ${inp('floor','층','text','inputmode="numeric" placeholder="3"')}
         ${inp('loc','위치 (호수 빼고)','text','placeholder="양정역 도보 5분 ○○빌"',true)}
       </fieldset>
       <fieldset><legend>금액 (만원)</legend>
@@ -528,6 +530,13 @@ function viewForm(rec){
         ${inp('fee','관리비','number','inputmode="numeric" min="0" placeholder="5"')}
       </fieldset>
       <fieldset><legend>상세</legend>
+        <div class="f" data-room><label for="f-rooms">방 수 <span class="req">*</span></label><input id="f-rooms" name="rooms" type="number" inputmode="numeric" min="0" value="${v('rooms')}" placeholder="1"></div>
+        <div class="f" data-room><label for="f-baths">욕실 수</label><input id="f-baths" name="baths" type="number" inputmode="numeric" min="0" value="${v('baths')}" placeholder="1"></div>
+        <div class="f" data-bld><label for="f-floor">해당 층</label><input id="f-floor" name="floor" type="text" inputmode="numeric" value="${v('floor')}" placeholder="3 (지하는 B1)"></div>
+        <div class="f" data-bld><label for="f-totalFloor">전체 층</label><input id="f-totalFloor" name="totalFloor" type="number" inputmode="numeric" min="1" value="${v('totalFloor')}" placeholder="5"></div>
+        <div class="f full" data-bld><label>엘리베이터</label>${seg('elevator',['있음','없음'])}</div>
+        <div class="f full"><label>주차</label>${seg('parking',['가능','불가'])}</div>
+        <div class="f full" data-bld><label for="f-direction">방향 <span class="muted">(거실·안방 기준)</span></label><select id="f-direction" name="direction">${opts(DIRS,rec.direction||'','선택')}</select></div>
         ${inp('area','전용면적 (㎡)','number','inputmode="decimal" min="0" step="0.1" placeholder="23"','', rec.area?pyeong(rec.area)+'평':'')}
         ${inp('moveIn','입주가능일','text','placeholder="즉시 / 11월 초"')}
         <div class="f full"><label for="f-feature">특징</label><textarea id="f-feature" name="feature" placeholder="풀옵션, 엘리베이터, 반려동물 가능">${v('feature')}</textarea></div>
@@ -568,6 +577,8 @@ function bind(){
   const so=document.getElementById('sort'); if(so) so.onchange=()=>{S.sort=so.value;render()};
   const f=document.getElementById('lf');
   if(f){
+    const applyType=()=>{const t=(f.querySelector('input[name="type"]:checked')||{}).value||'';f.querySelectorAll('[data-room]').forEach(el=>el.hidden=!!t&&!ROOMY.includes(t));f.querySelectorAll('[data-bld]').forEach(el=>el.hidden=t==='토지');f.querySelectorAll('[data-room] .req').forEach(el=>el.hidden=!ROOM_REQ.includes(t))};
+    f.querySelectorAll('input[name="type"]').forEach(r=>r.addEventListener('change',applyType));applyType();
     const bindGu=()=>{const g=document.getElementById('f-gu');g.onchange=()=>{document.getElementById('dongbox').innerHTML=dongField(f.elements.sido.value,g.value,'')}};bindGu();
     f.elements.sido.onchange=()=>{const sd=f.elements.sido.value;document.getElementById('gubox').innerHTML=guField(sd,'');document.getElementById('dongbox').innerHTML=dongField(sd,'','');bindGu()};
     ['deposit','sale','area'].forEach(k=>{const el=f.elements[k];if(el) el.addEventListener('input',()=>{const a=document.getElementById('aux-'+k)||(()=>{const s=document.createElement('span');s.className='aux';s.id='aux-'+k;el.after(s);return s})();a.textContent=el.value?(k==='area'?pyeong(el.value)+'평':won(+el.value)+'만원'):''})});
@@ -575,6 +586,8 @@ function bind(){
       const fd=new FormData(f),rec={...S.edit};fd.forEach((val,k)=>rec[k]=String(val).trim());if(rec.gu&&rec.sido&&rec.sido!=='부산광역시')rec.gu=rec.sido+' '+rec.gu;delete rec.sido;
       const err=document.getElementById('ferr');
       if(!rec.deal||!rec.type||!rec.gu||!rec.dong){err.textContent='종류, 거래유형, 구, 동은 꼭 골라 주세요.';err.hidden=false;return}
+      if(ROOM_REQ.includes(rec.type)&&!rec.rooms){err.textContent=rec.type+'은(는) 방 수를 꼭 적어 주세요.';err.hidden=false;f.elements.rooms.focus();return}
+      if(!ROOMY.includes(rec.type)){rec.rooms='';rec.baths=''}if(rec.type==='토지'){rec.floor='';rec.totalFloor='';rec.elevator='';rec.direction=''}
       S.edit=rec;S.busy=true;render();
       try{S.data=await call('saveListing',rec);S.edit=null;S.busy=false;toast(rec.id?'저장했어요':'등록했어요. 다른 직원 화면에는 1분 안에 보여요')}
       catch(x){S.busy=false;render();const er=document.getElementById('ferr');er.textContent='저장하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요. ('+(x&&x.message||x)+')';er.hidden=false}
@@ -604,7 +617,7 @@ function demoInit(){
     {agent:'김윤미',id:'김-0003',regDate:d(20),status:'계약완료',type:'원룸',deal:'단기',gu:'수영구',dong:'수영동',loc:'수영역 인근',floor:5,area:16.5,deposit:100,rent:60,feature:'1개월 단위',checked:d(20)}
   ];
   DEMO={me:{name:'권성환',role:'대표',email:'demo'},units:{big:500,small:10},agents:[{name:'권성환',role:'대표'},{name:'조원경',role:'소장'},{name:'김윤미',role:'실장'},{name:'조수광',role:'소장'}],
-    mine:mine.map(row),all:[...all,...mine].map(o=>{const r=row(o);return r.slice(0,20)})};
+    mine:mine.map(row),all:[...all,...mine].map(o=>{const r=row(o);return [...r.slice(0,20),'','','','','','',...r.slice(26)]})};
   return DEMO;
 }
 function demoCall(fn,arg){
@@ -619,7 +632,7 @@ function demoCall(fn,arg){
     if(!r){const n=mine.length+1;rec.id='권-'+String(n).padStart(4,'0');r=F.map(()=>'');mine.push(r)}
     F.forEach((k,i)=>r[i]=rec[k]??'');
   }
-  DEMO.all=[...DEMO.all.filter(x=>x[0]!==DEMO.me.name),...mine.map(x=>x.slice(0,20))];
+  DEMO.all=[...DEMO.all.filter(x=>x[0]!==DEMO.me.name),...mine.map(x=>[...x.slice(0,20),'','','','','','',...x.slice(26)])];
   return JSON.parse(JSON.stringify(DEMO));
 }
 
