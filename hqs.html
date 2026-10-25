@@ -41,7 +41,7 @@
 .nav b{font-size:14px;min-width:150px;text-align:center}
 .days{padding:4px 14px 14px}
 .dayh{display:flex;align-items:baseline;gap:8px;padding:12px 0 8px;font-weight:700;font-size:14px;position:sticky;top:0;background:var(--card);z-index:1}
-.dayh span{font-weight:400;color:var(--sub);font-size:12.5px}
+.dayh span:not(.tag){font-weight:400;color:var(--sub);font-size:12.5px}
 .dayh.today{color:var(--info)}
 .job{border:1px solid var(--line);border-radius:14px;padding:10px 12px 10px 16px;margin-bottom:8px;position:relative}
 .job::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--tc)}
@@ -274,7 +274,7 @@ function stfView(){
   return `<div class="jacts" style="margin:10px 0"><button class="btn sm" data-addstaff="1">${I('plus')}직원 추가</button><button class="btn ghost sm" data-copyall="1">전체 링크 안내문 복사</button></div>`
    + teams.filter(t=>t.code!=='HQS').map(t => { const ms = staff.filter(s => s.team === t.code); if (!ms.length) return '';
      return `<div class="dayh" style="position:static"><span class="tag" style="background:${t.color}">${t.code}</span> ${esc(t.name)} <span>${ms.length}명</span></div>` + ms.map(s => `
-      <div class="st"><div><span class="nm">${esc(s.name)}</span> <small>${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</small><br><small>${esc(s.phone||'')} · ${PT[s.pay_type]} · ${s.can_collect?'수금 가능':'수금 X'} · 마지막 접속 ${s.last_seen_at?ago(s.last_seen_at):'없음'}</small></div>
+      <div class="st"><div><span class="nm">${esc(s.name)}</span> <small>${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</small><br><small>${s.phone?esc(s.phone)+' · ':''}${PT[s.pay_type]} · ${s.can_collect?'수금 가능':'수금 X'} · 마지막 접속 ${s.last_seen_at?ago(s.last_seen_at):'없음'}</small></div>
         <span class="pill ${s.status==='active'?'p-ok':s.status==='leave'?'p-wait':'p-mute'}">${ST[s.status]}</span>
         <div class="ops"><button class="btn ghost sm" data-link="${s.id}">링크 복사</button><button class="btn ghost sm" data-editstaff="${s.id}">수정</button></div></div>`).join(''); }).join('');
 }
