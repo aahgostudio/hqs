@@ -190,7 +190,7 @@ function render(){
 
   $('#root').innerHTML = `<div class="wrap">
    <div class="top"><div class="brand"><img class="logo" src="logo.svg" alt=""><div><b>HQS</b><small>${esc(C.BRAND)} 본사 일정판</small></div></div>
-     <div class="row" style="flex:0 0 auto"><button class="btn" data-new="1">${I('plus')}일정 올리기</button><button class="btn ghost sm" data-logout="1">로그아웃</button></div></div>
+     <div class="row" style="flex:0 0 auto"><button class="btn" data-new="1">${I('plus')}일정 올리기</button><a class="btn ghost sm" href="hq/">본사 홈</a><button class="btn ghost sm" data-logout="1">로그아웃</button></div></div>
    <div class="kpis">
      <div class="kpi"><span>일정</span><b>${shown.filter(act).length}</b></div>
      <div class="kpi"><span>남은 자리</span><b style="color:${open?'var(--warn)':'var(--ink)'}">${open}</b></div>
