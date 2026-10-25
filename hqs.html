@@ -135,7 +135,7 @@ const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); retu
 const won = n => n == null ? '-' : Number(n).toLocaleString('ko-KR') + '원';
 const ago = t => { if (!t) return '-'; const m = Math.round((Date.now()-new Date(t))/60000); return m<1?'방금':m<60?m+'분 전':m<1440?Math.round(m/60)+'시간 전':Math.round(m/1440)+'일 전'; };
 function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('on'),2400); }
-const fail = e => { console.error(e); toast('오류: ' + (e.message || e)); };
+const fail = e => { console.error(e); let b = document.getElementById('errbar'); if (!b){ b = document.createElement('div'); b.id='errbar'; b.style.cssText='position:fixed;left:12px;right:12px;top:12px;z-index:99;background:#FDECEC;color:#B91C1C;border:1px solid #F5B5B5;border-radius:12px;padding:10px 14px;font-size:13.5px;white-space:pre-wrap;box-shadow:0 8px 24px rgba(0,0,0,.15)'; b.onclick=()=>b.remove(); document.body.appendChild(b); } b.textContent = '오류 (눌러서 닫기)\n' + [e.message, e.details, e.hint, e.code].filter(Boolean).join('\n'); };
 const TODAY = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
 
 /* ---------- state ---------- */
