@@ -408,10 +408,10 @@ document.addEventListener('change', e => {
 });
 
 document.addEventListener('submit', async e => {
-  const f = e.target; e.preventDefault();
+  const f = e.target; e.preventDefault(); const fid = f.getAttribute('id');
   try {
-    if (f.id === 'login'){ const v = fd(f); const {error} = await sb.auth.signInWithPassword({email:v.get('email'), password:v.get('password')}); if (error) throw error; return boot(); }
-    if (f.id === 'jobForm'){ const v = fd(f); const tms = v.getAll('teams'); if (!tms.length){ toast('팀을 하나 이상 골라주세요'); return; }
+    if (fid === 'login'){ const v = fd(f); const {error} = await sb.auth.signInWithPassword({email:v.get('email'), password:v.get('password')}); if (error) throw error; return boot(); }
+    if (fid === 'jobForm'){ const v = fd(f); const tms = v.getAll('teams'); if (!tms.length){ toast('팀을 하나 이상 골라주세요'); return; }
       const row = { job_date:v.get('job_date'), start_time:nn(v.get('start_time')), title:v.get('title').trim(), kind:nn(v.get('kind')), headcount:+v.get('headcount')||1, teams:tms,
         target_staff: v.getAll('target').length ? v.getAll('target') : null, public_note:nn(v.get('public_note')), address:nn(v.get('address')), private_note:nn(v.get('private_note')),
         order_channel:nn(v.get('order_channel')), collector_id:nn(v.get('collector_id')), total_amount:nnum(v.get('total_amount')), deposit_amount:nnum(v.get('deposit_amount')),
@@ -421,24 +421,24 @@ document.addEventListener('submit', async e => {
       if (r.error) throw r.error; closeSheet();
       if (!id){ copy(jobMsg(r.data), '올렸어요 · 카톡 알림 문구가 복사됐어요'); } else toast('저장했어요');
       return refresh(); }
-    if (f.id === 'payForm'){ const v = fd(f); const id = +v.get('id'); const j = jobs.find(x=>x.id===id);
+    if (fid === 'payForm'){ const v = fd(f); const id = +v.get('id'); const j = jobs.find(x=>x.id===id);
       for (const a of j.assignments.filter(a=>a.status==='approved')){
         const {error} = await sb.from('assignments').update({pay_amount:nnum(v.get('pay_'+a.staff_id)), extra_amount:nnum(v.get('extra_'+a.staff_id)), pay_memo:nn(v.get('memo_'+a.staff_id))}).match({job_id:id, staff_id:a.staff_id});
         if (error) throw error; }
       const {error} = await sb.from('jobs').update({status:'done'}).eq('id', id); if (error) throw error;
       closeSheet(); toast('마감 저장 · 직원들이 자기 금액을 볼 수 있어요'); return refresh(); }
-    if (f.id === 'staffForm'){ const v = fd(f);
+    if (fid === 'staffForm'){ const v = fd(f);
       const row = { name:v.get('name').trim(), team:v.get('team'), role:nn(v.get('role')), phone:nn(v.get('phone')), partner_area:nn(v.get('partner_area')),
         pay_type:v.get('pay_type'), status:v.get('status'), joined_on:nn(v.get('joined_on')), can_collect: v.get('can_collect')==='on' };
       const id = v.get('id'); const r = id ? await sb.from('staff').update(row).eq('id', id) : await sb.from('staff').insert(row);
       if (r.error) throw r.error; closeSheet(); toast('저장했어요'); return refresh(); }
-    if (f.id === 'assignForm'){ const v = fd(f); const id = +v.get('id'); const ids = v.getAll('s'); if (!ids.length) return closeSheet();
+    if (fid === 'assignForm'){ const v = fd(f); const id = +v.get('id'); const ids = v.getAll('s'); if (!ids.length) return closeSheet();
       const now = new Date().toISOString();
       const {error} = await sb.from('assignments').upsert(ids.map(s=>({job_id:id, staff_id:s, status:'approved', decided_at:now})), {onConflict:'job_id,staff_id'}); if (error) throw error;
       const j = jobs.find(x=>x.id===id); const n = new Set([...j.assignments.filter(a=>a.status==='approved').map(a=>a.staff_id), ...ids]).size;
       if (n >= j.headcount) await sb.from('jobs').update({status:'full'}).eq('id', id);
       closeSheet(); toast('배정했어요'); return refresh(); }
-    if (f.id === 'ntcForm'){ const v = fd(f);
+    if (fid === 'ntcForm'){ const v = fd(f);
       const {error} = await sb.from('notices').insert({title:nn(v.get('title')), body:v.get('body'), team:nn(v.get('team')), important:v.get('important')==='on'}); if (error) throw error;
       copy(`[${C.BRAND}] 새 공지가 있어요. 일정판 [공지]에서 확인해주세요.`, '공지 올림 · 카톡 알림 문구 복사됐어요'); return refresh(); }
   } catch(err){ fail(err); }
