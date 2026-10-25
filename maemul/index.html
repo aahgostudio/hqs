@@ -885,7 +885,7 @@ function demoInit(){
   ];
   DEMO={me:{name:'권성환',role:'대표',email:'demo'},units:{big:500,small:10},agents:[{name:'권성환',role:'대표'},{name:'조원경',role:'소장'},{name:'김윤미',role:'실장'},{name:'조수광',role:'소장'}],
     mine:mine.map(row),all:[...all,...mine].map(o=>{const r=row(o);return [...r.slice(0,20),'','','','','','',...r.slice(26,46)]})};
-  if(new URLSearchParams(location.search).get('demo')==='staff'){const me='조원경';DEMO.me={name:me,role:'소장',email:'demo'};DEMO.mine=all.filter(o=>o.agent===me).map(o=>row({...o,owner:'(예시) 박○○',phone:'010-0000-0000',addr:'(예시) 302호'}));DEMO.staff=true}
+  if(new URLSearchParams(location.search).get('demo')==='staff'){const me='조원경';DEMO.me={name:me,role:'소장',email:'demo'};DEMO.mine=all.filter(o=>o.agent===me).map((o,i)=>row({...o,owner:'(예시) 박○○',phone:'010-0000-0000',addr:'(예시) 302호',photo:'https:\/\/drive.google.com\/drive\/folders\/demo#ids='+(i?'p2,p3,p1':'p1,p2,p3,p4')}));DEMO.staff=true}
   return DEMO;
 }
 function demoCall(fn,arg){
