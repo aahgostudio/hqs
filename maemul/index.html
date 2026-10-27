@@ -476,11 +476,11 @@ function render(){
       ${navs.map(([v,l,i])=>`<button class="nav" data-go="${v}" aria-current="${S.view===v}">${ic(i)}${l}${v==='mine'?`<span class="cnt num">${mine.length}</span>`:v==='find'?`<span class="cnt num">${live.length}</span>`:''}</button>`).join('')}
       ${EPChat.state.on?`<button class="nav" data-chat>${ic('chat')}대화${EPChat.state.unread?`<span class="cnt num" style="background:#E5484D;color:#fff">${EPChat.state.unread}</span>`:''}</button>`:''}
       <button class="nav add" data-new>${ic('plus')}매물 등록</button>
-      ${KEY&&!S.demo&&S.v2?(S.data.me.role==='대표'?`<a class="nav" href="../hq/#sched" style="text-decoration:none">${ic('cal')}본사 HQ · 일정</a>`:`<a class="nav" href="../clean/?k=${encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정 (계약·잔금·안내)</a>`):''}
+      ${KEY&&!S.demo&&S.v2?(S.data.me.role==='대표'?`<a class="nav" href="../hq/#home" style="text-decoration:none">${ic('home')}본사 HQ 홈</a><a class="nav" href="../hq/#sched" style="text-decoration:none">${ic('cal')}HQ 일정</a>`:`<a class="nav" href="../clean/?k=${encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정 (계약·잔금·안내)</a>`):''}
       <div class="who">${EPProfile.av(S.data.me.name,34,{me:S.data.me.role!=='대표'})}<div><b>${esc(S.data.me.name)} ${esc(S.data.me.role)}</b><small>리츠부동산</small></div></div>
     </aside>
     <main><div class="glow" aria-hidden="true"></div><div class="wrap">
-      ${S.data.me.role==='대표'?`<div class="hqback"><a href="../hq/">← 본사 홈 (HQ)</a></div>`:''}
+      ${S.data.me.role==='대표'?`<div class="hqback"><a href="../hq/#home">← 본사 홈 (HQ)</a></div>`:''}
       ${S.view==='home'?'':`<div class="statusrow">${EPStatus.pill()}</div>`}
       ${S.demo?`<div class="demo">${ic('alert')}지금 보이는 매물은 화면 미리보기용 예시예요. 실제 프로그램에서는 각자 시트의 매물이 나옵니다.</div>`:''}
       ${S.view==='home'?viewHome(all,live,mine,myLive,stale):S.view==='find'?viewFind(live):viewMine(mine)}
