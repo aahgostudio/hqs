@@ -141,7 +141,7 @@ H.photosOf = jid => (H.S.photos||[]).filter(p => p.job_id === jid);
 
 /* ---------- 화면 틀 ---------- */
 H.view = (key, def) => { H.views[key] = def; };
-const ORDER = ['home','sched','ops','promo','money','staff'];
+const ORDER = ['home','team','sched','ops','promo','money','staff'];
 H.cur = () => { const h = (location.hash||'').replace('#',''); const k = h.split('/')[0]; return H.views[k] && (!H.views[k].owner || H.S.owner) ? k : 'home'; };
 H.go = k => { if (location.hash !== '#'+k) location.hash = k; else H.render(); };
 
@@ -275,7 +275,7 @@ H.boot = async () => {
     await Promise.all([H.loadBase(), H.loadBossStatus()]);
     if (H.S.owner && !H.S.mcode) H.toast('매물노트를 연결하면 부동산 현황도 보여요 (홈 › 연결하기)');
     await H.render();
-    H.loadMaemul().then(() => { if (H.cur() === 'home' || H.cur() === 'staff' || H.cur() === 'ops') { H._dirty = Date.now(); H.render(); } });
+    H.loadMaemul().then(() => { if (['home','team','staff','ops'].includes(H.cur())) { H._dirty = Date.now(); H.render(); } });
     setInterval(() => { if (document.visibilityState === 'visible' && !$('#scrim').classList.contains('on') && !document.activeElement.closest('#main input,#main select,#main textarea')) H.refresh(); }, 90000);
   } catch(e){ H.fail(e); }
 };

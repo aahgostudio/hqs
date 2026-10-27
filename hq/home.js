@@ -93,6 +93,7 @@ H.view('home', {label:'홈',
       .sort((a,b)=>(a.t||'').localeCompare(b.t||''));
 
     return `
+    ${H.teamStrip ? H.teamStrip() : ''}
     ${alerts.length?`<section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">누르면 해당 화면으로 가요</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${alerts.map(([c,t,go])=>`<a class="banner ${c==='warn'?'warn':'info'}" href="#${go}" style="text-decoration:none;padding:8px 12px">${esc(t)} →</a>`).join('')}</div></section>`:''}
     <div class="g2">
