@@ -16,6 +16,7 @@ body{background:var(--bg)}
 .brand{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);font-weight:500}
 .brand .logo{width:24px;height:24px;border-radius:6px}
 :root[data-biz=res]{--navy:#5B21B6;--info:#6D28D9;--infob:#EDE9FE}
+:root[data-biz=ago]{--navy:#1E4A37;--info:#2E8B57;--infob:#E7F5EE}
 .hi{min-width:0;word-break:keep-all}
 .hirow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:10px}.hirow .epst-ic{margin-top:12px}
 .cheer{margin:3px 0 4px;font-size:14px;color:var(--ink,#1f2937);opacity:.8}
@@ -210,6 +211,9 @@ let evEdit = null;                  // 개인 일정 편집
 let shoot = null;                   // 현장 사진 {job, stage, files:[], memo}
 const V2 = () => D && D.v === 2;
 const isRES = () => D && D.me.team === 'RES';
+const isAGO = () => D && D.me.team === 'AGO';
+const EVT = () => isRES() || isAGO(); // 개인 일정 중심 (부동산·아고 파트너)
+const who = () => isAGO() ? `${D.me.name} ${(D.me.role||'사장').replace(/님$/,'')}님` : `${D.me.name}님`;
 
 async function load(){
   const from = ymd(addDays(month, -7));
@@ -286,7 +290,7 @@ function boardView(){
   const p = parse(pick);
   const head = `<div class="bar">
      <div class="seg" role="group" aria-label="보기"><button data-view="week" aria-pressed="${view==='week'}">주간</button><button data-view="month" aria-pressed="${view==='month'}">월간</button></div>
-     <div class="seg" role="group" aria-label="범위"><button data-scope="team" aria-pressed="${scope==='team'}">${isRES()?'전체':'팀 전체'}</button><button data-scope="mine" aria-pressed="${scope==='mine'}">내 일정</button></div></div>`;
+     <div class="seg" role="group" aria-label="범위"><button data-scope="team" aria-pressed="${scope==='team'}">${EVT()?'전체':'팀 전체'}</button><button data-scope="mine" aria-pressed="${scope==='mine'}">내 일정</button></div></div>`;
   const nav = view==='month'
     ? `<div class="bar"><div class="mnav"><button data-mnav="-1" aria-label="이전 달">${I('left')}</button><b>${month.getFullYear()}.${pad(month.getMonth()+1)}</b><button data-mnav="1" aria-label="다음 달">${I('right')}</button></div><button class="btn ghost sm" data-day="${ymd(today)}">오늘</button></div>`
     : `<div class="bar"><div class="mnav"><button data-wnav="-7" aria-label="이전 주">${I('left')}</button><b>${p.getMonth()+1}월 ${Math.ceil((p.getDate()+new Date(p.getFullYear(),p.getMonth(),1).getDay())/7)}주</b><button data-wnav="7" aria-label="다음 주">${I('right')}</button></div><button class="btn ghost sm" data-day="${ymd(today)}">오늘</button></div>`;
@@ -319,7 +323,7 @@ function mineView(){
       <div class="ics">${esc(GAS)}?ics=${esc(TOKEN)}</div><button class="btn ghost sm" data-icscopy="1">주소 복사</button>
       <div style="font-size:12px;color:var(--sub)">구글이 몇 시간에 한 번씩 가져가서, 반영까지 하루까지 걸릴 수 있어요. 이 주소도 나만 쓰는 거예요.</div></div>` : '';
   return `<div class="bar"><h3>다가오는 내 일정</h3>${V2()?'<button class="btn ghost sm" data-plus="1">＋ 넣기</button>':''}</div>` + (evs.map(evCard).join('') + up.map(card).join('') || '<p class="empty">다가오는 일정이 없어요</p>') +
-    `<div class="bar" style="margin-top:18px"><h3>내 정산</h3></div>` + (payBox || '<p class="empty">불러오는 중…</p>') + ics;
+    `<div class="bar" style="margin-top:18px"><h3>${isAGO()?'파트너 정산':'내 정산'}</h3></div>` + (payBox || '<p class="empty">불러오는 중…</p>') + ics;
 }
 
 function reportView(){
@@ -364,7 +368,7 @@ function plusMenu(){
   const todayShoot = D.jobs.find(j => j.my_status === 'approved' && j.date === ymd(today) && j.status !== 'cancelled');
   sheet(`<h3>무엇을 넣을까요?</h3><div class="menu">
     ${!isRES()?`<button data-paint="1">🗓<span>일할 수 있는 날 알려주기<small>가능·불가일을 한 번에 칠해요</small></span></button>`:''}
-    <button data-evnew="1">📌<span>내 일정 추가<small>${isRES()?'계약 · 잔금 · 안내 · 기타 (매물번호 연결)':'개인 일정 · 메모'}</small></span></button>
+    <button data-evnew="1">📌<span>내 일정 추가<small>${isRES()?'계약 · 잔금 · 안내 · 기타 (매물번호 연결)':isAGO()?'촬영 · 라이브 · 미팅 · 교육 · 기타':'개인 일정 · 메모'}</small></span></button>
     ${todayShoot?`<button data-shoot="${todayShoot.id}">📷<span>오늘 현장 사진 올리기<small>${esc(todayShoot.title)}</small></span></button>`:''}
     <button data-tab="report">📝<span>현장 보고<small>한 줄 보고 · 사진</small></span></button></div>`);
 }
@@ -387,13 +391,13 @@ function paintView(){
 
 function evForm(){
   const e = evEdit;
-  const kinds = isRES() ? ['계약','잔금','안내','기타'] : ['개인','기타'];
+  const kinds = isRES() ? ['계약','잔금','안내','기타'] : isAGO() ? ['촬영','라이브','미팅','교육','기타'] : ['개인','기타'];
   return `<div class="bar"><h3>${e.id?'내 일정 수정':'내 일정 추가'}</h3><button class="btn ghost sm" data-tab="board">닫기</button></div>
    <form class="form" id="evForm">
     <div class="field"><label>종류</label><div class="segs">${kinds.map(k=>`<button type="button" data-evk="${k}" aria-pressed="${e.kind===k}">${k}</button>`).join('')}</div></div>
     ${isRES()?`<div class="field"><label>매물번호 (선택)</label><input name="maemul" value="${esc(e.maemul||'')}" placeholder="조-0005"></div>`:''}
     <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>날짜</label><input type="date" name="date" value="${e.date}" required></div><div class="field" style="flex:1"><label>시간</label><input type="time" name="time" value="${e.time||''}"></div></div>
-    <div class="field"><label>캘린더에 보일 말</label><input name="title" value="${esc(e.title||'')}" placeholder="${isRES()?'광안동 원룸 계약':'병원'}" required maxlength="80"><div class="hint">손님 이름·연락처는 넣지 말아 주세요 (매물번호·동네까지만)</div></div>
+    <div class="field"><label>캘린더에 보일 말</label><input name="title" value="${esc(e.title||'')}" placeholder="${isRES()?'광안동 원룸 계약':isAGO()?'스튜디오 라이브 촬영':'병원'}" required maxlength="80"><div class="hint">손님 이름·연락처는 넣지 말아 주세요 (매물번호·동네까지만)</div></div>
     <div class="field"><label>메모 (나만 보기)</label><input name="memo" value="${esc(e.memo||'')}" maxlength="500"></div>
     <label class="tog">대표님 일정판에 보이기<input type="checkbox" name="show_boss" ${e.show_boss!==false?'checked':''}></label>
     <label class="tog">내 구글 캘린더에 넣기<input type="checkbox" name="gcal" ${e.gcal?'checked':''}></label>
@@ -425,14 +429,14 @@ function render(){
   const acks = D.jobs.filter(j=>j.need_ack).length;
   const mm = isRES() && /^[a-f0-9]{20}$/.test(TOKEN) ? `<a class="btn ghost sm" href="../maemul/?k=${encodeURIComponent(TOKEN)}" style="margin-left:auto">매물노트로</a>` : '';
   const evN = D.events.filter(e=>e.date>=ymd(today)).length;
-  const gr = EPGreet.get(isRES() ? 'maemul' : 'clean');
-  document.documentElement.dataset.biz = isRES() ? 'res' : 'clean';
+  const gr = EPGreet.get(isRES() ? 'maemul' : isAGO() ? 'ago' : 'clean');
+  document.documentElement.dataset.biz = isRES() ? 'res' : isAGO() ? 'ago' : 'clean';
   const main = tab==='board'?boardView():tab==='mine'?mineView():tab==='report'?reportView():tab==='paint'?paintView():tab==='ev'?evForm():tab==='shoot'?shootView():noticeView();
-  app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${esc(C.BRAND)} 일정판${mm}</div>
-     <div class="hirow"><div style="display:flex;gap:12px;align-items:center;min-width:0">${EPProfile.av(D.me.name,46,{me:true})}<div class="hi"><b>${esc(D.me.name)}님, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}</small></div></div>${EPStatus.pill()}</div>
-     <div class="summary">${isRES()?`<div><b>${evN}</b><span>다가오는 내 일정</span></div>`:`<div><b>${ok}</b><span>확정된 일정</span></div>`}<div><b style="color:var(--warn)">${isRES()?ok:open}</b><span>${isRES()?'확정 현장':'신청 가능'}</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div></header>
+  app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${isAGO() ? '아고스튜디오 파트너룸' : esc(C.BRAND)+' 일정판'}${mm}</div>
+     <div class="hirow"><div style="display:flex;gap:12px;align-items:center;min-width:0">${EPProfile.av(D.me.name,46,{me:true})}<div class="hi"><b>${esc(who())}, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${isAGO() ? `${esc(D.me.team_name)} 레이블 파트너 · co-work` : `${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}`}</small></div></div>${EPStatus.pill()}</div>
+     <div class="summary">${EVT()?`<div><b>${evN}</b><span>다가오는 내 일정</span></div>`:`<div><b>${ok}</b><span>확정된 일정</span></div>`}<div><b style="color:var(--warn)">${EVT()?ok:open}</b><span>${isAGO()?'확정 일정':isRES()?'확정 현장':'신청 가능'}</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div></header>
    <main class="body">${main}
-   <p class="foot">${esc(C.BRAND)} · 이 링크는 ${esc(D.me.name)}님 전용이에요. 다른 사람과 공유하지 마세요.</p></main>`;
+   <p class="foot">${esc(C.BRAND)} · 이 링크는 ${esc(who())} 전용이에요. 다른 사람과 공유하지 마세요.</p></main>`;
   const tb = document.getElementById('tabbar'); tb.classList.remove('hidden');
   const items = [['board','cal','일정판',acks],['mine','check','내 일정',0], V2() ? ['plus'] : null, ['report','cam','사진·보고',0],['notice','bell','공지',unread]].filter(Boolean);
   tb.querySelector('nav').style.gridTemplateColumns = `repeat(${items.length},1fr)`;
@@ -497,7 +501,7 @@ document.addEventListener('click', async e => {
       toast('저장했어요 · 대표님이 인력 배정할 때 봐요'); paint = null; tab = 'board'; await load(); render(); } catch(err){ toast(errMsg(err)); b.disabled = false; }
     return; }
   // 개인 일정
-  if (d.evnew){ closeSheet(); evEdit = {date: pick < ymd(today) ? ymd(today) : pick, kind: isRES() ? '계약' : '개인', show_boss: isRES(), gcal: false}; tab = 'ev'; render(); window.scrollTo(0,0); return; }
+  if (d.evnew){ closeSheet(); evEdit = {date: pick < ymd(today) ? ymd(today) : pick, kind: isRES() ? '계약' : isAGO() ? '미팅' : '개인', show_boss: EVT(), gcal: false}; tab = 'ev'; render(); window.scrollTo(0,0); return; }
   if (d.evedit){ evEdit = Object.assign({}, D.events.find(x => x.id == d.evedit)); tab = 'ev'; render(); window.scrollTo(0,0); return; }
   if (d.evk){ const f = document.getElementById('evForm'); const keep = Object.fromEntries(new FormData(f)); evEdit = Object.assign(evEdit, {kind:d.evk, date:keep.date, time:keep.time, title:keep.title, memo:keep.memo, maemul:keep.maemul, show_boss:!!keep.show_boss, gcal:!!keep.gcal}); render(); return; }
   if (d.evdel){ if (!confirm('이 일정을 지울까요?')) return; try { await rpc('staff_event_delete',{p_token:TOKEN,p_id:+d.evdel}); toast('지웠어요'); evEdit = null; tab = 'board'; await load(); render(); } catch(err){ toast(errMsg(err)); } return; }
@@ -564,7 +568,7 @@ document.addEventListener('submit', async e => {
   if (!TOKEN && !DEMO){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>${esc(C.BRAND)} 일정판</h2><p>개인 링크로 들어와 주세요.<br>링크는 '${esc(C.BRAND)}' 카카오톡 채널로 받을 수 있어요.</p></div>`; return; }
   EPProfile.init({token:TOKEN, demo:DEMO, nameFn:()=>D&&D.me&&D.me.name, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }});
   EPStatus.init({manual:()=>D&&D.boss, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }, demo:DEMO});
-  try { await load(); if (isRES()) scope = 'mine'; render(); if (tab==='mine'){ try{ payData = await rpc('staff_pay',{p_token:TOKEN,p_month:ymd(month)}); }catch(_){ payData=[]; } render(); } }
+  try { await load(); if (EVT()) scope = 'mine'; render(); if (tab==='mine'){ try{ payData = await rpc('staff_pay',{p_token:TOKEN,p_month:ymd(month)}); }catch(_){ payData=[]; } render(); } }
   catch(e){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>링크를 확인해주세요</h2><p>${esc(errMsg(e))}</p></div>`; }
   document.addEventListener('visibilitychange', async () => { if (document.visibilityState==='visible' && D && !['paint','ev','shoot'].includes(tab)){ try{ await load(); render(); }catch(_){} } });
 })();

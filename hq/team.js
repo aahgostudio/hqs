@@ -52,8 +52,17 @@ H.teamData = () => {
       return {s, icon, now: now_, reg, chk, stale, warn, evN: evs.length, seen: s.last_seen_at};
     }).sort((a,b) => b.warn - a.warn || (a.icon === '🚗' ? -1 : 0));
   }
+  // 아고 파트너 (대표 화면만, 일정 기준)
+  const partners = !S.owner ? [] : (S.staff||[]).filter(s => s.status === 'active' && s.team === 'AGO').map(s => {
+    const evs = (S.events||[]).filter(e => e.staff_id === s.id && e.ev_date === today).sort((a,b) => (a.ev_time||'').localeCompare(b.ev_time||''));
+    const curE = evs.find(e => { const t = mins(e.ev_time); return t != null && now >= t && now < t + 120; });
+    const nextE = evs.find(e => { const t = mins(e.ev_time); return t != null && t > now; });
+    const icon = curE ? ({'촬영':'🎬','라이브':'🎤','미팅':'🤝','교육':'📚'}[curE.kind] || '📌') : nextE ? '🗓' : '·';
+    const now_ = curE ? `${curE.kind} 중${curE.title?' · '+curE.title:''}` : nextE ? `다음 ${hm(nextE.ev_time)} ${nextE.kind}${nextE.title?' · '+nextE.title:''}` : '오늘 함께하는 일정 없음';
+    return {s, icon, now: now_, seen: s.last_seen_at, evN: evs.length};
+  });
   const warnN = sites.filter(x => x.warn.length).length + people.filter(p => p.warn).length;
-  return {sites, free, people, warnN};
+  return {sites, free, people, partners, warnN};
 };
 
 const TONE = {on:['on','작업 중'], next:['mute','예정'], done:['ok','작업 끝'], over:['bad','작업 중']};
@@ -79,11 +88,12 @@ function personRow(p){
 // 홈 맨 위 아이콘 줄
 H.teamStrip = () => {
   const d = H.teamData(), S = H.S;
-  if (!d.sites.length && !d.people.length) return '';
+  if (!d.sites.length && !d.people.length && !(d.partners||[]).length) return '';
   const sIc = d.sites.map(x => `<span class="tm-ic ${x.warn.length?'warn':x.state}" title="${esc(x.j.title)}">🧹<em>${x.partner?'P':x.ppl.length}</em></span>`).join('');
   const pIc = d.people.map(p => `<span class="tm-ic res ${p.warn?'warn':''}" title="${esc(p.s.name)} · ${esc(p.now)}">${H.av(p.s, 34)}<em>${p.icon}</em></span>`).join('');
+  const gIc = (d.partners||[]).map(p => `<span class="tm-ic ago" title="${esc(p.s.name)} 사장님 · ${esc(p.now)}">${H.av(p.s, 34, 'ago')}<em>${p.icon}</em></span>`).join('');
   return `<a class="box tm-strip" href="#team"><div class="tm-sh"><b>지금 우리 팀</b>${d.warnN?`<span class="tg bad">⚠ ${d.warnN}</span>`:''}<span class="go">자세히 →</span></div>
-    <div class="tm-icons">${sIc}${sIc&&pIc?'<i class="sep"></i>':''}${pIc}</div></a>`;
+    <div class="tm-icons">${sIc}${sIc&&pIc?'<i class="sep"></i>':''}${pIc}${gIc?'<i class="sep"></i>'+gIc:''}</div></a>`;
 };
 
 H.view('team', {label:'팀',
@@ -105,6 +115,8 @@ H.view('team', {label:'팀',
         ${d.people.map(personRow).join('') || '<div class="note">근무 중인 부동산 직원이 없어요</div>'}
         <p class="tm-foot">상태는 본인이 넣은 일정(안내·계약·잔금)과 매물노트 활동으로만 정해져요 · 위치 추적 없음</p></section>`:''}
     </div>
+    ${S.owner && d.partners.length ? `<section class="box"><div class="bh"><h3><i class="dot" style="background:var(--ago)"></i>아고 파트너판 <span class="sub">레이블 co-work</span></h3></div>
+      ${d.partners.map(p => `<div class="tm-per">${H.av(p.s, 40, 'ago')}<div><b>${esc(p.s.name)} ${esc((p.s.role||'사장').replace(/님$/,''))}님</b><div class="now">${p.icon} ${esc(p.now)}</div><div class="meta">오늘 일정 ${p.evN}건</div></div><div class="rt"><strong>${p.seen ? H.ago(p.seen) : '-'}</strong>접속</div></div>`).join('')}</section>` : ''}
     <p class="tm-foot">직원 화면엔 안 보여요${S.owner?' · 관리자(HQS)에게는 청소 현장판만 보여요':''}</p>`;
   }
 });

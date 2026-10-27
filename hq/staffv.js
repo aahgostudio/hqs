@@ -56,7 +56,8 @@ H.CHANGE.stStatus = async el => { const s = H.S.staff.find(x=>x.id===el.dataset.
 H.ACT.stOldLeft = () => { H.S.showOldLeft = !H.S.showOldLeft; H.render(); };
 H.ACT.stSync = async el => { const s = H.S.staff.find(x=>x.id===el.dataset.s); H.S.mm = await H.maemul('setStaff', [{name: s.name, status: S2M[s.status]}]); H.toast('매물노트를 일정판 상태로 맞췄어요'); H.render(); };
 const linkOf = s => `${location.origin}/clean/?k=${s.token}`;
-const linkMsg = s => `[${H.C.BRAND}] ${s.name}님 전용 일정판 링크예요.\n${linkOf(s)}\n\n· 일정 확인·신청, 일할 수 있는 날, 현장 사진, 공지를 여기서 해요.\n· 본인만 쓰는 링크라 다른 분께 보내지 말아주세요.\n· 휴대폰 홈 화면에 추가해두시면 편해요.`;
+const agoMsg = s => `[아고스튜디오] ${s.name} ${(s.role||'사장').replace(/님$/,'')}님, 파트너룸 링크예요.\n${linkOf(s)}\n\n· 함께하는 촬영·라이브·미팅 일정, 공지, 파트너 정산을 여기서 봐요.\n· 사장님만 쓰는 링크라 다른 분께 보내지 말아주세요.\n· 휴대폰 홈 화면에 추가해두시면 편해요.`;
+const linkMsg = s => s.team === 'AGO' ? agoMsg(s) : `[${H.C.BRAND}] ${s.name}님 전용 일정판 링크예요.\n${linkOf(s)}\n\n· 일정 확인·신청, 일할 수 있는 날, 현장 사진, 공지를 여기서 해요.\n· 본인만 쓰는 링크라 다른 분께 보내지 말아주세요.\n· 휴대폰 홈 화면에 추가해두시면 편해요.`;
 const resMsg = s => `[${H.C.BRAND}] ${s.name}님 매물노트 링크예요.\n${location.origin}/maemul/?k=${s.maemul_code}\n\n· 매물노트 위쪽 [일정] 버튼으로 일정판(계약·잔금·안내 일정)도 같이 써요.\n· 본인만 쓰는 링크라 다른 분께 보내지 말아주세요.`;
 H.ACT.stLink = el => { const s = H.S.staff.find(x=>x.id===el.dataset.s);
   if (s.team === 'RES' && s.maemul_code) H.copy(resMsg(s), `${s.name}님 매물노트 링크 안내문 복사 · 카톡 1:1에 붙여넣으세요`);
@@ -66,8 +67,8 @@ function staffSheet(s){
   const S = H.S; s = s || {team:'OPS', status:'active', pay_type:'none', can_collect:false};
   H.open(`<form data-f="staff"><h3>${s.id?'직원 수정':'직원 추가'}</h3><div class="fg">
     <div class="field"><label>이름</label><input name="name" value="${esc(s.name||'')}" required></div>
-    <div class="field"><label>팀</label><select name="team">${S.teams.filter(t=>t.code!=='HQS').map(t=>`<option value="${t.code}" ${s.team===t.code?'selected':''}>${t.code} · ${esc(t.name)}</option>`).join('')}</select></div>
-    <div class="field"><label>직책</label><input name="role" value="${esc(s.role||'')}"></div>
+    <div class="field"><label>팀</label><select name="team" data-c="stTeam">${S.teams.filter(t=>t.code!=='HQS').map(t=>`<option value="${t.code}" ${s.team===t.code?'selected':''}>${t.code} · ${esc(t.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>직책 <small>(아고 파트너는 사장님)</small></label><input name="role" value="${esc(s.role||'')}"></div>
     <div class="field"><label>연락처</label><input name="phone" value="${esc(s.phone||'')}"></div>
     <div class="field full"><label>파트너 지역 · 분야 (도급)</label><input name="partner_area" value="${esc(s.partner_area||'')}"></div>
     <div class="field"><label>지급 방식</label><select name="pay_type">${Object.entries(H.PT).map(([v,l])=>`<option value="${v}" ${s.pay_type===v?'selected':''}>${l}</option>`).join('')}</select><div class="hint">세금 방식은 세무사 확인 후 정해 주세요</div></div>
@@ -78,12 +79,13 @@ function staffSheet(s){
   </div>${H.sacts('저장', s.id?`<button type="button" class="btn ghost" data-a="stToken" data-s="${s.id}" style="flex:0 0 auto">링크 새로 발급</button>`:'')}<input type="hidden" name="id" value="${s.id||''}"></form>`);
 }
 H.ACT.stNew = () => staffSheet();
+H.CHANGE.stTeam = el => { const r = el.form.role; if (el.value === 'AGO' && !r.value) r.value = '사장님'; };
 H.ACT.stEdit = el => staffSheet(H.S.staff.find(x=>x.id===el.dataset.s));
 H.ACT.stToken = async el => { if (!confirm('새 링크를 만들면 예전 링크는 바로 막혀요. 계속할까요?')) return;
   const tok = [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');
   await H.q(sb.from('staff').update({token: tok}).eq('id', el.dataset.s)); H.close(); H.toast('새 링크 발급 · [링크 복사]로 다시 보내주세요'); H.refresh(); };
 H.FORM.staff = async v => {
-  const row = {name:v.get('name').trim(), team:v.get('team'), role:H.nn(v.get('role')), phone:H.nn(v.get('phone')), partner_area:H.nn(v.get('partner_area')), pay_type:v.get('pay_type'), status:v.get('status'), joined_on:H.nn(v.get('joined_on')), can_collect:v.get('can_collect')==='on'};
+  const row = {name:v.get('name').trim(), team:v.get('team'), role:H.nn(v.get('role')) || (v.get('team')==='AGO' ? '사장님' : null), phone:H.nn(v.get('phone')), partner_area:H.nn(v.get('partner_area')), pay_type:v.get('pay_type'), status:v.get('status'), joined_on:H.nn(v.get('joined_on')), can_collect:v.get('can_collect')==='on'};
   const id = v.get('id'); await H.q(id ? sb.from('staff').update(row).eq('id', id) : sb.from('staff').insert(row));
   if (id) await saveLeft(id, row.status);
   if (!id && v.get('mm') === 'on') { try { H.S.mm = await H.maemul('addStaff', [{name: row.name, role: row.role || '사원'}]); H.S.staff = await H.q(sb.from('staff').select('*').order('created_at')); await H.syncMaemulCodes(); H.toast('매물노트 파일·링크도 만들었어요'); } catch(e){ H.toast('일정판엔 추가했어요 · 매물노트는 못 만들었어요: ' + e.message); } }
