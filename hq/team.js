@@ -15,15 +15,16 @@ H.teamData = () => {
   const sites = (S.jobs||[]).filter(j => j.job_date === today && j.status !== 'cancelled' && j.status !== 'quote').map(j => {
     const ppl = appr(j).map(a => H.P(a.staff_id));
     const partner = ppl.some(p => p.team === 'PRT');
+    const boss = !ppl.length && j.status === 'full'; // 대표 현장 (배정 없이 마감)
     const st = mins(j.start_time), ph = H.photosOf(j.id), done = j.work_done_at || j.done_at;
     const el = st == null ? null : now - st;
     let state = done ? 'done' : (st != null && el >= 0) ? (el > SITE_MIN + 60 ? 'over' : 'on') : 'next';
     const warn = [], info = [];
-    if (!done && !partner && j.headcount && ppl.length < j.headcount) warn.push(`인원 ${j.headcount - ppl.length}명 부족`);
-    if (state === 'on' && el >= 60 && !ph.length) warn.push(`${Math.floor(el/60)}시간째 사진 0장`);
+    if (!done && !partner && !boss && j.headcount && ppl.length < j.headcount) warn.push(`인원 ${j.headcount - ppl.length}명 부족`);
+    if (state === 'on' && el >= 60 && !ph.length && !boss) warn.push(`${Math.floor(el/60)}시간째 사진 0장`);
     if (state === 'over') warn.push('끝날 시간 지남 · 작업 끝 안 누름');
     if (j.collector_id && +j.balance_amount && !j.collected_at && done) info.push(`잔금 ${H.won(j.balance_amount)} · 수금 대기`);
-    return {j, ppl, partner, state, warn, info, ph, done, el, prog: el == null ? 0 : Math.max(0, Math.min(1, el / SITE_MIN))};
+    return {j, ppl, partner, boss, state, warn, info, ph, done, el, prog: el == null ? 0 : Math.max(0, Math.min(1, el / SITE_MIN))};
   });
   const rank = s => s.warn.length ? 0 : s.state === 'on' ? 1 : s.state === 'next' ? 2 : 3;
   sites.sort((a,b) => rank(a) - rank(b) || (mins(a.j.start_time)||0) - (mins(b.j.start_time)||0));
@@ -72,7 +73,7 @@ function siteCard(x){
   const empty = !x.partner && j.headcount > x.ppl.length && x.state !== 'done' ? j.headcount - x.ppl.length : 0;
   return `<a class="tm-site ${x.warn.length?'warn':x.partner?'prt':x.state}" href="#sched">
     <div class="r1"><b>${esc(j.title)}</b><span class="tm">${hm(j.start_time)||'시간 미정'}~</span></div>
-    <div class="ppl">${x.partner ? '<span class="tg prt">도급 파트너</span> ' + x.ppl.map(p => esc(p.name)).join('·')
+    <div class="ppl">${x.boss ? '<i class="lead">대표 현장</i>' : x.partner ? '<span class="tg prt">도급 파트너</span> ' + x.ppl.map(p => esc(p.name)).join('·')
       : `<span class="n">${x.ppl.length}${j.headcount?'/'+j.headcount:''}인</span>${x.ppl.map(p => `<i class="${p===lead?'lead':''}">${esc(p.name)}${p.role&&p===lead?' '+esc(p.role):''}</i>`).join('')}${empty?`<i class="empty">+${empty} 비었음</i>`:''}`}</div>
     <div class="st"><span class="tg ${tc}">${x.state==='done'?'✅ '+tl+' '+clock(x.done):tl}</span>${x.warn.map(w => `<span class="tg bad">⚠ ${esc(w)}</span>`).join('')}
       ${x.ph.length?`<span>📸 ${x.ph.length}장 · 마지막 ${clock(x.ph[0].created_at)}</span>`:''}${j.live_views?`<span>👀 손님 ${j.live_views}번 봄</span>`:''}${x.info.map(t => `<span>${esc(t)}</span>`).join('')}</div>
