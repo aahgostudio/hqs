@@ -259,9 +259,11 @@ tr.boss td{background:#F5F7FF}
  .ch-wrap{grid-template-columns:1fr;height:auto;min-height:0}.ch-list{max-height:none}
  .ch-wrap:not(.inroom) .ch-room{display:none}
  .ch-wrap.inroom .ch-list{display:none}
- .ch-wrap.inroom .ch-room{position:fixed;inset:0;z-index:45;border-radius:0;height:100dvh;margin:0}
+ body.chroom .top,body.chroom .ch-top{display:none}
+ body.chroom main.wrap{padding:0;max-width:none}
+ .ch-wrap.inroom .ch-room{border-radius:0;height:100dvh;margin:0;border:0}
  .ch-back,.ch-more{display:block}
- .ch-rh{flex-wrap:nowrap;align-items:center;padding:10px 8px;padding-top:calc(10px + env(safe-area-inset-top))}
+ .ch-rh{flex-wrap:nowrap;align-items:center;padding:10px 8px}
  .ch-rh .ch-mem{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  .ch-rh .ch-ra{display:none}
  .ch-rh.open{flex-wrap:wrap}.ch-rh.open .ch-ra{display:flex;flex-wrap:wrap;gap:6px;width:100%}
@@ -333,3 +335,4 @@ body[data-tab=chat] .fab{display:none!important}
 .ch-fold{font-style:normal;font-size:11px;color:var(--sub);padding:1px 5px;border-radius:6px;cursor:pointer}.ch-fold:hover{background:var(--soft)}.ch-row.on .ch-fold{color:#CBD5E1}
 .ch-row.over-dn{box-shadow:inset 0 -2px 0 var(--navy)}.ch-row.into{background:#EEF3FF;box-shadow:inset 3px 0 0 var(--navy)}
 .ch-ic.mgr{position:relative}.ch-ic.mgr::after{content:'';position:absolute;right:0;bottom:0;width:5px;height:5px;border-radius:50%;background:#94A3B8;border:1.5px solid #fff}
+.ch-b video{display:block;max-width:280px;max-height:360px;border-radius:10px;background:#000}

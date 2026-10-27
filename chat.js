@@ -11,6 +11,8 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const pub = p => `${URL_}/storage/v1/object/public/chat/${p}`;
   const two = n => { n = String(n || '?').trim(); return n.length >= 3 ? n.slice(1, 3) : n; };
+  const isVid = p => /\.(mov|mp4|m4v|webm|3gp)$/i.test(p || '');
+  const extOf = f => { const n = ((f.name || '').split('.').pop() || '').toLowerCase(); if (/^(jpe?g|png|webp|heic|heif|mov|mp4|m4v|webm|3gp)$/.test(n)) return n.replace('jpeg','jpg'); const t = (f.type || '').split('/')[1] || 'jpg'; return t === 'quicktime' ? 'mov' : t.replace('jpeg','jpg'); };
   const ICON = {dm:'👔', all:'📣', team:'👥', site:'📍', custom:'💬'};
   let ICONS = null;   // 대표가 고른 방 아이콘 {방번호: 이모지}
   let opt = {token:'', demo:false, accent:'#16347A', onState:()=>{}};
@@ -91,6 +93,7 @@
 .epc-m.mine .epc-meta{align-items:flex-end}
 .epc-meta .u{color:#D9A400;font-weight:800}
 .epc-in{display:flex;gap:8px;align-items:flex-end;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:var(--epc-card);border-top:1px solid var(--epc-line)}
+.epc-b video{display:block;max-width:240px;max-height:320px;border-radius:12px;background:#000}
 .epc-in textarea{flex:1;resize:none;border:1px solid var(--epc-line);background:var(--epc-bg);color:inherit;border-radius:20px;padding:10px 14px;font:inherit;font-size:15px;max-height:120px;line-height:1.35}
 .epc-in button{border:0;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:18px;cursor:pointer;flex:none}
 .epc-send{background:var(--epc-acc);color:#fff}.epc-ph{background:var(--epc-bg);color:var(--epc-mute)}
@@ -154,7 +157,7 @@
       const prev = msgs[i-1], cont = prev && prev.who === m.who && dayKey(prev.at) === dayKey(m.at) && (new Date(m.at) - new Date(prev.at)) < 180000;
       const u = unreadMap[m.id] || 0;
       const body = m.deleted ? `<div class="epc-b del">삭제된 메시지예요</div>`
-        : `<div class="epc-b" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener"><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>${m.body ? '<div style="margin-top:8px">' + esc(m.body) + '</div>' : ''}` : esc(m.body)}</div>`;
+        : `<div class="epc-b" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `${isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener"><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body ? '<div style="margin-top:8px">' + esc(m.body) + '</div>' : ''}` : esc(m.body)}</div>`;
       out += `<div class="epc-m ${m.mine ? 'mine' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
         <div class="epc-col">${!m.mine && !cont ? `<span class="epc-nm">${esc(m.name)}</span>` : ''}
         <div class="epc-line">${body}<span class="epc-meta">${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}<span>${tm(m.at)}</span></span></div></div></div>`;
@@ -165,7 +168,7 @@
     const html = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
       <div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
       ${editing ? `<div class="epc-edit"><span>✏️ 메시지 수정 중</span><button data-epccancel="1">취소</button></div>` : ''}
-      <div class="epc-in"><button class="epc-ph" data-photo="1" aria-label="사진">📷</button><input type="file" accept="image/*" hidden id="epc-file">
+      <div class="epc-in"><button class="epc-ph" data-photo="1" aria-label="사진·동영상">📷</button><input type="file" accept="image/*,video/*" hidden id="epc-file">
         <textarea id="epc-t" rows="1" placeholder="메시지 입력" enterkeyhint="enter"></textarea><button class="epc-send" data-send="1" aria-label="보내기">↑</button></div>`;
     if (keepIn) {   // 입력칸은 그대로(움직이면 키보드 닫힘) · 위쪽 줄과 메시지만 바꿈
       const tmp = document.createElement('div'); tmp.innerHTML = html;
@@ -250,16 +253,18 @@
     busy = false;
   }
   async function sendPhoto(f){
-    if (f.size > 15 * 1024 * 1024) return alert('15MB 이하 사진만 올릴 수 있어요');
+    const vid = /^video\//.test(f.type || '') || /\.(mov|mp4|m4v|webm|3gp)$/i.test(f.name || '');
+    if (vid && f.size > 50 * 1024 * 1024) return alert('동영상은 50MB까지 올릴 수 있어요.\n(약 30초~1분) 길면 잘라서 보내주세요.');
+    if (!vid && f.size > 15 * 1024 * 1024) return alert('15MB 이하 사진만 올릴 수 있어요');
     if (opt.demo) { msgs.push({id: Date.now(), who:'me', name: home.me.name, mine:true, photo:null, body:'📷 (미리보기: 사진은 저장되지 않아요)', at:new Date().toISOString()}); return drawRoom(); }
     try {
       const key = await rpc('staff_avatar_slot', {p_token: opt.token});
-      const ext = (f.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+      const ext = extOf(f);
       const path = `${key}/${room.room.id}/${Date.now()}.${ext}`;
-      const r = await fetch(`${URL_}/storage/v1/object/chat/${path}`, {method:'POST', headers:Object.assign({'content-type': f.type || 'image/jpeg'}, H), body: f});   // 원본 그대로 (증거 보관)
+      const r = await fetch(`${URL_}/storage/v1/object/chat/${path}`, {method:'POST', headers:Object.assign({'content-type': f.type || (vid ? 'video/mp4' : 'image/jpeg')}, H), body: f});   // 원본 그대로 (증거 보관)
       if (!r.ok) throw new Error('upload');
       await rpc('chat_send', {p_token: opt.token, p_room: room.room.id, p_body: null, p_photo: path}); await refreshRoom();
-    } catch(_) { alert('사진을 올리지 못했어요. 잠시 뒤 다시 해주세요.'); }
+    } catch(_) { alert((vid ? '동영상' : '사진') + '을 올리지 못했어요. 잠시 뒤 다시 해주세요.'); }
   }
 
   function onClick(e){

@@ -59,7 +59,7 @@ function roomHtml(){
     const hist = (m.history||[]).length ? `<details class="ch-hist"><summary>${m.deleted?'삭제됨':'수정됨'} · 이력 ${(m.history||[]).length}</summary>${m.history.map(h => `<div>${dt(h.at)} ${h.act==='delete'?'삭제 전':'수정 전'}: ${esc(h.body||'')}${h.photo?' [사진]':''}</div>`).join('')}</details>` : '';
     out += `<div class="ch-m ${m.mine?'mine':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine?'':`<span class="ch-nm">${esc(m.name)}</span>`}
-      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener"><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`:''}${m.body?`<div>${esc(m.body)}</div>`:''}</div>
+      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?(isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener"><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body?`<div>${esc(m.body)}</div>`:''}</div>
       <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
@@ -71,7 +71,7 @@ function roomHtml(){
         <button class="btn sm ghost" data-a="chClose">${r.closed?'다시 열기':'방 닫기'}</button>` : '<span class="note">관리자로 참여 중</span>'}</div></div>
     <div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
     ${r.closed ? '<div class="ch-in note" style="justify-content:center">닫은 방이에요 · 직원 화면엔 안 보여요</div>' :
-    `<div class="ch-in">${OWN() && R.kind==='dm' && !H.S.needV9 ? '<button class="btn ghost sm" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''}<label class="btn ghost sm" style="cursor:pointer">📷<input type="file" accept="image/*" hidden data-chfile="1"></label><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
+    `<div class="ch-in">${OWN() && R.kind==='dm' && !H.S.needV9 ? '<button class="btn ghost sm" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''}<label class="btn ghost sm" style="cursor:pointer">📷<input type="file" accept="image/*,video/*" hidden data-chfile="1"></label><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
 }
 
 // 방 순서: PC에서 끌어다 놓기 (같은 묶음 안에서만)
@@ -101,7 +101,7 @@ function bindDnd(L){
 function paint(keep){
   const L = document.getElementById('chList'), R = document.getElementById('chRoom'); if (!L || !R) return;
   L.innerHTML = listHtml(); bindDnd(L);
-  const W = L.parentElement; if (W) W.classList.toggle('inroom', !!C.cur);   // 폰: 방 열면 목록 숨기고 방만 꽉 차게
+  const W = L.parentElement; if (W) W.classList.toggle('inroom', !!C.cur); document.body.classList.toggle('chroom', !!C.cur);   // 폰: 방 열면 목록 숨기고 방만 꽉 차게
   const box0 = document.getElementById('chMsgs'), atB = !box0 || box0.scrollHeight - box0.scrollTop - box0.clientHeight < 80, top = box0 ? box0.scrollTop : 0;
   // 입력칸은 그대로 두고 나머지만 다시 그림 (폰에서 글 쓰는 중에 키보드가 닫히지 않게)
   const oldIn = R.querySelector('.ch-in'), same = oldIn && R.dataset.room === String(C.cur);
@@ -145,10 +145,14 @@ async function tick(){
 }
 function poll(){ clearInterval(C.t); C.t = setInterval(tick, 4000); }
 
+const isVid = p => /\.(mov|mp4|m4v|webm|3gp)$/i.test(p || '');
+const extOf = f => { const n = ((f.name || '').split('.').pop() || '').toLowerCase(); if (/^(jpe?g|png|webp|heic|heif|mov|mp4|m4v|webm|3gp)$/.test(n)) return n.replace('jpeg','jpg'); const t = (f.type || '').split('/')[1] || 'jpg'; return t === 'quicktime' ? 'mov' : t.replace('jpeg','jpg'); };
 async function sendPhoto(f){
-  if (f.size > 15*1024*1024) return H.toast('15MB 이하 사진만 올릴 수 있어요');
-  try { const ext = (f.type.split('/')[1]||'jpg').replace('jpeg','jpg'), path = `boss/${C.cur}/${Date.now()}.${ext}`;
-    const {error} = await H.sb.storage.from('chat').upload(path, f, {contentType: f.type || 'image/jpeg'}); if (error) throw error;
+  const vid = /^video\//.test(f.type || '') || isVid(f.name);
+  if (vid && f.size > 50*1024*1024) return H.toast('동영상은 50MB(약 30초~1분)까지 올릴 수 있어요');
+  if (!vid && f.size > 15*1024*1024) return H.toast('15MB 이하 사진만 올릴 수 있어요');
+  try { const path = `boss/${C.cur}/${Date.now()}.${extOf(f)}`; if (vid) H.toast('동영상 올리는 중…');
+    const {error} = await H.sb.storage.from('chat').upload(path, f, {contentType: f.type || (vid ? 'video/mp4' : 'image/jpeg')}); if (error) throw error;
     await rpc('chat_admin_send', {p_room: C.cur, p_body: null, p_photo: path}); await tick();
   } catch(e){ H.fail(e); }
 }
@@ -230,7 +234,7 @@ H.FORM.chRoom = async (fd0, f) => {
 H.ACT.chExport = async () => {
   const d = await rpc('chat_admin_load', {p_room: C.cur, p_after: 0, p_before: null, p_limit: 5000});
   const R = d.room, m = d.msgs, from = m[0] ? dt(m[0].at) : '-', to = m.length ? dt(m[m.length-1].at) : '-';
-  const rows = m.map(x => `<tr><td>${dt(x.at)}</td><td>${esc(x.name)}</td><td>${x.photo?`<a href="${esc(pub(x.photo))}">[사진] ${esc(x.photo.split('/').pop())}</a><br>`:''}${esc(x.body||'')}
+  const rows = m.map(x => `<tr><td>${dt(x.at)}</td><td>${esc(x.name)}</td><td>${x.photo?`<a href="${esc(pub(x.photo))}">[${isVid(x.photo)?'동영상':'사진'}] ${esc(x.photo.split('/').pop())}</a><br>`:''}${esc(x.body||'')}
     ${x.deleted?'<div class="f">※ 작성자가 삭제한 메시지 (원문 보관)</div>':''}${(x.history||[]).map(h => `<div class="f">※ ${dt(h.at)} ${h.act==='delete'?'삭제':'수정'} 전 내용: ${esc(h.body||'')}</div>`).join('')}</td></tr>`).join('');
   const w = window.open('', '_blank'); if (!w) return H.toast('팝업이 막혀 있어요 · 허용해 주세요');
   w.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>대화 기록 · ${esc(R.title)}</title>
