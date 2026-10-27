@@ -101,7 +101,7 @@ H.view('home', {label:'홈',
     ${alerts.length?`<section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">누르면 해당 화면으로 가요</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${alerts.map(([c,t,go])=>`<a class="banner ${c==='warn'?'warn':'info'}" href="#${go}" style="text-decoration:none;padding:8px 12px">${esc(t)} →</a>`).join('')}</div></section>`:''}
     <div class="g2">
-      <section class="box"><div class="bh"><h3>오늘 ${md(today)}</h3><a class="btn sm ghost" href="#sched">일정판 →</a></div>
+      <section class="box"><div class="bh"><h3>오늘 ${md(today)}</h3><span style="display:flex;gap:6px">${S.owner?'<button class="btn sm" data-a="daySettle">💰 오늘 정산</button>':''}<a class="btn sm ghost" href="#sched">일정판 →</a></span></div>
         ${todayList.map(x=>`<div class="rw"><span>${x.t?x.t.slice(0,5)+' · ':''}${x.h}</span></div>`).join('') || '<div class="note">오늘 일정이 없어요</div>'}</section>
       <section class="box"><div class="bh"><h3>직원에게 보이는 대표 상태</h3></div>
         <div class="banner info"><b>${esc((S.boss||{}).state||'근무중')}</b>${(S.boss||{}).memo?' · '+esc(S.boss.memo):''}${esc(H.untilTxt((S.boss||{}).until))}${S.owner?'<button class="btn sm" style="margin-left:auto" data-a="bossSheet">바꾸기</button>':''}</div>

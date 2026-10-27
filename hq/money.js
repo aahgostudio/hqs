@@ -57,7 +57,7 @@ H.view('money', {label:'돈', owner:true,
         </tbody></table></div>
         <div class="ptitle">추가금 사유 TOP</div>${R.extraTop.map(([k,v])=>`<div class="rw"><span>${esc(k)}</span><b>${v.n}건 · ${won(v.s)}</b></div>`).join('') || '<div class="note">이 달 추가금이 없어요</div>'}
         <p class="note">도급 A는 예약금만 본사 매출, B는 전액 매출이고 잔금 송금은 외주 지급(청소 도급)으로 넣어 주세요.</p></section>
-      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>청소 · 직원별 정산</h3><span class="sub">이름을 누르면 현장별 상세</span></div>
+      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>청소 · 직원별 정산 <button class="btn sm" data-a="daySettle" style="margin-left:6px">💰 오늘 정산</button></h3><span class="sub">이름을 누르면 현장별 상세</span></div>
         <div class="tbl"><table><thead><tr><th>직원</th><th>지급 방식</th><th class="num">현장</th><th class="num">지급 총액</th><th class="num">공제</th><th class="num">실지급</th><th>상태</th></tr></thead><tbody>
         ${[['OPS','직영'],['SPT','지원'],['PRT','도급']].map(([tm,l])=>{ const rows = R.pay.filter(p=>p.s.team===tm); if (!rows.length) return '';
           return `<tr class="grp"><td colspan="7">${l}</td></tr>` + rows.map(p=>`<tr><td><button class="btn sm ghost" data-a="payDetail" data-s="${p.s.id}" style="font-weight:700">${esc(p.s.name)}</button></td>
