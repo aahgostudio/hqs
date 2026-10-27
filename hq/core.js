@@ -45,6 +45,10 @@ H.GROUPS = [
   {key:'CLEAN', label:'리츠종합클린', teams:['OPS','SPT','PRT']},
   {key:'AGO', label:'아고스튜디오', teams:['AGO']}
 ];
+// 직급 순서 (모든 직원 목록 공통): 실장이 팀장보다 위
+H.RANK = ['대표','소장','실장','특수팀장','상가팀장','팀장','고정팀원','팀원','파트너','지원','사원','교육생'];
+H.rankOf = r => { r = r || ''; const i = H.RANK.findIndex(x => r.includes(x)); return i < 0 ? H.RANK.length : i; };
+H.rankSort = list => (list || []).slice().sort((a, b) => H.rankOf(a.role) - H.rankOf(b.role));
 H.ST = {active:'근무', leave:'휴직', left:'퇴사'};
 H.ST_PRT = {active:'근무', leave:'휴업', left:'계약종료'};   // 도급(파트너)은 휴업·계약종료로 표기
 H.STL = s => (s && s.team === 'PRT') ? H.ST_PRT : H.ST;
@@ -102,7 +106,7 @@ H.loadBase = async () => {
     H.q(sb.from('staff').select('*').order('created_at')),
     H.q(sb.from('settings').select('*'))
   ]);
-  S.teams = tm; S.staffAll = st; S.staff = st.filter(x => !x.hidden); S.settings = Object.fromEntries(set.map(r => [r.key, r.value]));
+  S.teams = tm; S.staffAll = H.rankSort(st); S.staff = S.staffAll.filter(x => !x.hidden); S.settings = Object.fromEntries(set.map(r => [r.key, r.value]));
   S.mcode = S.settings.hq_maemul_code ? String(S.settings.hq_maemul_code) : '';
   if (S.owner) {
     S.payRules = await H.q(sb.from('pay_rules').select('*'));

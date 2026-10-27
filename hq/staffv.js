@@ -17,7 +17,7 @@ async function saveLeft(id, status){ const m = {...leftMap()};
   try { await H.q(sb.from('settings').upsert({key:'staff_left', value:m})); H.S.settings.staff_left = m; } catch(e){} }
 H.saveLeft = saveLeft;
 H.view('staff', {label:'직원',
-  async load(){ H.S.staffAll = await H.q(sb.from('staff').select('*').order('created_at')); H.S.staff = H.S.staffAll.filter(x => !x.hidden);  /* 숨김 = 처음부터 없던 사람 */
+  async load(){ H.S.staffAll = H.rankSort(await H.q(sb.from('staff').select('*').order('created_at'))); H.S.staff = H.S.staffAll.filter(x => !x.hidden);  /* 숨김 = 처음부터 없던 사람 */
     if (H.S.owner) H.S.payRules = await H.q(sb.from('pay_rules').select('*'));
     // 퇴사 날짜가 없는 예전 퇴사자는 오늘부터 30일 계산
     const m = leftMap(), miss = H.S.staff.filter(s => s.status === 'left' && !m[s.id]);
@@ -89,7 +89,7 @@ H.FORM.staff = async v => {
   const row = {name:v.get('name').trim(), team:v.get('team'), role:H.nn(v.get('role')) || (v.get('team')==='AGO' ? '사장님' : null), phone:H.nn(v.get('phone')), partner_area:H.nn(v.get('partner_area')), pay_type:v.get('pay_type'), status:v.get('status'), joined_on:H.nn(v.get('joined_on')), can_collect:v.get('can_collect')==='on'};
   const id = v.get('id'); await H.q(id ? sb.from('staff').update(row).eq('id', id) : sb.from('staff').insert(row));
   if (id) await saveLeft(id, row.status);
-  if (!id && v.get('mm') === 'on') { try { H.S.mm = await H.maemul('addStaff', [{name: row.name, role: row.role || '사원'}]); H.S.staff = await H.q(sb.from('staff').select('*').order('created_at')); await H.syncMaemulCodes(); H.toast('매물노트 파일·링크도 만들었어요'); } catch(e){ H.toast('일정판엔 추가했어요 · 매물노트는 못 만들었어요: ' + e.message); } }
+  if (!id && v.get('mm') === 'on') { try { H.S.mm = await H.maemul('addStaff', [{name: row.name, role: row.role || '사원'}]); H.S.staff = H.rankSort(await H.q(sb.from('staff').select('*').order('created_at'))); await H.syncMaemulCodes(); H.toast('매물노트 파일·링크도 만들었어요'); } catch(e){ H.toast('일정판엔 추가했어요 · 매물노트는 못 만들었어요: ' + e.message); } }
   else H.toast('저장했어요');
   H.close(); H.refresh(); };
 })(window.HQ);
