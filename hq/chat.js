@@ -45,7 +45,7 @@ function roomHtml(){
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
   return `<div class="ch-rh"><div style="min-width:0"><b>${ICON[R.kind]} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div></div>
-      <div class="ch-ra">${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':''}
+      <div class="ch-ra">${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}
         <button class="btn sm ghost" data-a="chKeep" title="기간이 지나도 정리하지 않아요">${r.keep?'📌 고정 해제':'📌 보관 고정'}</button>
         <button class="btn sm ghost" data-a="chExport">내보내기(PDF)</button>
         <button class="btn sm ghost" data-a="chClose">${r.closed?'다시 열기':'방 닫기'}</button></div></div>
@@ -135,6 +135,9 @@ function roomForm(r){
     ${Object.entries(byTeam).map(([t, a]) => `<div class="ptitle">${esc(H.T(t).name)}</div><div class="ch-pick">${a.map(s => `<label><input type="checkbox" name="m" value="${s.id}" ${sel.has(s.id)?'checked':''}> ${esc(s.name)} <small>${esc(s.role||'')}</small></label>`).join('')}</div>`).join('')}
     ${H.sacts(r ? '저장' : '만들기')}</form>`);
 }
+H.ACT.chRename = async () => { const r = C.home.rooms.find(x => x.id === C.cur);
+  const v = prompt('방 이름 (비우면 원래 이름으로 돌아가요)', r.custom_title || r.title); if (v === null) return;
+  await rpc('chat_admin_room_save', {p_id: r.id, p_title: v, p_members: null}); await loadHome(); await openRoom(r.id); H.toast('이름을 바꿨어요 · 직원 화면에도 이 이름으로 보여요'); };
 H.ACT.chNew = () => roomForm(null);
 H.ACT.chEdit = () => roomForm(C.home.rooms.find(x => x.id === C.cur));
 H.FORM.chRoom = async f => {
