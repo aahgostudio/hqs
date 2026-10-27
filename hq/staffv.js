@@ -3,7 +3,7 @@
 const {esc, sb} = H;
 const M2S = {'재직':'active','휴직':'leave','퇴사':'left'}, S2M = {active:'재직', leave:'휴직', left:'퇴사'};
 // 정렬: 근무 → 휴직 → 퇴사, 같은 상태 안에서는 직급순 (소장 → 실장 → 팀장 → 팀원 …)
-const RANK = ['대표','소장','실장','팀장','팀원','지원','사원'];
+const RANK = ['대표','소장','실장','특수팀장','상가팀장','팀장','고정팀원','팀원','지원','사원','교육생'];
 const rk = r => { r = r || ''; const i = RANK.findIndex(x => r.includes(x)); return i < 0 ? RANK.length : i; };
 const SO = {active:0, leave:1, left:2};
 const byOrder = (a,b) => (SO[a.status]??0) - (SO[b.status]??0) || rk(a.role) - rk(b.role) || String(a.created_at||'').localeCompare(String(b.created_at||''));

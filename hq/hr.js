@@ -3,7 +3,9 @@
    레벨·서류·메모는 settings 'staff_hr' {직원id: {...}} 에 저장 (주민번호·계좌번호 같은 민감 정보는 넣지 않기) */
 (function(H){
 const {esc, sb} = H;
-const LV_CLEAN = ['교육생','가정청소 팀원','가정청소 고정팀원','가정청소 팀장 · 상가 팀원','상가·특수청소 팀장'];
+// 청소: 레벨 고르면 직급도 자동
+const CLEAN_ROLE = {'교육생':'교육생', '가정청소 팀원 (일반)':'팀원', '가정청소 팀원 (고정)':'고정팀원', '가정청소 팀장':'팀장', '상가청소 팀장':'상가팀장', '특수청소 팀장':'특수팀장'};
+const LV_CLEAN = Object.keys(CLEAN_ROLE);
 // 부동산 = 3.3% + 비율제 (직원 몫). 맨 아래 교육생, 직원 8할이 최상위. 단계 이름은 교육과정 정해지면 바꾸기
 const RES_RATE = {'교육생':40, '2단계':50, '3단계':60, '4단계':70, '최상위':80};
 const LV_RES = Object.keys(RES_RATE);
@@ -56,7 +58,7 @@ H.ACT.stCard = async el => {
       <div><span>서류</span><b>${docN}/${DOCS.length}</b><small>체크</small></div>
     </div>
     <div class="fg">
-      <div class="field"><label>레벨 (등급제)</label><select name="level"><option value="">미정</option>${LV(s.team).map(l => `<option value="${l}" ${hr.level===l?'selected':''}>${l}${s.team==='RES'?` · 직원 ${RES_RATE[l]/10} : 대표 ${10-RES_RATE[l]/10}`:''}</option>`).join('')}</select><div class="hint">${s.team==='RES'?`저장하면 배분율(직원 몫)도 같이 바뀌어요${own?` · 지금 ${(H.S.payRules||[]).find(p=>p.staff_id===s.id)?.share_rate ?? '미정'}%`:''}`:s.team==='AGO'?'아고 파트너 단계':'무단결근 시 레벨 하향 규칙'}</div></div>
+      <div class="field"><label>레벨 (등급제)</label><select name="level"><option value="">미정</option>${LV(s.team).map(l => `<option value="${l}" ${hr.level===l?'selected':''}>${l}${s.team==='RES'?` · 직원 ${RES_RATE[l]/10} : 대표 ${10-RES_RATE[l]/10}`:''}</option>`).join('')}</select><div class="hint">${!['RES','AGO'].includes(s.team)?'저장하면 직급도 자동으로 바뀌어요 · ':''}${s.team==='RES'?`저장하면 배분율(직원 몫)도 같이 바뀌어요${own?` · 지금 ${(H.S.payRules||[]).find(p=>p.staff_id===s.id)?.share_rate ?? '미정'}%`:''}`:s.team==='AGO'?'아고 파트너 단계':'무단결근 시 레벨 하향 규칙'}</div></div>
       <div class="field"><label>지급 방식</label><input value="${esc(H.PT[s.pay_type]||'')}${s.team==='RES'?' · 비율제':''}${s.can_collect?' · 수금 가능':''}" disabled><div class="hint">기본 정보 수정에서 바꿔요 · 세금 방식은 세무사 확인</div></div>
       <div class="field full"><label>서류 · 확인</label><div class="hr-docs">${DOCS.map(([k,l]) => `<label><input type="checkbox" name="doc_${k}" ${(hr.docs||{})[k]?'checked':''}> ${l}</label>`).join('')}</div>
         <div class="hint">체크만 해요 · 주민번호·계좌번호·신분증 사진은 여기에 넣지 마세요</div></div>
@@ -73,6 +75,10 @@ H.FORM.stHr = async (fd0, f) => {
   m[id] = {level: fd.get('level') || '', memo: (fd.get('memo')||'').slice(0, 5000), docs: Object.fromEntries(DOCS.map(([k]) => [k, !!fd.get('doc_'+k)])), at: new Date().toISOString()};
   await H.q(sb.from('settings').upsert({key:'staff_hr', value:m})); H.S.settings.staff_hr = m;
   const st = (H.S.staffAll||H.S.staff||[]).find(x => x.id === id);
+  if (st && !['RES','AGO'].includes(st.team) && CLEAN_ROLE[m[id].level] && st.role !== CLEAN_ROLE[m[id].level]) {   // 청소: 레벨 → 직급
+    await H.q(sb.from('staff').update({role: CLEAN_ROLE[m[id].level]}).eq('id', id)); st.role = CLEAN_ROLE[m[id].level];
+    const s2 = (H.S.staff||[]).find(x => x.id === id); if (s2) s2.role = st.role;
+  }
   if (st && st.team === 'RES' && H.S.owner && RES_RATE[m[id].level] != null) {   // 부동산: 레벨 → 배분율
     const v = RES_RATE[m[id].level]; await H.q(sb.from('pay_rules').upsert({staff_id: id, share_rate: v}));
     const r = (H.S.payRules||[]).find(p => p.staff_id === id); if (r) r.share_rate = v; else (H.S.payRules = H.S.payRules||[]).push({staff_id: id, share_rate: v});
