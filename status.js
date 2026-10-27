@@ -4,7 +4,7 @@
    사용: <script src="../status.js"></script> → EPStatus.init({manual:()=>상태, onChange:render}) → `${EPStatus.pill()}` */
 (function(){
   // 캘린더 자동 상태 주소 (Apps Script 웹앱). 비어 있으면 HQ에서 정한 상태만 보여요.
-  const STATUS_URL = '';
+  const STATUS_URL = 'https://script.google.com/macros/s/AKfycbyN4H5mjfqVtNgsUmjcT2ejAtWKQ0BBbQSzBPa7Vpu6MwIcT9mYe8pwxir4qMxmb_5_hg/exec';
   const PHONE = '010-7193-2246';
   const KAKAO = 'http://pf.kakao.com/_hZqWX/chat';
 
