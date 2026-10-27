@@ -68,7 +68,7 @@ H.view('money', {label:'돈', owner:true,
         </tbody></table></div>
         <p class="note">지급 방식: 3.3% / 공제 없음 / 일용직 / 급여 / 도급 · 일용직은 하루 15만원 넘는 부분만 원천징수로 계산 (세무사 확인)</p></section>
     </div>
-    <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>부동산 · 직원별 배분 · 수익</h3><span class="sub">배분율은 사람마다 기본값, 계약마다 바꿀 수 있어요</span></div>
+    <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>부동산 · 직원별 배분 · 수익 <button class="btn sm" data-a="resMonthly" style="margin-left:6px">🏠 월 정산 (10일 지급)</button></h3><span class="sub">배분율은 사람마다 기본값, 계약마다 바꿀 수 있어요</span></div>
       <div class="tbl"><table><thead><tr><th>직원</th><th>배분율</th><th class="num">계약 몫</th><th class="num">개인 수익</th><th>지급 방식</th><th class="num">공제</th><th class="num">실지급</th><th>상태</th></tr></thead><tbody>
       ${R.res.rows.map(r=>`<tr><td><button class="btn sm ghost" data-a="resDetail" data-s="${r.s.id}" style="font-weight:700">${esc(r.s.name)}</button> ${r.s.status==='leave'?'<span class="pill p-leave">휴직</span>':''}<div class="note">${r.n}건</div></td>
         <td><input class="in sm num" style="width:70px" type="number" min="0" max="100" data-c="shareRate" data-s="${r.s.id}" value="${r.rate??''}" placeholder="%"></td>

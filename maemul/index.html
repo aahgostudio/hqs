@@ -288,6 +288,7 @@ setTimeout(function(){var r=document.getElementById('root');if(r&&r.querySelecto
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
 <script src="../chat.js"></script>
+<script src="../mymoney.js"></script>
 <script>
 (function(){
 
@@ -454,6 +455,7 @@ function evPanel(){
 setTimeout(loadEvents, 700); setInterval(()=>{ if(document.visibilityState==='visible') loadEvents(); }, 300000);
 setTimeout(loadBoss, 600);
 EPProfile.init({token:KEY, demo:!hasGAS, nameFn:()=>S.data&&S.data.me.name, onChange:()=>{ if(S.data) render(); }});
+EPMoney.init({token:hasGAS?KEY:'', demo:!hasGAS, onChange:()=>{ if(S.data&&S.view==='home') render(); }});
 { let last=''; EPChat.init({token:hasGAS?KEY:'', demo:!hasGAS&&new URLSearchParams(location.search).has('chat'), accent:'#5B21B6', onState:st=>{const k=st.on+'/'+st.unread; if(k!==last){last=k; if(S.data) render();}}}); }
 EPStatus.init({manual:()=>S.boss, onChange:()=>{ if(S.data) render(); }, demo:!hasGAS}); setInterval(()=>{ if(document.visibilityState==='visible') loadBoss(); }, 300000);
 
@@ -530,6 +532,7 @@ function viewHome(all,live,mine,myLive,stale){
         return `<div class="person">${EPProfile.av(a.name,36)}<div><b>${esc(a.name)} ${esc(a.role)}</b><small>보류 ${rs.filter(r=>r.status==='보류').length} · 완료 ${rs.filter(r=>r.status==='계약완료').length}</small></div><div><span class="pill-n num">${on}</span> <span class="muted" style="font-size:12px">진행</span></div></div>`}).join('')}
     </div></section>
   </div>
+  ${S.data.me.role!=='대표' && EPMoney.data ? `<section><div class="panel-h"><h2>내 정산</h2></div>${EPMoney.html()}</section>` : ''}
   <section><div class="panel-h"><h2>최근 등록</h2><button class="link" data-go="find">전체 보기</button></div>
     ${recent.length?`<div class="cards">${recent.map(card).join('')}</div>`:emptyBox('첫 매물을 등록해 보세요','오른쪽 위 매물 등록 버튼을 누르면 됩니다.')}
   </section>

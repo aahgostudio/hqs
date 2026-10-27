@@ -1,6 +1,7 @@
 -- ============================================================
 --  어닝플레이스 HQ 업데이트 v9 (2026-10-27)  ※ v8 포함 — 이것 하나만 돌리면 돼요
 --  ① 인사카드 대표 전용 칸 (주민번호·계좌 서버 자동 암호화, 비밀번호 없음)
+--  ③ 직원 화면 '내 돈': 번 돈 · 받은 돈 · 아직 안 받은 돈 (11/1부터)
 --  ② 입금 기록: 대표님이 1:1 방에 "준호님 7 넣었어요" 보내면 자동 기록 (7 = 7만원)
 --     · 글을 고치면 금액도 고쳐지고, 지우면 기록도 취소 표시
 --  Supabase → SQL Editor → 붙여넣고 Run → '업데이트 완료 (v9)'
@@ -99,6 +100,59 @@ end $$;
 drop trigger if exists chat_pay on public.chat_messages;
 create trigger chat_pay after insert or update of body, deleted_at on public.chat_messages
   for each row execute function public._pay_from_chat();
+
+-- ---------- 직원 화면: 내 돈 (번 돈 · 받은 돈 · 아직 안 받은 돈) ----------
+--  11/1 이후 일만 계산 (그 전은 카카오워크 시절 정산 끝난 것으로 봄) · settings 'pay_track_from' 으로 바꿀 수 있음
+insert into public.settings (key, value) values ('pay_track_from', '"2026-11-01"'::jsonb) on conflict (key) do nothing;
+
+create or replace function public._deduct(p_type text, p_amount numeric, p_days int default 1) returns int language plpgsql immutable as $$
+declare per numeric; t numeric;
+begin
+  if p_type = 'freelance33' then return (floor(p_amount * 0.033 / 10) * 10)::int; end if;
+  if p_type = 'daily' then
+    per := p_amount / greatest(p_days, 1); t := greatest(0, per - 150000) * 0.06 * 0.45 * 1.1;
+    t := floor(t * greatest(p_days, 1) / 10) * 10; if t < 1000 * greatest(p_days, 1) then return 0; end if; return t::int;
+  end if;
+  return 0;
+end $$;
+
+create or replace function public.staff_money(p_token text) returns jsonb
+language plpgsql stable security definer set search_path = public, extensions as $$
+declare s public.staff := public._me(p_token); since date; m date; out jsonb := '[]'::jsonb;
+        g numeric; n int; d int; rcv int; tot_net bigint := 0; tot_rcv bigint := 0; base_rate numeric;
+begin
+  since := coalesce((select (value #>> '{}')::date from public.settings where key = 'pay_track_from'), date '2026-11-01');
+  base_rate := (select share_rate from public.pay_rules where staff_id = s.id);
+  for i in 0..5 loop
+    m := (date_trunc('month', public._today()) - make_interval(months => i))::date;
+    if s.team = 'RES' then
+      select coalesce(sum(round(
+               (select coalesce(sum((x->>'amount')::numeric), 0) from jsonb_array_elements(dl.sides) x)
+               * coalesce(sh.contrib, 100.0 / greatest(array_length(dl.agents, 1), 1)) / 100
+               * coalesce(sh.rate, base_rate, 0) / 100)), 0), count(*)
+        into g, n
+        from public.deals dl left join public.deal_shares sh on sh.deal_id = dl.id and sh.staff_id = s.id
+       where s.id = any(dl.agents) and dl.deal_date >= greatest(m, since) and dl.deal_date < (m + interval '1 month');
+    else
+      select coalesce(sum(coalesce(a.pay_amount,0) + coalesce(a.extra_amount,0)), 0), count(*)
+        into g, n
+        from public.assignments a join public.jobs j on j.id = a.job_id
+       where a.staff_id = s.id and a.status = 'approved' and j.status = 'done'
+         and j.job_date >= greatest(m, since) and j.job_date < (m + interval '1 month');
+    end if;
+    d := case when s.pay_type = 'salary' then 0 else public._deduct(s.pay_type, g, n) end;
+    select coalesce(sum(amount), 0) into rcv from public.payouts
+     where staff_id = s.id and not void and paid_on >= greatest(m, since) and paid_on < (m + interval '1 month');
+    out := out || jsonb_build_array(jsonb_build_object('ym', to_char(m, 'YYYY-MM'), 'n', n, 'gross', g, 'ded', d, 'net', g - d, 'received', rcv));
+    if m + interval '1 month' > since then tot_net := tot_net + (g - d); tot_rcv := tot_rcv + rcv; end if;
+  end loop;
+  return jsonb_build_object('team', s.team, 'pay_type', s.pay_type, 'since', since, 'months', out,
+    'net_all', tot_net, 'received_all', tot_rcv, 'due', tot_net - tot_rcv,
+    'payday', case when s.team = 'RES' then '매달 말일 정산 → 다음 달 10일 지급' else '현장 마감·수금 확인 후 저녁 지급' end,
+    'recent', coalesce((select jsonb_agg(jsonb_build_object('date', paid_on, 'amount', amount) order by paid_on desc, id desc)
+                          from (select * from public.payouts where staff_id = s.id and not void and paid_on >= since order by paid_on desc, id desc limit 10) p), '[]'::jsonb));
+end $$;
+grant execute on function public.staff_money(text) to anon, authenticated;
 
 create or replace function public.hq_schema_version() returns int
 language sql stable as $$ select 9 $$;

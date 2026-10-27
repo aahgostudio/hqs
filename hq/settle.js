@@ -75,4 +75,57 @@ H.ACT.stlCopy = () => { const C = calc(SD);
     ...C.rows.map(r => { const a = (H.S.accts||{})[r.s.id] || {}; return `${r.s.name} ${won(r.gross)}${r.ded ? ` - ${H.PT[r.s.pay_type]} ${won(r.ded)}` : ''} = ${won(r.net)}원${a.acct ? ` / ${a.bank||''} ${a.acct} ${a.holder||''}` : ''}`; }),
     `합계 보낼 돈 ${won(C.net)}원`].join('\n');
   H.copy(t, '정산 내용을 복사했어요'); };
+
+/* ---------- 부동산 월 정산: 말일 기준 → 다음 달 10일 일괄 지급 ---------- */
+let RM = null;
+const ymOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+async function loadRes(ym){
+  const [y, m] = ym.split('-').map(Number), f = `${ym}-01`, t = H.ymd(new Date(y, m, 0));
+  const [deals, shares, rules] = await Promise.all([
+    H.q(sb.from('deals').select('*').gte('deal_date', f).lte('deal_date', t).order('deal_date')),
+    H.q(sb.from('deal_shares').select('*')), H.q(sb.from('pay_rules').select('*'))]);
+  const staff = (H.S.staffAll||H.S.staff||[]).filter(s => s.team === 'RES' && !s.hidden);
+  if (H.loadAccts) await H.loadAccts(staff.map(s => s.id)).catch(() => {});
+  const pay = new Date(y, m, 10), payOn = H.ymd(pay);
+  let pays = []; if (!H.S.needV9) pays = await H.q(sb.from('payouts').select('*').eq('void', false).like('body', `${m}월 부동산 정산%`).gte('paid_on', f)).catch(() => []);
+  const rate = sid => { const r = rules.find(p => p.staff_id === sid); return r && r.share_rate != null ? +r.share_rate : null; };
+  const rows = staff.map(s => { let base = 0, inc = 0, n = 0, list = [];
+    deals.forEach(d => { if (!(d.agents||[]).includes(s.id)) return; n++;
+      const sh = shares.find(x => x.deal_id === d.id && x.staff_id === s.id);
+      const contrib = sh ? +sh.contrib : 100 / (d.agents.length||1), rt = sh && sh.rate != null ? +sh.rate : (rate(s.id) || 0);
+      const b = H.dealTotal(d) * contrib / 100, mine = Math.round(b * rt / 100); base += b; inc += mine; list.push({d, mine, rt}); });
+    const ded = s.pay_type === 'salary' ? 0 : H.deduct(s.pay_type === 'none' ? 'none' : s.pay_type, inc);
+    const paid = pays.filter(p => p.staff_id === s.id).reduce((a,p) => a + p.amount, 0);
+    return {s, n, base: Math.round(base), inc, ded, net: inc - ded, paid, list, rate: rate(s.id)}; }).filter(r => r.n || r.s.status !== 'left');
+  return {ym, m, payOn, deals, rows, total: deals.reduce((a,d) => a + H.dealTotal(d), 0)};
+}
+function drawRes(){
+  const R = RM, sum = R.rows.reduce((a,r) => a + r.inc, 0), net = R.rows.reduce((a,r) => a + r.net, 0), on = !H.S.needV9;
+  H.open(`<div class="st">
+    <div class="bh"><h3 style="margin:0">🏠 부동산 ${R.m}월 정산 <span class="note" style="font-size:13px">지급일 ${md(R.payOn)}</span></h3><span style="display:flex;gap:6px"><input type="month" class="in sm" value="${R.ym}" data-c="resMonth" style="width:auto"><button class="btn sm ghost" data-a="resCopy">전체 복사</button></span></div>
+    <div class="hr-k">
+      <div><span>계약</span><b>${R.deals.length}</b><small>중개보수 ${won(R.total)}</small></div>
+      <div><span>직원 몫 합계</span><b>${won(sum)}</b><small>대표 몫 ${won(R.total - sum)}</small></div>
+      <div><span>실제 보낼 돈</span><b>${won(net)}</b><small>3.3% 공제 ${won(sum - net)}</small></div>
+    </div>
+    ${R.rows.some(r => r.n && r.rate == null) ? '<div class="banner warn" style="margin-bottom:8px">배분율이 비어 있는 직원이 있어요 — 인사카드 레벨이나 돈 탭에서 넣어주세요 (비면 0%)</div>' : ''}
+    <div class="tbl"><table><thead><tr><th>직원</th><th class="num">계약</th><th class="num">배분율</th><th class="num">개인 수익</th><th>방식</th><th class="num">공제</th><th class="num">보낼 돈</th><th>계좌</th><th></th></tr></thead><tbody>
+      ${R.rows.map(r => `<tr><td><b>${esc(r.s.name)}</b>${r.list.length ? `<div class="note">${r.list.map(x => esc(x.d.title||'') + ' ' + won(x.mine)).join(' · ')}</div>` : ''}</td><td class="num">${r.n}</td><td class="num">${r.rate ?? '-'}%</td><td class="num">${won(r.inc)}</td><td class="note">${H.PT[r.s.pay_type]||''}</td><td class="num">${won(r.ded)}</td><td class="num"><b>${won(r.net)}</b></td>
+        <td>${H.acctHtml ? H.acctHtml(r.s.id) : ''}</td>
+        <td style="white-space:nowrap">${!on || !r.net ? '' : r.paid >= r.net ? '<span class="pill p-ok">입금 ✓</span>' : `<button class="btn sm" data-a="resPay" data-s="${r.s.id}" data-n="${r.net}">입금 완료</button>`}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">부동산 직원이 없어요</td></tr>'}
+    </tbody></table></div>
+    <p class="note">${R.m}월 1일~말일 계약 기준 · 공동중개는 기여 비율로 나눈 뒤 배분율 적용 · 3.3% 처리는 세무사 확인 · 계약은 운영 › 부동산 계약에서 넣어요</p>
+    <div class="sacts"><button class="btn ghost" data-a="close">닫기</button></div></div>`, true);
+}
+H.ACT.resMonthly = async el => { const d = new Date(); const ym = (el && el.dataset && el.dataset.ym) || ymOf(new Date(d.getFullYear(), d.getMonth() - (d.getDate() <= 20 ? 1 : 0), 1));
+  H.open('<div class="spin"></div>', true); RM = await loadRes(ym); drawRes(); };
+H.CHANGE.resMonth = async el => { RM = await loadRes(el.value); drawRes(); };
+H.ACT.resPay = async el => { const s = H.P(el.dataset.s), n = +el.dataset.n;
+  if (!confirm(`${s.name}님께 ${RM.m}월 정산 ${won(n)}원 입금하셨어요?`)) return;
+  await H.q(sb.from('payouts').insert({staff_id: s.id, amount: n, paid_on: H.ymd(new Date()), source: 'manual', body: `${RM.m}월 부동산 정산`}));
+  H.toast(`${s.name}님 입금 기록 완료`); RM = await loadRes(RM.ym); drawRes(); };
+H.ACT.resCopy = () => { const R = RM;
+  H.copy([`[부동산 ${R.m}월 정산 · ${md(R.payOn)} 지급] 계약 ${R.deals.length}건 · 중개보수 ${won(R.total)}`,
+    ...R.rows.filter(r => r.net).map(r => { const a = (H.S.accts||{})[r.s.id] || {}; return `${r.s.name} ${won(r.inc)} (${r.rate ?? '-'}%) - 3.3% ${won(r.ded)} = ${won(r.net)}원${a.acct ? ` / ${a.bank||''} ${a.acct} ${a.holder||''}` : ''}`; }),
+    `합계 보낼 돈 ${won(R.rows.reduce((a,r) => a + r.net, 0))}원`].join('\n'), '정산 내용을 복사했어요'); };
 })(window.HQ);

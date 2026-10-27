@@ -166,6 +166,7 @@ body{background:var(--bg)}
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
 <script src="../chat.js"></script>
+<script src="../mymoney.js"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -326,7 +327,7 @@ function mineView(){
       <div class="ics">${esc(GAS)}?ics=${esc(TOKEN)}</div><button class="btn ghost sm" data-icscopy="1">주소 복사</button>
       <div style="font-size:12px;color:var(--sub)">구글이 몇 시간에 한 번씩 가져가서, 반영까지 하루까지 걸릴 수 있어요. 이 주소도 나만 쓰는 거예요.</div></div>` : '';
   return `<div class="bar"><h3>다가오는 내 일정</h3>${V2()?'<button class="btn ghost sm" data-plus="1">＋ 넣기</button>':''}</div>` + (evs.map(evCard).join('') + up.map(card).join('') || '<p class="empty">다가오는 일정이 없어요</p>') +
-    `<div class="bar" style="margin-top:18px"><h3>${isAGO()?'파트너 정산':'내 정산'}</h3></div>` + (payBox || '<p class="empty">불러오는 중…</p>') + ics;
+    `<div class="bar" style="margin-top:18px"><h3>${isAGO()?'파트너 정산':'내 정산'}</h3></div>` + EPMoney.html() + (payBox || '<p class="empty">불러오는 중…</p>') + ics;
 }
 
 function reportView(){
@@ -577,6 +578,7 @@ document.addEventListener('submit', async e => {
 (async () => {
   if (!TOKEN && !DEMO){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>${esc(C.BRAND)} 일정판</h2><p>개인 링크로 들어와 주세요.<br>링크는 '${esc(C.BRAND)}' 카카오톡 채널로 받을 수 있어요.</p></div>`; return; }
   EPProfile.init({token:TOKEN, demo:DEMO, nameFn:()=>D&&D.me&&D.me.name, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }});
+  EPMoney.init({token:TOKEN, demo:DEMO, onChange:()=>{ if (D && tab==='mine') render(); }});
   { let last = '';
     EPChat.init({token:TOKEN, demo:DEMO && qs.has('chat'), accent:(getComputedStyle(document.documentElement).getPropertyValue('--navy')||'#16347A').trim(),
       onState:st => { const k = st.on + '/' + st.unread; if (k !== last) { last = k; tabbar(); } }}); }

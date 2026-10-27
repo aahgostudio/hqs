@@ -44,7 +44,8 @@ H.view('home', {label:'홈',
       needRcpt && ['warn', `현금영수증 발행 필요 ${needRcpt}건 (이번 달)`, S.owner?'money':'ops/money'],
       puOld.length && ['warn', `외주 세금계산서 요청 7일 넘음 ${puOld.length}건`, 'ops/buy'],
       unpaidCollect.length && ['wait', `현장 잔금 미수 ${unpaidCollect.length}건`, 'ops/money'],
-      repEnding.length && ['wait', `정기 일정 2주 안에 끝남 ${repEnding.length}곳 (연장하기)`, 'sched']
+      repEnding.length && ['wait', `정기 일정 2주 안에 끝남 ${repEnding.length}곳 (연장하기)`, 'sched'],
+      S.owner && T.getDate() <= 10 && [T.getDate() >= 8 ? 'warn' : 'info', `부동산 ${T.getMonth() || 12}월 정산 · ${T.getMonth()+1}/10 지급${T.getDate() === 10 ? ' (오늘!)' : ` (D-${10 - T.getDate()})`}`, 'money']
     ].filter(Boolean);
 
     // 부동산
