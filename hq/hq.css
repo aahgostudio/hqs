@@ -254,7 +254,19 @@ tr.boss td{background:#F5F7FF}
 .ch-in textarea{flex:1;resize:none;border:1px solid var(--line);background:var(--soft);border-radius:12px;padding:9px 12px;max-height:120px}
 .ch-pick{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px}.ch-pick small{color:var(--sub)}
 .fl{display:block;font-size:12.5px;color:var(--sub);margin:10px 0 4px;font-weight:500}.fl .inp{margin-top:4px;color:var(--ink)}
-@media (max-width:860px){.ch-wrap{grid-template-columns:1fr;height:auto}.ch-list{max-height:320px}.ch-room{height:70vh}}
+.ch-back,.ch-more{display:none;border:0;background:none;font-size:22px;line-height:1;padding:4px 8px;border-radius:8px;cursor:pointer;color:inherit}
+@media (max-width:860px){
+ .ch-wrap{grid-template-columns:1fr;height:auto;min-height:0}.ch-list{max-height:none}
+ .ch-wrap:not(.inroom) .ch-room{display:none}
+ .ch-wrap.inroom .ch-list{display:none}
+ .ch-wrap.inroom .ch-room{position:fixed;inset:0;z-index:45;border-radius:0;height:100dvh;margin:0}
+ .ch-back,.ch-more{display:block}
+ .ch-rh{flex-wrap:nowrap;align-items:center;padding:10px 8px;padding-top:calc(10px + env(safe-area-inset-top))}
+ .ch-rh .ch-mem{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .ch-rh .ch-ra{display:none}
+ .ch-rh.open{flex-wrap:wrap}.ch-rh.open .ch-ra{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+ .ch-in{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+}
 /* 인사카드 */
 .st-name{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px}
 .st-name:hover{text-decoration-color:currentColor}

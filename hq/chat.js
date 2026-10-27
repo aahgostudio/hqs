@@ -63,8 +63,8 @@ function roomHtml(){
       <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
-  return `<div class="ch-rh"><div style="min-width:0"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div></div>
-      <div class="ch-ra">${OWN() ? `${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}<button class="btn sm ghost" data-a="chIcon">🙂 아이콘</button>
+  return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div></div>
+      <button class="ch-more" data-a="chMore" aria-label="방 설정">⋯</button><div class="ch-ra">${OWN() ? `${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}<button class="btn sm ghost" data-a="chIcon">🙂 아이콘</button>
         ${H.S.needV6?'':`<button class="btn sm ghost" data-a="chMgr" title="관리자(HQS)도 이 방을 보고 대화">${r.mgr?'👥 관리자 참여 중':'👥 관리자 빼고'}</button>`}
         <button class="btn sm ghost" data-a="chKeep" title="기간이 지나도 정리하지 않아요">${r.keep?'📌 고정 해제':'📌 보관 고정'}</button>
         <button class="btn sm ghost" data-a="chExport">내보내기(PDF)</button>
@@ -101,6 +101,7 @@ function bindDnd(L){
 function paint(keep){
   const L = document.getElementById('chList'), R = document.getElementById('chRoom'); if (!L || !R) return;
   L.innerHTML = listHtml(); bindDnd(L);
+  const W = L.parentElement; if (W) W.classList.toggle('inroom', !!C.cur);   // 폰: 방 열면 목록 숨기고 방만 꽉 차게
   const box0 = document.getElementById('chMsgs'), atB = !box0 || box0.scrollHeight - box0.scrollTop - box0.clientHeight < 80, top = box0 ? box0.scrollTop : 0;
   // 입력칸은 그대로 두고 나머지만 다시 그림 (폰에서 글 쓰는 중에 키보드가 닫히지 않게)
   const oldIn = R.querySelector('.ch-in'), same = oldIn && R.dataset.room === String(C.cur);
@@ -166,7 +167,7 @@ H.view('chat', {label:'대화',
 });
 
 H.chatGo = staffId => { C.goStaff = staffId; H._loaded = null; H.close(); H.go('chat'); };
-H.ACT.chOpen = el => openRoom(+el.dataset.id);
+H.ACT.chOpen = el => { if (matchMedia('(max-width:860px)').matches && !(history.state && history.state.chRoom)) history.pushState({chRoom: +el.dataset.id}, ''); return openRoom(+el.dataset.id); };   // 폰: 뒤로가기 = 목록
 H.ACT.chKeepId = async el => { await rpc('chat_admin_room_flag', {p_id: +el.dataset.id, p_closed: null, p_keep: true}); await loadHome(); paint(true); H.toast('장기 보관으로 고정했어요'); };
 H.ACT.chPurge = async el => { const r = C.home.rooms.find(x => x.id === +el.dataset.id);
   if (!confirm(`${r.title}님과의 1:1 대화 ${r.count}건을 완전히 지울까요?\n되돌릴 수 없어요. 필요하면 먼저 [내보내기]로 PDF를 받아두세요.`)) return;
@@ -210,6 +211,9 @@ H.ACT.chIcon = () => { const r = C.home.rooms.find(x => x.id === C.cur); if (!r)
 H.ACT.chIconSet = async el => { const id = C.cur, m = Object.assign({}, (H.S.settings||{}).chat_icons || {});
   if (el.dataset.e) m[id] = el.dataset.e; else delete m[id];
   await H.q(H.sb.from('settings').upsert({key:'chat_icons', value:m})); H.S.settings.chat_icons = m; H.close(); paint(); if (C.cur) openRoom(C.cur); H.toast('아이콘을 바꿨어요'); };
+H.ACT.chBack = () => { if (history.state && history.state.chRoom) history.back(); else { C.cur = null; C.room = null; paint(); } };
+H.ACT.chMore = el => el.closest('.ch-rh').classList.toggle('open');
+window.addEventListener('popstate', () => { if (C.cur && H.cur() === 'chat' && !(history.state && history.state.chRoom)) { C.cur = null; C.room = null; paint(); } });
 H.ACT.chNew = () => roomForm(null);
 H.ACT.chEdit = () => roomForm(C.home.rooms.find(x => x.id === C.cur));
 H.FORM.chRoom = async (fd0, f) => {
