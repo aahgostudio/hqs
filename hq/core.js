@@ -267,7 +267,7 @@ H.boot = async () => {
     if (error || !isAdmin){ await sb.auth.signOut(); return loginView('관리자 계정이 아니에요'); }
     const ver = await sb.rpc('hq_schema_version');
     if (ver.error || (ver.data||0) < 2) return setupView();
-    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4; H.S.needV5 = (ver.data||0) < 5; H.S.needV6 = (ver.data||0) < 6; H.S.needV7 = (ver.data||0) < 7;
+    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4; H.S.needV5 = (ver.data||0) < 5; H.S.needV6 = (ver.data||0) < 6; H.S.needV7 = (ver.data||0) < 7; H.S.needV8 = (ver.data||0) < 8;
     const own = await sb.rpc('is_owner');
     H.S.isOwner = !!own.data && (session.user.email||'').toLowerCase() === OWNER_EMAIL;
     // 대표님이 관리자(HQS) 화면을 미리 볼 수 있게: ?mode=hqs 로 들어오거나 모드 버튼을 누르면 전환
