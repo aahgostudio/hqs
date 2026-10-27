@@ -12,6 +12,7 @@
   const pub = p => `${URL_}/storage/v1/object/public/chat/${p}`;
   const two = n => { n = String(n || '?').trim(); return n.length >= 3 ? n.slice(1, 3) : n; };
   const ICON = {dm:'👔', all:'📣', team:'👥', site:'📍', custom:'💬'};
+  let ICONS = null;   // 대표가 고른 방 아이콘 {방번호: 이모지}
   let opt = {token:'', demo:false, accent:'#16347A', onState:()=>{}};
   let home = null, room = null, msgs = [], unreadMap = {}, view = null, pollT = null, homeT = null, busy = false, editing = null;
 
@@ -126,7 +127,7 @@
   function drawList(){
     const w = shell(), rs = (home && home.rooms) || [];
     const total = rs.reduce((a, r) => a + (r.unread || 0), 0);
-    const row = r => `<button class="epc-row" data-room="${r.id}"><span class="epc-ic">${ICON[r.kind] || '💬'}</span>
+    const row = r => `<button class="epc-row" data-room="${r.id}"><span class="epc-ic">${(ICONS && ICONS[r.id]) || ICON[r.kind] || '💬'}</span>
       <span class="t"><b>${esc(r.title)}${r.kind !== 'dm' ? ` <small style="color:var(--epc-mute);font-weight:600;font-size:12px">${r.n}</small>` : ''}</b>
       <p>${r.last ? esc((r.kind === 'dm' ? '' : r.last.name + ': ') + r.last.body) : '아직 대화가 없어요'}</p></span>
       <span class="r">${r.last ? short(r.last.at) : ''}${r.unread ? `<span class="epc-bd">${r.unread > 99 ? '99+' : r.unread}</span>` : ''}</span></button>`;
@@ -189,7 +190,8 @@
   /* ---------- 데이터 ---------- */
   async function loadHome(){
     if (opt.demo) { home = (opt.demoTeam === 'RES' ? DEMO_RES : DEMO).home; }
-    else { try { home = await rpc('chat_home', {p_token: opt.token}); } catch(_) { home = home || {on:false}; } }
+    else { try { home = await rpc('chat_home', {p_token: opt.token}); } catch(_) { home = home || {on:false}; }
+      if (home && home.on && ICONS === null) { try { ICONS = await rpc('chat_icons', {}) || {}; } catch(_) { ICONS = {}; } } }
     const unread = home && home.on ? home.rooms.reduce((a, r) => a + (r.unread || 0), 0) : 0;
     opt.onState({on: !!(home && home.on), unread});
     if (view === 'list') drawList();

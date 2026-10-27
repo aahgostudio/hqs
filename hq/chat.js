@@ -2,6 +2,8 @@
 (function(H){
 const {esc} = H;
 const ICON = {dm:'👤', all:'📣', team:'👥', site:'📍', custom:'💬'};
+const icOf = r => (((H.S.settings||{}).chat_icons||{})[r.id]) || ICON[r.kind];   // 대표가 고른 방 아이�N
+const ICONS = ['📣','👥','🧹','🏢','🏠','🔧','🧽','🚚','🌱','⭐','🔥','💬','📋','💼','📷','🏗️','🌿','👔','🙌','☀️'];
 const KIND = {all:'전체', team:'팀', site:'현장', dm:'1:1', custom:'대표가 만든 방'};
 const URL_ = (window.EP_CONFIG||{}).SUPABASE_URL;
 const pub = p => `${URL_}/storage/v1/object/public/chat/${p}`;
@@ -19,7 +21,7 @@ function listHtml(){
   const rs = (C.home && C.home.rooms) || [], q = C.q.trim();
   const vis = rs.filter(r => (OWN() || (r.mgr && !r.closed && r.live)) && (C.showClosed ? r.closed : !r.closed) && (r.kind !== 'site' || r.live || r.count || C.showClosed) && (!q || r.title.includes(q)));
   const grp = [['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['현장', r => r.kind === 'site'], ['1:1', r => r.kind === 'dm']];
-  const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}" data-a="chOpen" data-id="${r.id}"><span class="ch-ic">${ICON[r.kind]}</span>
+  const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}" data-a="chOpen" data-id="${r.id}"><span class="ch-ic">${icOf(r)}</span>
     <span class="t"><b>${esc(r.title)}${r.keep?' 📌':''}${OWN()&&r.mgr&&!H.S.needV6?' <small class="ch-tag" title="관리자도 참여">관리자</small>':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
     <span class="r">${r.last?short(r.last.at):''}${r.unread?`<i class="ch-bd">${r.unread}</i>`:''}</span></button>`;
   const nClosed = rs.filter(r => r.closed).length;
@@ -45,8 +47,8 @@ function roomHtml(){
       <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
-  return `<div class="ch-rh"><div style="min-width:0"><b>${ICON[R.kind]} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div></div>
-      <div class="ch-ra">${OWN() ? `${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}
+  return `<div class="ch-rh"><div style="min-width:0"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div></div>
+      <div class="ch-ra">${OWN() ? `${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}<button class="btn sm ghost" data-a="chIcon">🙂 아이콘</button>
         ${H.S.needV6?'':`<button class="btn sm ghost" data-a="chMgr" title="관리자(HQS)도 이 방을 보고 대화">${r.mgr?'👥 관리자 참여 중':'👥 관리자 빼고'}</button>`}
         <button class="btn sm ghost" data-a="chKeep" title="기간이 지나도 정리하지 않아요">${r.keep?'📌 고정 해제':'📌 보관 고정'}</button>
         <button class="btn sm ghost" data-a="chExport">내보내기(PDF)</button>
@@ -151,6 +153,13 @@ function roomForm(r){
 H.ACT.chRename = async () => { const r = C.home.rooms.find(x => x.id === C.cur);
   const v = prompt('방 이름 (비우면 원래 이름으로 돌아가요)', r.custom_title || r.title); if (v === null) return;
   await rpc('chat_admin_room_save', {p_id: r.id, p_title: v, p_members: null}); await loadHome(); await openRoom(r.id); H.toast('이름을 바꿨어요 · 직원 화면에도 이 이름으로 보여요'); };
+H.ACT.chIcon = () => { const r = C.home.rooms.find(x => x.id === C.cur); if (!r) return;
+  H.open(`<h3>방 아이콘</h3><p class="note" style="margin:-4px 0 12px">${esc(r.title)} · 직원 화면에도 이 아이콘으로 보여요</p>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">${ICONS.map(e => `<button class="btn ghost" style="font-size:26px;padding:10px 0" data-a="chIconSet" data-e="${e}">${e}</button>`).join('')}</div>
+    <div class="sacts"><button type="button" class="btn ghost" data-a="chIconSet" data-e="">기본으로</button><button type="button" class="btn ghost" data-a="close">닫기</button></div>`); };
+H.ACT.chIconSet = async el => { const id = C.cur, m = Object.assign({}, (H.S.settings||{}).chat_icons || {});
+  if (el.dataset.e) m[id] = el.dataset.e; else delete m[id];
+  await H.q(H.sb.from('settings').upsert({key:'chat_icons', value:m})); H.S.settings.chat_icons = m; H.close(); paint(); if (C.cur) openRoom(C.cur); H.toast('아이콘을 바꿨어요'); };
 H.ACT.chNew = () => roomForm(null);
 H.ACT.chEdit = () => roomForm(C.home.rooms.find(x => x.id === C.cur));
 H.FORM.chRoom = async (fd0, f) => {
