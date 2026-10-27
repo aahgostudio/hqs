@@ -480,7 +480,7 @@ function render(){
       <div class="who">${EPProfile.av(S.data.me.name,34,{me:S.data.me.role!=='대표'})}<div><b>${esc(S.data.me.name)} ${esc(S.data.me.role)}</b><small>리츠부동산</small></div></div>
     </aside>
     <main><div class="glow" aria-hidden="true"></div><div class="wrap">
-      ${S.data.me.role==='대표'&&!S.demo?`<div class="hqback"><a href="../hq/">← 본사 홈 (HQ)</a></div>`:''}
+      ${S.data.me.role==='대표'?`<div class="hqback"><a href="../hq/">← 본사 홈 (HQ)</a></div>`:''}
       ${S.view==='home'?'':`<div class="statusrow">${EPStatus.pill()}</div>`}
       ${S.demo?`<div class="demo">${ic('alert')}지금 보이는 매물은 화면 미리보기용 예시예요. 실제 프로그램에서는 각자 시트의 매물이 나옵니다.</div>`:''}
       ${S.view==='home'?viewHome(all,live,mine,myLive,stale):S.view==='find'?viewFind(live):viewMine(mine)}
