@@ -276,3 +276,7 @@ tr.boss td{background:#F5F7FF}
 .acct{font-weight:400;white-space:nowrap;margin-top:2px}.acct .link{border:0;background:none;color:var(--ink);text-decoration:underline;cursor:pointer;font-size:11.5px;padding:0}
 .hr-pay-sum{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px;margin-bottom:4px}.hr-pay-sum button{margin-left:auto}
 .hr-jobs .link{border:0;background:none;color:var(--sub);text-decoration:underline;cursor:pointer;font-size:11px;padding:0;margin-left:4px}
+.mtabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;margin:12px 0;overflow-x:auto}
+.mtabs button{border:0;background:none;padding:8px 14px;border-radius:9px;font-size:14px;color:var(--sub);white-space:nowrap;cursor:pointer}
+.mtabs button[aria-pressed=true]{background:#111827;color:#fff;font-weight:700}
+.money-tbl td{padding:6px 8px}

@@ -19,7 +19,7 @@ H.view('money', {label:'돈', owner:true,
     if (H.loadAccts) await H.loadAccts((staff||[]).filter(x => x.status !== 'left' && !x.hidden).map(x => x.id)).catch(() => {});
     Object.assign(H.S, {mJobs: jobs, mDeals: deals, mShares: shares, payRules: rules, mEx: ex, mPu: pu, staffAll: staff, staff: (staff||[]).filter(x => !x.hidden)});
   },
-  render(){ const R = H.calcMonth(); const m = V.money.month;
+  render(){ const R = H.calcMonth(); const m = V.money.month; const sec = V.money.sec || 'sum';
     return `<div class="bh" style="margin:0"><div style="display:flex;gap:6px;align-items:center"><button class="btn ghost sm" data-a="monNav" data-n="-1">${H.I('left')}</button><b>${m.getFullYear()}년 ${m.getMonth()+1}월</b><button class="btn ghost sm" data-a="monNav" data-n="1">${H.I('right')}</button></div><span class="note">세금·공제는 기본 계산이에요 · 신고 전 세무사 확인</span></div>
     <section class="box money"><div class="bh"><h3>${m.getMonth()+1}월 전체 수익</h3><button class="btn sm ghost" data-a="monXlsx">엑셀 받기 (세무사용)</button></div>
       <div class="mrow">
@@ -31,7 +31,8 @@ H.view('money', {label:'돈', owner:true,
         <div><span>미수금</span><b style="font-size:20px;color:#FCA5A5">${won(R.unpaid)}</b></div>
         <div class="net"><span>순수익</span><b>${won(R.net)}</b></div>
       </div></section>
-    <div class="g3">
+    <nav class="mtabs">${[['sum','요약'],['clean','청소 정산'],['res','부동산 정산'],['cost','운영비 · 매입']].map(([k,l])=>`<button data-a="monSec" data-k="${k}" aria-pressed="${sec===k}">${l}</button>`).join('')}</nav>
+    ${sec==='sum' ? `<div class="g2">
       <section class="box"><div class="bh"><h3>매출 구분</h3><span class="sub">둘 다 합계에 포함</span></div>
         <div class="ptitle">리츠종합클린</div>${bar(R.clean.issued, R.clean.not, 'var(--clean)')}
         <div class="rw"><span>증빙 발행</span><b>${won(R.clean.issued)}</b></div>
@@ -40,6 +41,45 @@ H.view('money', {label:'돈', owner:true,
         <div class="rw"><span>증빙 발행</span><b>${won(R.res.issued)}</b></div>
         <div class="rw"><span>증빙 안 함 ${R.res.need?`<span class="pill p-warn">${R.res.need}건</span>`:''}${R.res.wait?` <span class="pill p-wait">수령 전 ${R.res.wait}건</span>`:''}</span><b>${won(R.res.not)}</b></div>
         <p class="note">현금영수증 의무발행 업종은 10만원 이상 현금 거래에 발행이 필요해요. 미발행분은 세무사와 처리 방법을 정해 주세요.</p></section>
+      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>청소 · 현장별 수익</h3><span class="sub">${R.cleanJobs.length}곳</span></div>
+        <div class="tbl"><table><thead><tr><th>현장</th><th class="num">매출</th><th class="num">추가금</th><th class="num">인건비</th><th class="num">외주</th><th class="num">현장 이익</th></tr></thead><tbody>
+        ${R.cleanJobs.map(x=>`<tr><td>${md(x.j.job_date)} ${esc(x.j.title)}${x.j.contract_mode?` <span class="tag" style="background:var(--prt)">도급 ${x.j.contract_mode}</span>`:''}</td><td class="num">${won(x.rev)}</td><td class="num">${x.ext?'+'+won(x.ext):'-'}</td><td class="num">${won(x.lab)}</td><td class="num">${x.pu?won(x.pu):'-'}</td><td class="num"><b>${won(x.rev-x.lab-x.pu)}</b>${x.unpaid?' <span class="pill p-warn">미수</span>':''}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">이 달 현장이 없어요</td></tr>'}
+        </tbody></table></div>
+        <div class="ptitle">추가금 사유 TOP</div>${R.extraTop.map(([k,v])=>`<div class="rw"><span>${esc(k)}</span><b>${v.n}건 · ${won(v.s)}</b></div>`).join('') || '<div class="note">이 달 추가금이 없어요</div>'}
+        <p class="note">도급 A는 예약금만 본사 매출, B는 전액 매출이고 잔금 송금은 외주 지급(청소 도급)으로 넣어 주세요.</p></section>
+    </div>` : ''}
+    ${sec==='clean' ? `
+      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>청소 · 직원별 정산 <button class="btn sm" data-a="daySettle" style="margin-left:6px">💰 오늘 정산</button></h3><span class="sub">이름을 누르면 현장별 상세</span></div>
+        <div class="tbl"><table><thead><tr><th>직원</th><th>지급 방식</th><th class="num">현장</th><th class="num">지급 총액</th><th class="num">공제</th><th class="num">실지급</th><th>상태</th></tr></thead><tbody>
+        ${(() => { const bj = (H.S.mJobs||[]).filter(j => j.boss_on && j.status !== 'cancelled' && j.status !== 'quote'), dn = bj.filter(j => j.status === 'done');
+          return `<tr class="grp"><td colspan="7">대표</td></tr><tr class="boss"><td><b>권성환</b> <span class="note">대표 · 직접 현장</span></td><td class="note">사업 소득</td><td class="num">${dn.length}${bj.length>dn.length?`<div class="note">예정 ${bj.length-dn.length}</div>`:''}</td><td class="num">${won(dn.reduce((a,j)=>a+H.jobRevenue(j),0))}<div class="note">현장 매출</div></td><td class="num">-</td><td class="num">-</td><td class="note">${dn.slice(0,3).map(j=>esc(j.title||'')).join(' · ')}${dn.length>3?' 외':''}</td></tr>`; })()}
+        ${[['OPS','직영'],['SPT','지원'],['PRT','도급']].map(([tm,l])=>{ const rows = (H.S.staff||[]).filter(s=>s.team===tm && s.status!=='left').map(s => R.payBy[s.id] ? Object.assign(R.payBy[s.id], {ded: R.payBy[s.id].ded ?? H.deduct(s.pay_type, R.payBy[s.id].gross, R.payBy[s.id].n)}) : {s, n:0, gross:0, extra:0, ded:0, paid:false, items:[]}); if (!rows.length) return '';
+          return `<tr class="grp"><td colspan="7">${l}</td></tr>` + rows.map(p=>`<tr><td><button class="st-name" data-a="payDetail" data-s="${p.s.id}"><b>${esc(p.s.name)}</b></button> <span class="note">${esc(p.s.role||'')}</span>${p.s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}</td>
+            <td><select class="in sm" data-c="payType" data-s="${p.s.id}">${Object.entries(H.PT).map(([k,v])=>`<option value="${k}" ${p.s.pay_type===k?'selected':''}>${v}</option>`).join('')}</select></td>
+            <td class="num">${p.n}</td><td class="num">${won(p.gross)}${p.extra?`<div class="note">추가수당 ${won(p.extra)}</div>`:''}</td><td class="num">${p.s.pay_type==='salary'?'<span class="note">급여에서</span>':won(p.ded)}</td><td class="num"><b>${won(p.gross-p.ded)}</b>${H.payHtml?H.payHtml(p.s.id, p.gross-p.ded):''}${H.acctHtml?H.acctHtml(p.s.id):''}</td>
+            <td>${!p.n?'<span class="note">-</span>':p.paid?'<span class="pill p-ok">지급 완료</span>':`<button class="btn sm" data-a="payDone" data-s="${p.s.id}">지급 완료로</button>`}</td></tr>`).join(''); }).join('') || '<tr><td colspan="7" class="empty">이 달 지급액이 들어간 현장이 없어요</td></tr>'}
+        ${R.pay.length?`<tr><td colspan="3"><b>합계</b></td><td class="num"><b>${won(R.labor)}</b></td><td class="num">${won(R.pay.reduce((n,p)=>n+p.ded,0))}</td><td class="num"><b>${won(R.labor-R.pay.reduce((n,p)=>n+p.ded,0))}</b></td><td></td></tr>`:''}
+        </tbody></table></div>
+        <p class="note">지급 방식: 3.3% / 공제 없음 / 일용직 / 급여 / 도급 · 일용직은 하루 15만원 넘는 부분만 원천징수로 계산 (세무사 확인)</p></section>
+` : ''}
+    ${sec==='res' ? `
+    <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>부동산 · 직원별 배분 · 수익 <button class="btn sm" data-a="resMonthly" style="margin-left:6px">🏠 월 정산 (10일 지급)</button></h3><span class="sub">배분율은 사람마다 기본값, 계약마다 바꿀 수 있어요</span></div>
+      <div class="tbl"><table><thead><tr><th>직원</th><th>배분율</th><th class="num">계약 몫</th><th class="num">개인 수익</th><th>지급 방식</th><th class="num">공제</th><th class="num">실지급</th><th>상태</th></tr></thead><tbody>
+      ${R.res.rows.map(r=>`<tr><td><button class="st-name" data-a="resDetail" data-s="${r.s.id}"><b>${esc(r.s.name)}</b></button> <span class="note">${r.n}건</span>${r.s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}</td>
+        <td><input class="in sm num" style="width:70px" type="number" min="0" max="100" data-c="shareRate" data-s="${r.s.id}" value="${r.rate??''}" placeholder="%"></td>
+        <td class="num">${won(r.base)}</td><td class="num"><b>${won(r.inc)}</b></td>
+        <td><select class="in sm" data-c="payType" data-s="${r.s.id}">${['freelance33','salary','none'].map(k=>`<option value="${k}" ${r.s.pay_type===k?'selected':''}>${H.PT[k]}</option>`).join('')}</select></td>
+        <td class="num">${r.s.pay_type==='salary'?'<span class="note">급여에서</span>':won(r.ded)}</td><td class="num"><b>${won(r.inc-r.ded)}</b>${H.payHtml?H.payHtml(r.s.id, r.inc-r.ded):''}${H.acctHtml?H.acctHtml(r.s.id):''}</td>
+        <td>${!r.n?'-':r.paid?'<span class="pill p-ok">지급 완료</span>':`<button class="btn sm" data-a="resPaid" data-s="${r.s.id}">지급 완료로</button>`}</td></tr>`).join('')}
+      ${(() => { const own = (H.S.mDeals||[]).filter(d => !(d.agents||[]).length);
+        return `<tr class="boss"><td><b>권성환</b> <span class="note">대표 · 직접 계약 ${own.length}건</span></td><td class="note">-</td><td class="num">${won(own.reduce((a,d)=>a+H.dealTotal(d),0))}</td><td class="num"><b>${won(own.reduce((a,d)=>a+H.dealTotal(d),0))}</b></td><td colspan="4" class="note">${own.slice(0,3).map(d=>esc(d.title)).join(' · ') || '직접 계약 없음'}</td></tr>`; })()}
+      <tr class="boss"><td><b>대표 몫 합계</b></td><td class="note">직접 + 직원 나머지</td><td class="num">${won(R.resRev)}</td><td class="num"><b>${won(R.resRev - R.shareTot)}</b></td><td colspan="4" class="note">사업 소득</td></tr>
+      </tbody></table></div>
+      ${R.res.noRate?'<div class="banner warn" style="margin-top:8px">배분율이 비어 있는 직원이 있어요. 비어 있으면 0%로 계산돼요.</div>':''}
+      <div class="ptitle">이 달 계약 (계약마다 배분 바꾸기)</div>
+      ${(H.S.mDeals||[]).map(d=>`<div class="rw"><span>${md(d.deal_date)} ${esc(d.title)} <span class="note">${esc(d.maemul_id||'')} · ${(d.agents||[]).map(a=>esc(H.P(a).name)).join('·')||'대표'}</span></span><span><b>${won(H.dealTotal(d))}</b> <button class="btn sm ghost" data-a="shareSheet" data-id="${d.id}">배분</button></span></div>`).join('') || '<div class="note">이 달 계약이 없어요 · 운영 › 부동산 계약에서 넣어요</div>'}
+      <p class="note">공동중개는 기여 비율(기본 똑같이 나눔)로 먼저 나눈 뒤 배분율을 곱해요. 3.3%/급여 처리는 세무사 확인이 필요해요.</p></section>` : ''}
+    ${sec==='cost' ? `<div class="g2">
       <section class="box"><div class="bh"><h3><i class="dot" style="background:#6B7280"></i>운영비 · 구좌별</h3><span class="sub">${won(R.exTot)}</span></div>
         <div class="ptitle">항목별</div>${R.exByCat.map(([k,v])=>`<div class="rw"><span>${esc(k)}</span><b>${won(v)}</b></div>`).join('') || '<div class="note">없음</div>'}
         <div class="ptitle">결제 구좌별</div>${R.exByAcc.map(([k,v])=>`<div class="rw"><span>${esc(k)}${k==='현금'&&R.exNoRcpt?` <span class="pill p-wait">영수증 없음 ${R.exNoRcpt}건</span>`:''}</span><b>${won(v)}</b></div>`).join('') || '<div class="note">없음</div>'}
@@ -49,39 +89,7 @@ H.view('money', {label:'돈', owner:true,
           <div class="k wait"><span>요청 중</span><b>${won(R.pu.req)}</b></div><div class="k ${R.pu.none?'warn':''}"><span>증빙 없음</span><b>${won(R.pu.none)}</b></div></div>
         <div class="ptitle">항목별</div>${R.puByCat.map(([k,v])=>`<div class="rw"><span>${esc(k)}</span><b>${won(v)}</b></div>`).join('') || '<div class="note">없음</div>'}
         <div class="ptitle">받은 증빙 종류</div>${R.puByProof.map(([k,v])=>`<div class="rw"><span>${esc(k)}</span><b>${won(v)}</b></div>`).join('') || '<div class="note">없음</div>'}</section>
-    </div>
-    <div class="g2">
-      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>청소 · 현장별 수익</h3><span class="sub">${R.cleanJobs.length}곳</span></div>
-        <div class="tbl"><table><thead><tr><th>현장</th><th class="num">매출</th><th class="num">추가금</th><th class="num">인건비</th><th class="num">외주</th><th class="num">현장 이익</th></tr></thead><tbody>
-        ${R.cleanJobs.map(x=>`<tr><td>${md(x.j.job_date)} ${esc(x.j.title)}${x.j.contract_mode?` <span class="tag" style="background:var(--prt)">도급 ${x.j.contract_mode}</span>`:''}</td><td class="num">${won(x.rev)}</td><td class="num">${x.ext?'+'+won(x.ext):'-'}</td><td class="num">${won(x.lab)}</td><td class="num">${x.pu?won(x.pu):'-'}</td><td class="num"><b>${won(x.rev-x.lab-x.pu)}</b>${x.unpaid?' <span class="pill p-warn">미수</span>':''}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">이 달 현장이 없어요</td></tr>'}
-        </tbody></table></div>
-        <div class="ptitle">추가금 사유 TOP</div>${R.extraTop.map(([k,v])=>`<div class="rw"><span>${esc(k)}</span><b>${v.n}건 · ${won(v.s)}</b></div>`).join('') || '<div class="note">이 달 추가금이 없어요</div>'}
-        <p class="note">도급 A는 예약금만 본사 매출, B는 전액 매출이고 잔금 송금은 외주 지급(청소 도급)으로 넣어 주세요.</p></section>
-      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>청소 · 직원별 정산 <button class="btn sm" data-a="daySettle" style="margin-left:6px">💰 오늘 정산</button></h3><span class="sub">이름을 누르면 현장별 상세</span></div>
-        <div class="tbl"><table><thead><tr><th>직원</th><th>지급 방식</th><th class="num">현장</th><th class="num">지급 총액</th><th class="num">공제</th><th class="num">실지급</th><th>상태</th></tr></thead><tbody>
-        ${[['OPS','직영'],['SPT','지원'],['PRT','도급']].map(([tm,l])=>{ const rows = R.pay.filter(p=>p.s.team===tm); if (!rows.length) return '';
-          return `<tr class="grp"><td colspan="7">${l}</td></tr>` + rows.map(p=>`<tr><td><button class="btn sm ghost" data-a="payDetail" data-s="${p.s.id}" style="font-weight:700">${esc(p.s.name)}</button></td>
-            <td><select class="in sm" data-c="payType" data-s="${p.s.id}">${Object.entries(H.PT).map(([k,v])=>`<option value="${k}" ${p.s.pay_type===k?'selected':''}>${v}</option>`).join('')}</select></td>
-            <td class="num">${p.n}</td><td class="num">${won(p.gross)}${p.extra?`<div class="note">추가수당 ${won(p.extra)}</div>`:''}</td><td class="num">${p.s.pay_type==='salary'?'<span class="note">급여에서</span>':won(p.ded)}</td><td class="num"><b>${won(p.gross-p.ded)}</b>${H.payHtml?H.payHtml(p.s.id, p.gross-p.ded):''}${H.acctHtml?H.acctHtml(p.s.id):''}</td>
-            <td>${p.paid?'<span class="pill p-ok">지급 완료</span>':`<button class="btn sm" data-a="payDone" data-s="${p.s.id}">지급 완료로</button>`}</td></tr>`).join(''); }).join('') || '<tr><td colspan="7" class="empty">이 달 지급액이 들어간 현장이 없어요</td></tr>'}
-        ${R.pay.length?`<tr><td colspan="3"><b>합계</b></td><td class="num"><b>${won(R.labor)}</b></td><td class="num">${won(R.pay.reduce((n,p)=>n+p.ded,0))}</td><td class="num"><b>${won(R.labor-R.pay.reduce((n,p)=>n+p.ded,0))}</b></td><td></td></tr>`:''}
-        </tbody></table></div>
-        <p class="note">지급 방식: 3.3% / 공제 없음 / 일용직 / 급여 / 도급 · 일용직은 하루 15만원 넘는 부분만 원천징수로 계산 (세무사 확인)</p></section>
-    </div>
-    <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>부동산 · 직원별 배분 · 수익 <button class="btn sm" data-a="resMonthly" style="margin-left:6px">🏠 월 정산 (10일 지급)</button></h3><span class="sub">배분율은 사람마다 기본값, 계약마다 바꿀 수 있어요</span></div>
-      <div class="tbl"><table><thead><tr><th>직원</th><th>배분율</th><th class="num">계약 몫</th><th class="num">개인 수익</th><th>지급 방식</th><th class="num">공제</th><th class="num">실지급</th><th>상태</th></tr></thead><tbody>
-      ${R.res.rows.map(r=>`<tr><td><button class="btn sm ghost" data-a="resDetail" data-s="${r.s.id}" style="font-weight:700">${esc(r.s.name)}</button> ${r.s.status==='leave'?'<span class="pill p-leave">휴직</span>':''}<div class="note">${r.n}건</div></td>
-        <td><input class="in sm num" style="width:70px" type="number" min="0" max="100" data-c="shareRate" data-s="${r.s.id}" value="${r.rate??''}" placeholder="%"></td>
-        <td class="num">${won(r.base)}</td><td class="num"><b>${won(r.inc)}</b></td>
-        <td><select class="in sm" data-c="payType" data-s="${r.s.id}">${['freelance33','salary','none'].map(k=>`<option value="${k}" ${r.s.pay_type===k?'selected':''}>${H.PT[k]}</option>`).join('')}</select></td>
-        <td class="num">${r.s.pay_type==='salary'?'<span class="note">급여에서</span>':won(r.ded)}</td><td class="num"><b>${won(r.inc-r.ded)}</b>${H.payHtml?H.payHtml(r.s.id, r.inc-r.ded):''}${H.acctHtml?H.acctHtml(r.s.id):''}</td>
-        <td>${!r.n?'-':r.paid?'<span class="pill p-ok">지급 완료</span>':`<button class="btn sm" data-a="resPaid" data-s="${r.s.id}">지급 완료로</button>`}</td></tr>`).join('')}
-      <tr class="boss"><td><b>대표 몫</b></td><td class="note">나머지</td><td class="num">${won(R.resRev)}</td><td class="num"><b>${won(R.resRev - R.shareTot)}</b></td><td colspan="4" class="note">사업 소득</td></tr>
-      </tbody></table></div>
-      ${R.res.noRate?'<div class="banner warn" style="margin-top:8px">배분율이 비어 있는 직원이 있어요. 비어 있으면 0%로 계산돼요.</div>':''}
-      <div class="ptitle">이 달 계약 (계약마다 배분 바꾸기)</div>
-      ${(H.S.mDeals||[]).map(d=>`<div class="rw"><span>${md(d.deal_date)} ${esc(d.title)} <span class="note">${esc(d.maemul_id||'')} · ${(d.agents||[]).map(a=>esc(H.P(a).name)).join('·')||'대표'}</span></span><span><b>${won(H.dealTotal(d))}</b> <button class="btn sm ghost" data-a="shareSheet" data-id="${d.id}">배분</button></span></div>`).join('') || '<div class="note">이 달 계약이 없어요 · 운영 › 부동산 계약에서 넣어요</div>'}
-      <p class="note">공동중개는 기여 비율(기본 똑같이 나눔)로 먼저 나눈 뒤 배분율을 곱해요. 3.3%/급여 처리는 세무사 확인이 필요해요.</p></section>`;
+    </div>` : ''}`;
   }
 });
 const bar = (a, b, c) => (a+b) ? `<div class="hb"><i style="width:${a/(a+b)*100}%;background:${c}"></i><i style="width:${b/(a+b)*100}%;background:#F59E0B"></i></div>` : '';
@@ -140,6 +148,7 @@ H.calcMonth = () => {
   return R;
 };
 
+H.ACT.monSec = el => { V.money.sec = el.dataset.k; H.render(); };
 H.ACT.monNav = el => { const m = V.money.month; V.money.month = new Date(m.getFullYear(), m.getMonth()+(+el.dataset.n), 1); H._dirty = Date.now(); H.render(); };
 H.CHANGE.payType = async el => { await H.q(sb.from('staff').update({pay_type: el.value}).eq('id', el.dataset.s)); const s = H.S.staff.find(x=>x.id===el.dataset.s); if (s) s.pay_type = el.value; H.toast('지급 방식을 바꿨어요'); H.render(); };
 H.CHANGE.shareRate = async el => { const v = el.value === '' ? null : +el.value;
