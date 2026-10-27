@@ -5,7 +5,14 @@ const ICON = {dm:'👤', all:'📣', team:'👥', site:'📍', custom:'💬'};
 const ordOf = () => ((((H.S.settings||{}).chat_icons)||{})._order) || [];
 const byOrd = arr => { const o = ordOf(); const ix = id => { const i = o.indexOf(id); return i < 0 ? 1e6 : i; }; return arr.map((r, i) => [r, i]).sort((a, b) => ix(a[0].id) - ix(b[0].id) || a[1] - b[1]).map(x => x[0]); };   // 대표가 끌어서 정한 방 순서
 const icOf = r => (((H.S.settings||{}).chat_icons||{})[r.id]) || ICON[r.kind];   // 대표가 고른 방 아이콘
-const ICONS = ['📣','👥','🧹','🏢','🏠','🔧','🧽','🚚','🌱','⭐','🔥','💬','📋','💼','📷','🏗️','🌿','👔','🙌','☀️'];
+const ICON_SETS = [
+  ['공지·전체', ['📣','📢','🔔','📌','⭐','🌟','✨','🎉','🙌','👏','💪','🔥']],
+  ['클린·현장', ['🧹','🧽','🧼','🧴','🪣','🫧','✨','🚿','🛁','🪟','🧺','🗑️','♻️','🧯','🪜','🔧','🛠️','🔨','🪛','🧰','🏗️','🚧','🚚','🚐']],
+  ['부동산·건물', ['🏠','🏡','🏢','🏬','🏪','🏫','🏨','🏘️','🏙️','🔑','🗝️','🚪','📐','📏','🧾','📝','✍️','🤝']],
+  ['팀·사람', ['👥','👔','👷','🧑‍💼','🧑‍🔧','🧑‍🏫','👨‍👩‍👧','💁','🙋','🤗','😊','😎']],
+  ['일정·업무', ['📅','🗓️','⏰','📋','📎','💼','📷','📸','📦','💬','💡','📊','💰','💳','🧮','🎯']],
+  ['자연·기분', ['🌱','🌿','🍀','🌸','🌼','🌻','☀️','🌙','🌈','☕','🍙','🎈']]
+];
 const KIND = {all:'전체', team:'팀', site:'현장', dm:'1:1', custom:'대표가 만든 방'};
 const URL_ = (window.EP_CONFIG||{}).SUPABASE_URL;
 const pub = p => `${URL_}/storage/v1/object/public/chat/${p}`;
@@ -173,7 +180,7 @@ H.ACT.chRename = async () => { const r = C.home.rooms.find(x => x.id === C.cur);
   await rpc('chat_admin_room_save', {p_id: r.id, p_title: v, p_members: null}); await loadHome(); await openRoom(r.id); H.toast('이름을 바꿨어요 · 직원 화면에도 이 이름으로 보여요'); };
 H.ACT.chIcon = () => { const r = C.home.rooms.find(x => x.id === C.cur); if (!r) return;
   H.open(`<h3>방 아이콘</h3><p class="note" style="margin:-4px 0 12px">${esc(r.title)} · 직원 화면에도 이 아이콘으로 보여요</p>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">${ICONS.map(e => `<button class="btn ghost" style="font-size:26px;padding:10px 0" data-a="chIconSet" data-e="${e}">${e}</button>`).join('')}</div>
+    <div style="max-height:56vh;overflow:auto;padding-right:4px">${ICON_SETS.map(([t, a]) => `<div class="note" style="margin:10px 0 6px;font-weight:700">${t}</div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">${a.map(e => `<button class="btn ghost" style="font-size:24px;padding:8px 0${icOf(r)===e?';outline:2px solid var(--navy)':''}" data-a="chIconSet" data-e="${e}">${e}</button>`).join('')}</div>`).join('')}</div>
     <div class="sacts"><button type="button" class="btn ghost" data-a="chIconSet" data-e="">기본으로</button><button type="button" class="btn ghost" data-a="close">닫기</button></div>`); };
 H.ACT.chIconSet = async el => { const id = C.cur, m = Object.assign({}, (H.S.settings||{}).chat_icons || {});
   if (el.dataset.e) m[id] = el.dataset.e; else delete m[id];
