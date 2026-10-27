@@ -456,7 +456,7 @@ function evPanel(){
 setTimeout(loadEvents, 700); setInterval(()=>{ if(document.visibilityState==='visible') loadEvents(); }, 300000);
 setTimeout(loadBoss, 600);
 EPProfile.init({token:KEY, demo:!hasGAS, nameFn:()=>S.data&&S.data.me.name, onChange:()=>{ if(S.data) render(); }});
-EPMoney.init({token:hasGAS?KEY:'', demo:!hasGAS, onChange:()=>{ if(S.data&&S.view==='home') render(); }});
+EPMoney.init({token:hasGAS?KEY:'', demo:!hasGAS, demoTeam:'RES', onChange:()=>{ if(S.data&&S.view==='home') render(); }});
 { let last=''; EPChat.init({token:hasGAS?KEY:'', demo:!hasGAS&&new URLSearchParams(location.search).has('chat'), accent:'#5B21B6', onState:st=>{const k=st.on+'/'+st.unread; if(k!==last){last=k; if(S.data) render();}}}); }
 EPStatus.init({manual:()=>S.boss, onChange:()=>{ if(S.data) render(); }, demo:!hasGAS}); setInterval(()=>{ if(document.visibilityState==='visible') loadBoss(); }, 300000);
 
