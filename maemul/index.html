@@ -444,7 +444,7 @@ async function loadEvents(){ if(!KEY) return; try{ const f=today(),e=new Date();
   if(!r.ok) return; const b=await r.json(); S.evs=(b.events||[]).filter(x=>x.date>=f).sort((a,c)=>(a.date+(a.time||'')).localeCompare(c.date+(c.time||''))); if(S.data) render(); }catch(e){} }
 function evPanel(){
   const evs=S.demo?DEMO_EVS:S.evs; if(!evs) return '';
-  const href=S.demo?'#':'../clean/?k='+encodeURIComponent(KEY)+'&tab=mine';
+  const href=S.demo?'#':(S.data&&S.data.me&&S.data.me.role==='대표')?'../hq/#sched':'../clean/?k='+encodeURIComponent(KEY)+'&tab=mine';
   const tk=today(),tm=(()=>{const d=new Date();d.setDate(d.getDate()+1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})();
   const lab=d=>{if(d===tk)return'오늘';if(d===tm)return'내일';const x=new Date(d+'T00:00');return (x.getMonth()+1)+'/'+x.getDate()+' ('+'일월화수목금토'[x.getDay()]+')'};
   const todayN=evs.filter(e=>e.date===tk).length;
