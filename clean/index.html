@@ -16,7 +16,7 @@ body{background:var(--bg)}
 .brand{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);font-weight:500}
 .brand .logo{width:24px;height:24px;border-radius:6px}
 .hi{min-width:0;word-break:keep-all}
-.hirow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:10px}.hirow .epst-ic{margin-top:2px}
+.hirow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:10px}.hirow .epst-ic{margin-top:12px}
 .cheer{margin:3px 0 4px;font-size:14px;color:var(--ink,#1f2937);opacity:.8}
 .hi b{font-size:20px;font-weight:900;letter-spacing:-.02em;display:block;line-height:1.3}
 .hi small{font-size:13px;color:var(--sub)}
@@ -160,6 +160,7 @@ body{background:var(--bg)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
 <script src="../status.js"></script>
+<script src="../profile.js"></script>
 <script src="../greet.js"></script>
 <script>
 (function(){
@@ -426,7 +427,7 @@ function render(){
   const gr = EPGreet.get('clean');
   const main = tab==='board'?boardView():tab==='mine'?mineView():tab==='report'?reportView():tab==='paint'?paintView():tab==='ev'?evForm():tab==='shoot'?shootView():noticeView();
   app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${esc(C.BRAND)} 일정판${mm}</div>
-     <div class="hirow"><div class="hi"><b>${esc(D.me.name)}님, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}</small></div>${EPStatus.pill()}</div>
+     <div class="hirow"><div style="display:flex;gap:12px;align-items:center;min-width:0">${EPProfile.av(D.me.name,46,{me:true})}<div class="hi"><b>${esc(D.me.name)}님, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}</small></div></div>${EPStatus.pill()}</div>
      <div class="summary">${isRES()?`<div><b>${evN}</b><span>다가오는 내 일정</span></div>`:`<div><b>${ok}</b><span>확정된 일정</span></div>`}<div><b style="color:var(--warn)">${isRES()?ok:open}</b><span>${isRES()?'확정 현장':'신청 가능'}</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div></header>
    <main class="body">${main}
    <p class="foot">${esc(C.BRAND)} · 이 링크는 ${esc(D.me.name)}님 전용이에요. 다른 사람과 공유하지 마세요.</p></main>`;
@@ -559,6 +560,7 @@ document.addEventListener('submit', async e => {
 /* ---------- start ---------- */
 (async () => {
   if (!TOKEN && !DEMO){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>${esc(C.BRAND)} 일정판</h2><p>개인 링크로 들어와 주세요.<br>링크는 '${esc(C.BRAND)}' 카카오톡 채널로 받을 수 있어요.</p></div>`; return; }
+  EPProfile.init({token:TOKEN, demo:DEMO, nameFn:()=>D&&D.me&&D.me.name, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }});
   EPStatus.init({manual:()=>D&&D.boss, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }, demo:DEMO});
   try { await load(); if (isRES()) scope = 'mine'; render(); if (tab==='mine'){ try{ payData = await rpc('staff_pay',{p_token:TOKEN,p_month:ymd(month)}); }catch(_){ payData=[]; } render(); } }
   catch(e){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>링크를 확인해주세요</h2><p>${esc(errMsg(e))}</p></div>`; }

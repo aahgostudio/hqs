@@ -6,17 +6,17 @@
   const day = n => { const d = new Date(d0); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
   const S = {
     v:2,
-    me:{id:'me',name:'문나원',team:'OPS',team_name:'청소 직영',role:'팀원',can_collect:false,pay_type:'freelance33'},
+    me:{id:'me',name:'김지원',team:'OPS',team_name:'청소 직영',role:'팀원',can_collect:false,pay_type:'freelance33'},
     boss:{state:'휴가중',memo:'급한 건 신봉진 실장',until:new Date(Date.now()+86400000*3).toISOString()},
     avail:{[day(1)]:'ok',[day(3)]:'ok',[day(5)]:'no'},
     events:[{id:1,date:day(1),time:'15:00',kind:'개인',maemul:null,title:'병원',memo:null,show_boss:false,gcal:true}],
     today: day(0),
     jobs:[
-      {id:1,date:day(0),time:'08:00',title:'수영구 광안동 아파트 이사청소',kind:'이사청소',headcount:3,public_note:'장비 사무실에서 챙겨가기',status:'full',team:'OPS',approved:3,crew:['김준호','문나원','김효정'],my_status:'approved',address:'부산 수영구 광안동 협성에코펠리스 103동',private_note:'공동현관 #1234',need_ack:true,collector:false,balance:null,collected_at:null,my_pay:null,live:'DEMO',photos:3,work_done:null},
+      {id:1,date:day(0),time:'08:00',title:'수영구 광안동 아파트 이사청소',kind:'이사청소',headcount:3,public_note:'장비 사무실에서 챙겨가기',status:'full',team:'OPS',approved:3,crew:['김준호','김지원','김효정'],my_status:'approved',address:'부산 수영구 광안동 협성에코펠리스 103동',private_note:'공동현관 #1234',need_ack:true,collector:false,balance:null,collected_at:null,my_pay:null,live:'DEMO',photos:3,work_done:null},
       {id:2,date:day(2),time:'07:00',title:'해운대 센텀 사무실 정기청소',kind:'정기',headcount:2,public_note:null,status:'open',team:'OPS',approved:1,crew:['신봉진'],my_status:null,address:null,private_note:null,need_ack:false,collector:false,balance:null,collected_at:null,my_pay:null},
       {id:3,date:day(2),time:'13:00',title:'연제구 연산동 입주청소 24평',kind:'입주청소',headcount:2,public_note:null,status:'open',team:'OPS',approved:0,crew:[],my_status:'applied',address:null,private_note:null,need_ack:false,collector:false,balance:null,collected_at:null,my_pay:null},
       {id:4,date:day(4),time:'09:00',title:'남구 대연동 상가 준공청소',kind:'상가',headcount:4,public_note:'4인 현장 · 사다리 필요',status:'open',team:'OPS',approved:2,crew:['김준호','나미정'],my_status:null,address:null,private_note:null,need_ack:false,collector:false,balance:null,collected_at:null,my_pay:null},
-      {id:5,date:day(-3),time:'08:00',title:'동래 온천동 헬스장 준공청소',kind:'상가',headcount:4,public_note:null,status:'done',team:'OPS',approved:4,crew:['김준호','문나원','김효정','서은호'],my_status:'approved',address:'동래구 온천동',private_note:null,need_ack:false,collector:false,balance:null,collected_at:null,my_pay:130000}
+      {id:5,date:day(-3),time:'08:00',title:'동래 온천동 헬스장 준공청소',kind:'상가',headcount:4,public_note:null,status:'done',team:'OPS',approved:4,crew:['김준호','김지원','김효정','서은호'],my_status:'approved',address:'동래구 온천동',private_note:null,need_ack:false,collector:false,balance:null,collected_at:null,my_pay:130000}
     ],
     notices:[
       {id:1,title:'11월부터 일정판으로 신청 받아요',body:'카카오워크와 한 달 같이 써요.\n신청은 일정판에서, 대화는 카톡 채널로 해주세요.',important:true,team:null,at:new Date().toISOString(),read:false,confirmed:false},

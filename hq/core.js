@@ -35,7 +35,11 @@ H.setting = k => H.S.settings ? H.S.settings[k] : null;
 
 /* ---------- 팀 · 사람 ---------- */
 H.T = c => (H.S.teams||[]).find(t => t.code === c) || {code:c, name:c, color:'#9CA3AF'};
-H.P = id => (H.S.staff||[]).find(s => s.id === id) || {name:'?'};
+H.P = id => (H.S.staffAll||H.S.staff||[]).find(s => s.id === id) || {name:'?'};
+// 프로필 사진 (없으면 이름 두 글자: 조원경 → 원경)
+H.two = n => { n = String(n||'?').trim(); return n.length >= 3 ? n.slice(1,3) : n; };
+H.av = (s, size, cls) => { size = size||34; s = s||{}; const st = `width:${size}px;height:${size}px;font-size:${Math.round(size*.36)}px`;
+  return s.avatar_path ? `<span class="hav ${cls||''}" style="${st}"><img src="${C.SUPABASE_URL}/storage/v1/object/public/avatars/${H.esc(s.avatar_path)}" alt="" loading="lazy"></span>` : `<span class="hav ${cls||''}" style="${st}">${H.esc(H.two(s.name))}</span>`; };
 H.GROUPS = [
   {key:'RES', label:'리츠부동산', teams:['RES']},
   {key:'CLEAN', label:'리츠종합클린', teams:['OPS','SPT','PRT']},
@@ -96,7 +100,7 @@ H.loadBase = async () => {
     H.q(sb.from('staff').select('*').order('created_at')),
     H.q(sb.from('settings').select('*'))
   ]);
-  S.teams = tm; S.staff = st; S.settings = Object.fromEntries(set.map(r => [r.key, r.value]));
+  S.teams = tm; S.staffAll = st; S.staff = st.filter(x => !x.hidden); S.settings = Object.fromEntries(set.map(r => [r.key, r.value]));
   S.mcode = S.settings.hq_maemul_code ? String(S.settings.hq_maemul_code) : '';
   if (S.owner) {
     S.payRules = await H.q(sb.from('pay_rules').select('*'));
@@ -263,6 +267,7 @@ H.boot = async () => {
     if (error || !isAdmin){ await sb.auth.signOut(); return loginView('관리자 계정이 아니에요'); }
     const ver = await sb.rpc('hq_schema_version');
     if (ver.error || (ver.data||0) < 2) return setupView();
+    H.S.needV3 = (ver.data||0) < 3;
     const own = await sb.rpc('is_owner');
     H.S.isOwner = !!own.data && (session.user.email||'').toLowerCase() === OWNER_EMAIL;
     // 대표님이 관리자(HQS) 화면을 미리 볼 수 있게: ?mode=hqs 로 들어오거나 모드 버튼을 누르면 전환

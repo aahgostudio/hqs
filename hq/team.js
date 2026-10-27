@@ -70,7 +70,7 @@ function siteCard(x){
     ${x.state==='on'||x.state==='over'?`<div class="bar"><i style="width:${Math.round(x.prog*100)}%"></i></div>`:''}</a>`;
 }
 function personRow(p){
-  return `<div class="tm-per ${p.warn?'warn':''}"><div class="av">${esc((p.s.name||'?').slice(0,1))}</div>
+  return `<div class="tm-per ${p.warn?'warn':''}">${H.av(p.s, 40)}
     <div><b>${esc(p.s.name)} ${esc(p.s.role||'')}</b><div class="now">${p.icon} ${esc(p.now)}</div>
     <div class="meta">오늘 등록 ${p.reg} · 확인 ${p.chk}${p.evN?` · 일정 ${p.evN}건`:''}${p.stale?` · <span style="color:var(--warn)">30일 미확인 ${p.stale}건</span>`:''}</div></div>
     <div class="rt"><strong>${p.seen ? H.ago(p.seen) : '-'}</strong>접속</div></div>`;
@@ -81,7 +81,7 @@ H.teamStrip = () => {
   const d = H.teamData(), S = H.S;
   if (!d.sites.length && !d.people.length) return '';
   const sIc = d.sites.map(x => `<span class="tm-ic ${x.warn.length?'warn':x.state}" title="${esc(x.j.title)}">🧹<em>${x.partner?'P':x.ppl.length}</em></span>`).join('');
-  const pIc = d.people.map(p => `<span class="tm-ic res ${p.warn?'warn':''}" title="${esc(p.s.name)} · ${esc(p.now)}"><b>${esc(p.s.name.slice(0,1))}</b><em>${p.icon}</em></span>`).join('');
+  const pIc = d.people.map(p => `<span class="tm-ic res ${p.warn?'warn':''}" title="${esc(p.s.name)} · ${esc(p.now)}">${H.av(p.s, 34)}<em>${p.icon}</em></span>`).join('');
   return `<a class="box tm-strip" href="#team"><div class="tm-sh"><b>지금 우리 팀</b>${d.warnN?`<span class="tg bad">⚠ ${d.warnN}</span>`:''}<span class="go">자세히 →</span></div>
     <div class="tm-icons">${sIc}${sIc&&pIc?'<i class="sep"></i>':''}${pIc}</div></a>`;
 };

@@ -161,7 +161,7 @@ button.kpi:hover{border-color:var(--accent-2)}
 .bossbar{display:flex;gap:8px;align-items:center;border-radius:12px;padding:9px 13px;font-size:13.5px;margin:0 0 14px;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA}.bossbar.busy{background:#FEF2F2;color:#991B1B;border-color:#FECACA}
 .schedbtn{display:inline-flex;align-items:center;gap:6px}
 .statusrow{display:flex;justify-content:flex-end;margin:0 0 -8px}
-.greet{flex:1 1 320px;min-width:0}.hline{display:flex;align-items:center;justify-content:space-between;gap:12px}@media (min-width:900px){.hline{justify-content:flex-start;gap:16px}}.hline h1{min-width:0;word-break:keep-all}.hline h1 .nm{display:block}.cheer{word-break:keep-all}
+.greet{flex:1 1 320px;min-width:0}.hline{display:flex;align-items:center;justify-content:space-between;gap:12px}@media (min-width:900px){.hline{justify-content:flex-start;gap:16px}}.hline h1{min-width:0;word-break:keep-all}.hline h1 .nm{display:block}.hl{display:flex;align-items:center;gap:12px;min-width:0}.cheer{word-break:keep-all}
 .cheer{margin:6px 0 0;font-size:14px;color:var(--ink-2)}
 .evp{margin:0 0 16px}.evp .panel-h{margin-bottom:8px}.evp h2 small{font-size:12px;font-weight:400;color:var(--ink-3);margin-left:6px}
 .evrow{display:grid;grid-template-columns:78px auto 1fr;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);color:inherit;text-decoration:none}
@@ -284,6 +284,7 @@ setTimeout(function(){var r=document.getElementById('root');if(r&&r.querySelecto
 </script>
 <script src="regions.js"></script>
 <script src="../status.js"></script>
+<script src="../profile.js"></script>
 <script src="../greet.js"></script>
 <script>
 (function(){
@@ -449,6 +450,7 @@ function evPanel(){
 }
 setTimeout(loadEvents, 700); setInterval(()=>{ if(document.visibilityState==='visible') loadEvents(); }, 300000);
 setTimeout(loadBoss, 600);
+EPProfile.init({token:KEY, demo:!hasGAS, nameFn:()=>S.data&&S.data.me.name, onChange:()=>{ if(S.data) render(); }});
 EPStatus.init({manual:()=>S.boss, onChange:()=>{ if(S.data) render(); }, demo:!hasGAS}); setInterval(()=>{ if(document.visibilityState==='visible') loadBoss(); }, 300000);
 
 const root=document.getElementById('root');
@@ -467,7 +469,7 @@ function render(){
       ${navs.map(([v,l,i])=>`<button class="nav" data-go="${v}" aria-current="${S.view===v}">${ic(i)}${l}${v==='mine'?`<span class="cnt num">${mine.length}</span>`:v==='find'?`<span class="cnt num">${live.length}</span>`:''}</button>`).join('')}
       <button class="nav add" data-new>${ic('plus')}매물 등록</button>
       ${KEY&&!S.demo&&S.v2?(S.data.me.role==='대표'?`<a class="nav" href="../hq/#sched" style="text-decoration:none">${ic('cal')}본사 HQ · 일정</a>`:`<a class="nav" href="../clean/?k=${encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정 (계약·잔금·안내)</a>`):''}
-      <div class="who"><div class="avatar">${ini(S.data.me.name)}</div><div><b>${esc(S.data.me.name)} ${esc(S.data.me.role)}</b><small>리츠부동산</small></div></div>
+      <div class="who">${EPProfile.av(S.data.me.name,34,{me:S.data.me.role!=='대표'})}<div><b>${esc(S.data.me.name)} ${esc(S.data.me.role)}</b><small>리츠부동산</small></div></div>
     </aside>
     <main><div class="glow" aria-hidden="true"></div><div class="wrap">
       ${S.view==='home'?'':`<div class="statusrow">${EPStatus.pill()}</div>`}
@@ -500,7 +502,7 @@ function viewHome(all,live,mine,myLive,stale){
   const recent=sorted(live).slice(0,4);
   const onAll=live.filter(r=>r.status==='진행');
   return `
-  <div class="top"><div class="greet"><div class="eyebrow">${today().replace(/-/g,'. ')}</div><div class="hline"><h1><span class="nm">${esc(S.data.me.name)} ${esc(S.data.me.role)}님,</span> ${esc(g.h)}</h1>${EPStatus.pill()}</div><p class="cheer">${esc(g.s)}</p></div>
+  <div class="top"><div class="greet"><div class="eyebrow">${today().replace(/-/g,'. ')}</div><div class="hline"><div class="hl">${EPProfile.av(S.data.me.name,46,{me:S.data.me.role!=='대표'})}<h1><span class="nm">${esc(S.data.me.name)} ${esc(S.data.me.role)}님,</span> ${esc(g.h)}</h1></div>${EPStatus.pill()}</div><p class="cheer">${esc(g.s)}</p></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">${KEY&&!S.demo&&S.v2?`<a class="btn schedbtn" href="${S.data.me.role==='대표'?'../hq/#sched':'../clean/?k='+encodeURIComponent(KEY)}" style="text-decoration:none">${ic('cal')}일정</a>`:''}<button class="btn primary" data-new>${ic('plus')}매물 등록</button></div></div>
   ${S.data.me.role==='대표'?'':evPanel()}
   <div class="kpis">
@@ -520,7 +522,7 @@ function viewHome(all,live,mine,myLive,stale){
     </section>
     <section class="panel"><div class="panel-h"><h2>담당자별 현황</h2></div><div class="people">
       ${agents.map(a=>{const rs=all.filter(r=>r.agent===a.name);const on=rs.filter(r=>r.status==='진행').length;
-        return `<div class="person"><div class="avatar">${ini(a.name)}</div><div><b>${esc(a.name)} ${esc(a.role)}</b><small>보류 ${rs.filter(r=>r.status==='보류').length} · 완료 ${rs.filter(r=>r.status==='계약완료').length}</small></div><div><span class="pill-n num">${on}</span> <span class="muted" style="font-size:12px">진행</span></div></div>`}).join('')}
+        return `<div class="person">${EPProfile.av(a.name,36)}<div><b>${esc(a.name)} ${esc(a.role)}</b><small>보류 ${rs.filter(r=>r.status==='보류').length} · 완료 ${rs.filter(r=>r.status==='계약완료').length}</small></div><div><span class="pill-n num">${on}</span> <span class="muted" style="font-size:12px">진행</span></div></div>`}).join('')}
     </div></section>
   </div>
   <section><div class="panel-h"><h2>최근 등록</h2><button class="link" data-go="find">전체 보기</button></div>
@@ -614,7 +616,7 @@ function card(r,withActions){
     <div class="place">${esc(r.gu)} ${esc(r.dong)} <span>${esc(r.loc)}</span></div>
     <div class="specs">${r.rooms!==''?`<span>방 <span class="num">${esc(r.rooms)}</span>${r.baths!==''?` · 욕실 <span class="num">${esc(r.baths)}</span>`:''}</span>`:''}${r.floor!==''?`<span>${ic('floor')}<span class="num">${esc(r.floor)}</span>${r.totalFloor!==''?`/<span class="num">${esc(r.totalFloor)}</span>`:''}층</span>`:''}${r.area!==''?`<span>${ic('area')}<span class="num">${esc(r.area)}</span>㎡ · <span class="num">${pyeong(r.area)}</span>평</span>`:''}${r.moveIn?`<span>${ic('cal')}${esc(r.moveIn)}</span>`:''}</div>
     ${r.feature?`<div class="feat">${esc(r.feature)}</div>`:''}
-    <div class="card-foot"><div class="avatar">${ini(r.agent)}</div>${esc(r.agent)}${stale?`<span class="stale">${age>900?'확인 기록 없음':age+'일 전 확인'}</span>`:`<span class="fresh">${r.checked?short(r.checked)+' 확인':''}</span>`}</div>
+    <div class="card-foot">${EPProfile.av(r.agent,24)}${esc(r.agent)}${stale?`<span class="stale">${age>900?'확인 기록 없음':age+'일 전 확인'}</span>`:`<span class="fresh">${r.checked?short(r.checked)+' 확인':''}</span>`}</div>
     ${withActions?`<div class="actions"><button class="btn" data-check="${esc(r.id)}">${ic('check')}오늘 확인</button><button class="btn" data-edit="${esc(r.id)}">${ic('edit')}수정</button></div>`:''}
   </article>`;
 }

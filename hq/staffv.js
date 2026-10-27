@@ -27,7 +27,7 @@ H.view('staff', {label:'직원',
     const b = S.boss || {state:'근무중'};
     const leftOn = s => { const d = leftMap()[s.id]; return d ? ` <span class="note">${d.slice(5).replace('-','/')} 퇴사</span>` : ''; };
     const row = s => { const m = mStaff.find(x=>x.name===s.name); const mis = s.team==='RES' && m && M2S[m.status||'재직'] !== s.status;
-      return `<tr><td><b>${esc(s.name)}</b> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}${s.status==='left'?leftOn(s):''}</td>
+      return `<tr><td>${H.av(s, 26, s.team==='RES'?'':'cl')} <b>${esc(s.name)}</b> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}${s.status==='left'?leftOn(s):''}</td>
         <td><span class="tag" style="background:${H.T(s.team).color}">${s.team}</span></td>
         <td><select class="in sm" style="width:auto" data-c="stStatus" data-s="${s.id}">${Object.entries(H.ST).map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select>
           ${mis?`<div class="note" style="color:var(--warn)">매물노트는 '${esc(m.status)}' <button class="btn sm ghost" style="padding:0 6px" data-a="stSync" data-s="${s.id}">맞추기</button></div>`:''}</td>

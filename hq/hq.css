@@ -182,3 +182,8 @@ tr.boss td{background:#F5F7FF}
 .tm-per .rt{text-align:right;font-size:11.5px;color:var(--sub);white-space:nowrap}.tm-per .rt strong{display:block;font-size:13px;color:#111}
 .tm-per.warn .now{color:#B91C1C}
 .tm-foot{font-size:11.5px;color:var(--sub);text-align:center;margin:10px 0 0}
+
+.hav{border-radius:50%;display:inline-grid;place-items:center;flex-shrink:0;font-weight:800;letter-spacing:-.04em;background:#FCE7F3;color:var(--res);overflow:hidden;line-height:1;vertical-align:middle}
+.hav img{width:100%;height:100%;object-fit:cover;display:block}.hav.cl{background:#EEF2FF;color:var(--clean)}
+.tm-ic.res{overflow:visible}.tm-ic.res .hav{width:100%!important;height:100%!important}
+.v3bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
