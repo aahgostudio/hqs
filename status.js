@@ -37,7 +37,10 @@
     const m = opt.manual && opt.manual();
     const live = m && m.state && m.state !== '근무중' && (!m.until || new Date(m.until) > new Date());
     if (live) return {state: MANUAL_NAME[m.state] || m.state, until: m.until, memo: m.memo, next: auto && auto.next, manual: true};
-    const a = auto && auto.state ? auto : byClock();
+    let a = auto && auto.state ? auto : byClock();
+    const site = siteNow();
+    if (site && a.state !== '휴가중') a = Object.assign({}, a, site);
+    if (!a.next) { const ns = nextSite(); if (ns) a = Object.assign({}, a, {next: ns}); }
     return Object.assign({}, a, {memo: m && m.memo});
   }
 
@@ -70,9 +73,21 @@
     wrap.addEventListener('click', e => { if (e.target === wrap || e.target.closest('[data-epst-close]')) { wrap.classList.remove('on'); setTimeout(() => wrap.remove(), 200); } });
   }
 
+  let bossJobs = [];
+  const SB_URL = (window.EP_CONFIG||{}).SUPABASE_URL || 'https://ldvknvmsnpbporxhnsli.supabase.co';
+  const SB_KEY = (window.EP_CONFIG||{}).SUPABASE_KEY || 'sb_publishable_7MeTgyPzwzK47RKG-mUapQ_K5ngrTw5';
+  async function loadJobs(){ try { const r = await fetch(SB_URL + '/rest/v1/rpc/boss_jobs_today', {method:'POST', headers:{apikey:SB_KEY, 'content-type':'application/json'}, body:'{}'}); if (r.ok) { const j = await r.json(); if (Array.isArray(j)) bossJobs = j; } } catch(_){} }
+  // 일정판에 '대표님도 가는 현장'이면 그 시간(4시간)은 현장 근무중
+  function siteNow(){ const n = new Date(), m = n.getHours()*60 + n.getMinutes();
+    for (const b of bossJobs) { const [h, mi] = String(b.t||'').split(':').map(Number); if (isNaN(h)) continue; const s0 = h*60 + (mi||0);
+      if (m >= s0 && m < s0 + 240) { const u = new Date(n); u.setHours(0, s0 + 240, 0, 0); return {state:'현장 근무중', until:u.toISOString()}; } }
+    return null; }
+  function nextSite(){ const n = new Date(), m = n.getHours()*60 + n.getMinutes();
+    const b = bossJobs.find(b => { const [h, mi] = String(b.t||'').split(':').map(Number); return h*60 + (mi||0) > m; }); return b ? b.t + ' 현장' : null; }
   async function load(){
+    if (!opt.demo) await loadJobs();
     if (opt.demo) { auto = {state:'현장 근무중', until:new Date(Date.now()+2*3600e3).toISOString(), next:'13:00 회의'}; return opt.onChange(); }
-    if (!STATUS_URL) return;
+    if (!STATUS_URL) return opt.onChange();
     try { const r = await fetch(STATUS_URL, {cache:'no-store'}); if (!r.ok) return; const a = await r.json();
       if (a && a.state && JSON.stringify(a) !== JSON.stringify(auto)) { auto = a; opt.onChange(); } } catch(_){}
   }

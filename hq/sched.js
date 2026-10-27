@@ -269,7 +269,7 @@ H.CHANGE.repPrev = el => { const f = el.form, r = f.querySelector('#rep'); if (!
     ${odd.length?`<br><span class="o">${x.rule.mday}일이 없는 달은 말일로 잡혀요</span>`:''}<br><span class="note">끝나기 2주 전에 HQ 홈에서 '연장할까요?' 알려드려요</span>` : '<span class="o">요일·기간을 확인해 주세요 (0건)</span>';
   if (btn) btn.textContent = ds.length ? `${ds.length}건 올리기` : '올리기';
 };
-const SERIES_COPY = ['start_time','title','kind','headcount','teams','target_staff','public_note','address','private_note','order_channel','collector_id','total_amount','deposit_amount','balance_amount','admin_memo','contract_mode','live_title'];
+const SERIES_COPY = ['boss_on','start_time','title','kind','headcount','teams','target_staff','public_note','address','private_note','order_channel','collector_id','total_amount','deposit_amount','balance_amount','admin_memo','contract_mode','live_title'];
 H.ACT.repExtend = async el => { const j = J(el.dataset.j); if (!j || !j.series_id) return;
   const {data:last} = await sb.from('jobs').select('*').eq('series_id', j.series_id).order('job_date', {ascending:false}).limit(1).single();
   const from = H.addDays(parse(last.job_date), 1), end = new Date(from); end.setMonth(end.getMonth()+3);
@@ -295,6 +295,7 @@ function jobSheet(j, def){
     <div class="field full"><label>지역 · 현장 이름 <small>(팀 전체 공개)</small></label><input name="title" value="${esc(j.title||'')}" placeholder="예) 수영구 광안동 아파트 이사청소 24평" required></div>
     <div class="field"><label>종류</label><input name="kind" value="${esc(j.kind||'')}" list="kinds" placeholder="이사청소" data-c="repKind"><datalist id="kinds">${['이사청소','입주청소','퇴실청소','상가','사무실','정기','에어컨','철거','시설관리','폐기물','특수'].map(k=>`<option value="${k}">`).join('')}</datalist></div>
     <div class="field"><label>필요 인원</label><input type="number" name="headcount" min="1" max="50" value="${j.headcount}"></div>
+    <div class="field full"><label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink)"><input type="checkbox" name="boss_on" ${j.boss_on?'checked':''} style="width:auto">🧹 대표님도 이 현장 가요 <small style="color:var(--sub)">(직원 화면 대표 상태가 시간 맞춰 '현장 근무중'으로)</small></label></div>
 ${j.id ? repScopeHtml(j) : repHtml(j)}
     <div class="field full"><label>팀 공개 메모 <small>(장비·주차 등)</small></label><input name="public_note" value="${esc(j.public_note||'')}"></div>
     <div class="sec">${lock} 확정자에게만</div>
@@ -342,6 +343,7 @@ H.FORM.job = async v => {
     target_staff: v.getAll('target').length ? v.getAll('target') : null, public_note:H.nn(v.get('public_note')), address:H.nn(v.get('address')), private_note:H.nn(v.get('private_note')),
     order_channel:H.nn(v.get('order_channel')), collector_id:H.nn(v.get('collector_id')), total_amount:H.nnum(v.get('total_amount')), deposit_amount:H.nnum(v.get('deposit_amount')),
     balance_amount:H.nnum(v.get('balance_amount')), status:v.get('status'), admin_memo:H.nn(v.get('admin_memo')), contract_mode:H.nn(v.get('contract_mode')), live_title:H.nn(v.get('live_title')) };
+  if (!H.S.needV4) row.boss_on = v.get('boss_on') === 'on';
   const id = v.get('id'); const old = id ? J(id) : null;
   if (['open','full'].includes(row.status) && H.autoLive() && !(old && old.live_code)) { row.live_code = H.rnd(8); row.live_close_days = +((H.setting('live')||{}).close_days) || 7; }
   const f = document.querySelector('#sheet form');

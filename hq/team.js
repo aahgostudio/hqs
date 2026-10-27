@@ -15,7 +15,7 @@ H.teamData = () => {
   const sites = (S.jobs||[]).filter(j => j.job_date === today && j.status !== 'cancelled' && j.status !== 'quote').map(j => {
     const ppl = appr(j).map(a => H.P(a.staff_id));
     const partner = ppl.some(p => p.team === 'PRT');
-    const boss = !ppl.length && j.status === 'full'; // 대표 현장 (배정 없이 마감)
+    const boss = (j.boss_on && !ppl.length) || (!ppl.length && j.status === 'full'); // 대표 현장 (배정 없이 마감)
     const st = mins(j.start_time), ph = H.photosOf(j.id), done = j.work_done_at || j.done_at;
     const el = st == null ? null : now - st;
     let state = done ? 'done' : (st != null && el >= 0) ? (el > SITE_MIN + 60 ? 'over' : 'on') : 'next';
