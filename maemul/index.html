@@ -457,7 +457,7 @@ setTimeout(loadEvents, 700); setInterval(()=>{ if(document.visibilityState==='vi
 setTimeout(loadBoss, 600);
 EPProfile.init({token:KEY, demo:!hasGAS, nameFn:()=>S.data&&S.data.me.name, onChange:()=>{ if(S.data) render(); }});
 EPMoney.init({token:hasGAS?KEY:'', demo:!hasGAS, demoTeam:'RES', onChange:()=>{ if(S.data&&S.view==='home') render(); }});
-{ let last=''; EPChat.init({token:hasGAS?KEY:'', demo:!hasGAS&&new URLSearchParams(location.search).has('chat'), accent:'#5B21B6', onState:st=>{const k=st.on+'/'+st.unread; if(k!==last){last=k; if(S.data) render();}}}); }
+{ let last=''; EPChat.init({token:hasGAS?KEY:'', demo:!hasGAS&&new URLSearchParams(location.search).has('chat'), demoTeam:'RES', accent:'#5B21B6', onState:st=>{const k=st.on+'/'+st.unread; if(k!==last){last=k; if(S.data) render();}}}); }
 EPStatus.init({manual:()=>S.boss, onChange:()=>{ if(S.data) render(); }, demo:!hasGAS}); setInterval(()=>{ if(document.visibilityState==='visible') loadBoss(); }, 300000);
 
 const root=document.getElementById('root');
@@ -929,7 +929,7 @@ function bind(){
 async function act(fn,id,msg){
   try{S.data=await call(fn,id);toast(msg)}catch(x){toast('처리하지 못했어요. 다시 시도해 주세요.')}
 }
-function toast(m){S.toast=m;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{S.toast='';render()},2600)}
+function toast(m){S.toast=m;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{S.toast='';const t=document.querySelector('.toast');if(t)t.remove();else render()},2600)}  // 지울 땐 화면 전체를 다시 그리지 않음(입력 중 오류 안내가 사라지지 않게)
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(S.open||S.edit)){S.open=null;S.edit=null;render()}});
 
 let DEMO=null;
@@ -964,13 +964,13 @@ function demoCall(fn,arg){
   if(fn==='logExport') return true;
   if(fn==='uploadPhoto') return {folder:'demoFolder',id:'demo'+Math.random().toString(36).slice(2,8)};
   if(fn==='autofill'&&arg&&arg.many) return {items:[{type:'원룸',deal:'월세',sido:'부산광역시',gu:'남구',dong:'대연동',deposit:300,rent:38,area:19.8,rooms:1,baths:1},{type:'아파트',deal:'전세',gu:'해운대구',dong:'좌동',deposit:25000,area:59,rooms:3,baths:2,floor:7,totalFloor:20}]};
-  if(fn==='autofill') return {type:'원룸',deal:'월세',sido:'부산광역시',gu:'수영구',dong:'광안동',deposit:500,rent:45,feeType:'정액관리비',feeTier:'10만원 미만',feeBasis:'직전 월 관리비',fee:7,feeItems:'수도, 인터넷',rooms:1,baths:1,roomShape:'분리형',duplex:'단층',floor:3,totalFloor:5,elevator:'있음',parking:'불가',dirBase:'거실',direction:'남향',area:23.5,moveIn:'즉시',title:'광안역 5분 분리형 원룸',feature:'풀옵션, 에어컨, 세탁기'};
+  if(fn==='autofill') return {type:'원룸',deal:'월세',sido:'부산광역시',gu:'수영구',dong:'광안동',deposit:500,rent:45,feeType:'정액관리비',feeTier:'10만원 미만',feeBasis:'직전 월 관리비',fee:7,feeItems:'수도, 인터넷',rooms:1,baths:1,roomShape:'분리형',duplex:'단층',floor:3,totalFloor:5,elevator:'있음',parking:'불가',dirBase:'거실',direction:'남향',area:23.5,moveIn:'즉시',buildUse:'제2종 근린생활시설',title:'광안역 5분 분리형 원룸',feature:'풀옵션, 에어컨, 세탁기'};
   if(fn==='markChecked'){const r=mine.find(x=>x[1]===arg);if(r)r[18]=today();}
   if(fn==='saveListing'){
     const rec={...arg,agent:DEMO.me.name};
     if(!rec.regDate) rec.regDate=today(); if(!rec.checked) rec.checked=today();
     let r=mine.find(x=>x[1]===rec.id);
-    if(!r){const n=mine.length+1;rec.id=DEMO.me.name[0]+'-'+String(n).padStart(4,'0');r=F.map(()=>'');mine.push(r)}
+    if(!r){const n=DEMO.all.length+mine.length+1,d=new Date();rec.id=String(d.getFullYear()).slice(2)+String(d.getMonth()+1).padStart(2,'0')+'-'+String(rec.type||'기')[0]+String(n).padStart(3,'0');r=F.map(()=>'');mine.push(r)}
     F.forEach((k,i)=>r[i]=rec[k]??'');
   }
   DEMO.all=[...DEMO.all.filter(x=>x[0]!==DEMO.me.name),...mine.map(x=>[...x.slice(0,20),'','','','','','',...x.slice(26,46)])];

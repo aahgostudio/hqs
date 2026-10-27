@@ -36,6 +36,18 @@
       unread:{11:0, 12:1, 13:2, 14:4}}}
   };
 
+  const DEMO_RES = {
+    home: {on:true, me:{id:'me', name:'조원경'}, rooms:[
+      {id:1, kind:'dm', title:'대표님', unread:1, n:2, last:{name:'대표', body:'양정동 계약서 내일 오전에 같이 봐요', at:ago(12)}},
+      {id:2, kind:'all', title:'전체', unread:0, n:9, last:{name:'대표', body:'11/1부터 여기서 대화해요!', at:ago(95)}},
+      {id:3, kind:'team', title:'부동산팀', unread:2, n:4, last:{name:'김윤미', body:'광안동 원룸 오늘 3시 안내 갑니다', at:ago(6)}}]},
+    room: {3: {room:{id:3, kind:'team', title:'부동산팀', members:[{name:'권성환',role:'대표'},{name:'조원경',role:'소장'},{name:'김윤미',role:'실장'}]},
+      msgs:[{id:11, who:'boss', name:'대표', mine:false, body:'이번 주 신규 매물 꼭 등록해 주세요 🙌', at:ago(70)},
+            {id:12, who:'me', name:'조원경', mine:true, body:'네! 양정동 2건 오늘 올릴게요', at:ago(30)},
+            {id:13, who:'a', name:'김윤미', mine:false, body:'광안동 원룸 오늘 3시 안내 갑니다', at:ago(6)}],
+      unread:{11:0, 12:1, 13:2}}}
+  };
+
   /* ---------- 스타일 ---------- */
   function css(){
     if (document.getElementById('epc-css')) return;
@@ -176,7 +188,7 @@
 
   /* ---------- 데이터 ---------- */
   async function loadHome(){
-    if (opt.demo) { home = DEMO.home; }
+    if (opt.demo) { home = (opt.demoTeam === 'RES' ? DEMO_RES : DEMO).home; }
     else { try { home = await rpc('chat_home', {p_token: opt.token}); } catch(_) { home = home || {on:false}; } }
     const unread = home && home.on ? home.rooms.reduce((a, r) => a + (r.unread || 0), 0) : 0;
     opt.onState({on: !!(home && home.on), unread});
@@ -184,7 +196,7 @@
   }
   async function openRoom(id){
     view = 'room'; editing = null;
-    if (opt.demo) { const d = DEMO.room[id] || {room:{id, kind:'dm', title:(home.rooms.find(r=>r.id==id)||{}).title || '대화', members:[]}, msgs:[], unread:{}};
+    if (opt.demo) { const d = (opt.demoTeam === 'RES' ? DEMO_RES : DEMO).room[id] || {room:{id, kind:'dm', title:(home.rooms.find(r=>r.id==id)||{}).title || '대화', members:[]}, msgs:[], unread:{}};
       room = d; msgs = d.msgs.slice(); unreadMap = Object.assign({}, d.unread); const r = home.rooms.find(x => x.id == id); if (r) r.unread = 0; drawRoom(); return; }
     try { const d = await rpc('chat_load', {p_token: opt.token, p_room: id, p_after: 0, p_before: null});
       room = d; msgs = d.msgs; unreadMap = d.unread || {}; drawRoom(); poll(); loadHome(); }

@@ -7,11 +7,12 @@
   const H = {apikey: KEY_, Authorization: 'Bearer ' + KEY_};
   const won = n => (Math.round(+n||0)).toLocaleString('ko-KR');
   let opt = {token:'', demo:false, onChange:()=>{}}, D = null, open = false;
+  const YM = k => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-k); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
   const DEMO = {team:'OPS', pay_type:'freelance33', since:'2026-09-01', net_all:812800, received_all:735400, due:77400,
-    months:[{ym:'2026-11', n:11, gross:840000, ded:27720, net:812280, received:735400},{ym:'2026-10', n:15, gross:1190000, ded:39270, net:1150730, received:1150730},{ym:'2026-09', n:12, gross:950000, ded:31350, net:918650, received:918650}],
+    months:[{ym:YM(0), n:11, gross:840000, ded:27720, net:812280, received:735400},{ym:YM(1), n:15, gross:1190000, ded:39270, net:1150730, received:1150730},{ym:YM(2), n:12, gross:950000, ded:31350, net:918650, received:918650}],
     recent:[{date:'2026-11-12', amount:70000},{date:'2026-11-11', amount:90000},{date:'2026-11-08', amount:77360}]};
   const DEMO_RES = {team:'RES', pay_type:'freelance33', since:'2026-09-01', net_all:2320800, received_all:0, due:2320800,
-    months:[{ym:'2026-11', n:3, gross:2400000, ded:79200, net:2320800, received:0},{ym:'2026-10', n:4, gross:3200000, ded:105600, net:3094400, received:3094400},{ym:'2026-09', n:2, gross:1600000, ded:52800, net:1547200, received:1547200}],
+    months:[{ym:YM(0), n:3, gross:2400000, ded:79200, net:2320800, received:0},{ym:YM(1), n:4, gross:3200000, ded:105600, net:3094400, received:3094400},{ym:YM(2), n:2, gross:1600000, ded:52800, net:1547200, received:1547200}],
     recent:[{date:'2026-11-10', amount:3094400},{date:'2026-10-10', amount:1547200}]};
   async function load(){
     if (opt.demo) { D = opt.demoTeam === 'RES' ? DEMO_RES : DEMO; return opt.onChange(); }

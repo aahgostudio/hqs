@@ -6,7 +6,7 @@
   const day = n => { const d = new Date(d0); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
   const S = {
     v:2,
-    me:{id:'me',name:'김지원',team:'OPS',team_name:'청소 직영',role:'팀원',can_collect:false,pay_type:'freelance33'},
+    me:{id:'me',name:'김지원',team:'OPS',team_name:'클린 직영',role:'팀원',can_collect:false,pay_type:'freelance33'},
     boss:{state:'휴가중',memo:'급한 건 신봉진 실장',until:new Date(Date.now()+86400000*3).toISOString()},
     avail:{[day(1)]:'ok',[day(3)]:'ok',[day(5)]:'no'},
     events:[{id:1,date:day(1),time:'15:00',kind:'개인',maemul:null,title:'병원',memo:null,show_boss:false,gcal:true}],
