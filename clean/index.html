@@ -191,7 +191,7 @@ const photoUrl = p => `${C.SUPABASE_URL}/storage/v1/object/public/live/${p}`;
 
 /* ---------- state ---------- */
 let D = null;                       // board data
-let tab = 'board';
+let tab = qs.get('tab') === 'mine' ? 'mine' : 'board';
 let view = 'week';                  // week | month
 let scope = 'team';                 // team | mine
 let today = new Date(); today.setHours(0,0,0,0);
@@ -555,7 +555,7 @@ document.addEventListener('submit', async e => {
 /* ---------- start ---------- */
 (async () => {
   if (!TOKEN && !DEMO){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>${esc(C.BRAND)} 일정판</h2><p>개인 링크로 들어와 주세요.<br>링크는 '${esc(C.BRAND)}' 카카오톡 채널로 받을 수 있어요.</p></div>`; return; }
-  try { await load(); if (isRES()) scope = 'mine'; render(); }
+  try { await load(); if (isRES()) scope = 'mine'; render(); if (tab==='mine'){ try{ payData = await rpc('staff_pay',{p_token:TOKEN,p_month:ymd(month)}); }catch(_){ payData=[]; } render(); } }
   catch(e){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>링크를 확인해주세요</h2><p>${esc(errMsg(e))}</p></div>`; }
   document.addEventListener('visibilitychange', async () => { if (document.visibilityState==='visible' && D && !['paint','ev','shoot'].includes(tab)){ try{ await load(); render(); }catch(_){} } });
 })();
