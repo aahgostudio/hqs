@@ -2,6 +2,8 @@
 (function(H){
 const {esc} = H;
 const ICON = {dm:'👤', all:'📣', team:'👥', site:'📍', custom:'💬'};
+const ordOf = () => ((((H.S.settings||{}).chat_icons)||{})._order) || [];
+const byOrd = arr => { const o = ordOf(); const ix = id => { const i = o.indexOf(id); return i < 0 ? 1e6 : i; }; return arr.map((r, i) => [r, i]).sort((a, b) => ix(a[0].id) - ix(b[0].id) || a[1] - b[1]).map(x => x[0]); };   // 대표가 끌어서 정한 방 순서
 const icOf = r => (((H.S.settings||{}).chat_icons||{})[r.id]) || ICON[r.kind];   // 대표가 고른 방 아이콘
 const ICONS = ['📣','👥','🧹','🏢','🏠','🔧','🧽','🚚','🌱','⭐','🔥','💬','📋','💼','📷','🏗️','🌿','👔','🙌','☀️'];
 const KIND = {all:'전체', team:'팀', site:'현장', dm:'1:1', custom:'대표가 만든 방'};
@@ -21,7 +23,8 @@ function listHtml(){
   const rs = (C.home && C.home.rooms) || [], q = C.q.trim();
   const vis = rs.filter(r => (OWN() || (r.mgr && !r.closed && r.live)) && (C.showClosed ? r.closed : !r.closed) && (r.kind !== 'site' || r.live || r.count || C.showClosed) && (!q || r.title.includes(q)));
   const grp = [['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['현장', r => r.kind === 'site'], ['1:1', r => r.kind === 'dm']];
-  const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}" data-a="chOpen" data-id="${r.id}"><span class="ch-ic">${icOf(r)}</span>
+  const dnd = OWN() && !C.showClosed;
+  const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}" data-a="chOpen" data-id="${r.id}" ${dnd?`draggable="true" data-sec="${['all','team','custom'].includes(r.kind)?'g':r.kind}"`:''}><span class="ch-ic">${icOf(r)}</span>
     <span class="t"><b>${esc(r.title)}${r.keep?' 📌':''}${OWN()&&r.mgr&&!H.S.needV6?' <small class="ch-tag" title="관리자도 참여">관리자</small>':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
     <span class="r">${r.last?short(r.last.at):''}${r.unread?`<i class="ch-bd">${r.unread}</i>`:''}</span></button>`;
   const nClosed = rs.filter(r => r.closed).length;
@@ -29,7 +32,7 @@ function listHtml(){
   const dueHtml = due.map(r => `<div class="ch-due">⏳ <b>${esc(r.title)}</b> 퇴사 1년 지남 · 1:1 대화 ${r.count}건<span><button class="btn sm" data-a="chKeepId" data-id="${r.id}">장기 보관</button><button class="btn sm ghost" data-a="chPurge" data-id="${r.id}">정리</button></span></div>`).join('');
   return `${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
     ${C.showClosed ? `<div class="ch-sec">보관함 (닫은 방) <button class="link" data-a="chClosed">← 돌아가기</button></div>${vis.map(row).join('') || '<p class="note" style="padding:10px">닫은 방이 없어요</p>'}`
-      : grp.map(([l, f]) => { const a = vis.filter(f); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
+      : grp.map(([l, f]) => { const a = byOrd(vis.filter(f)); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
         + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')}`;
 }
 
@@ -58,9 +61,24 @@ function roomHtml(){
     `<div class="ch-in">${OWN() && R.kind==='dm' && !H.S.needV9 ? '<button class="btn ghost sm" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''}<label class="btn ghost sm" style="cursor:pointer">📷<input type="file" accept="image/*" hidden data-chfile="1"></label><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
 }
 
+// 방 순서: PC에서 끌어다 놓기 (같은 묶음 안에서만)
+function bindDnd(L){
+  if (L._dnd) return; L._dnd = true; let src = null;
+  L.addEventListener('dragstart', e => { const b = e.target.closest('.ch-row[draggable]'); if (!b) return; src = b; b.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', b.dataset.id); } catch(_){} });
+  L.addEventListener('dragend', () => { if (src) src.classList.remove('drag'); src = null; L.querySelectorAll('.ch-row.over').forEach(x => x.classList.remove('over')); });
+  L.addEventListener('dragover', e => { const t = e.target.closest('.ch-row[draggable]'); if (!src || !t || t === src || t.dataset.sec !== src.dataset.sec) return; e.preventDefault();
+    L.querySelectorAll('.ch-row.over').forEach(x => x.classList.remove('over')); t.classList.add('over'); });
+  L.addEventListener('drop', async e => { const t = e.target.closest('.ch-row[draggable]'); if (!src || !t || t === src || t.dataset.sec !== src.dataset.sec) return; e.preventDefault();
+    const r = t.getBoundingClientRect(); t.parentNode.insertBefore(src, e.clientY > r.top + r.height / 2 ? t.nextSibling : t);
+    const ids = [...L.querySelectorAll('.ch-row[draggable]')].map(x => +x.dataset.id);
+    const m = Object.assign({}, (H.S.settings||{}).chat_icons || {}); m._order = ids;
+    try { await H.q(H.sb.from('settings').upsert({key:'chat_icons', value:m})); H.S.settings.chat_icons = m; H.toast('방 순서를 바꿨어요 · 직원 화면도 이 순서예요'); } catch(err){ H.fail(err); }
+    paint(true); });
+}
+
 function paint(keep){
   const L = document.getElementById('chList'), R = document.getElementById('chRoom'); if (!L || !R) return;
-  L.innerHTML = listHtml();
+  L.innerHTML = listHtml(); bindDnd(L);
   const box0 = document.getElementById('chMsgs'), atB = !box0 || box0.scrollHeight - box0.scrollTop - box0.clientHeight < 80, top = box0 ? box0.scrollTop : 0;
   const t0 = document.getElementById('chT'), v = t0 ? t0.value : '';
   R.innerHTML = roomHtml();

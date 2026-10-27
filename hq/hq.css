@@ -314,3 +314,4 @@ tr.boss td{background:#F5F7FF}
 .jpaste .note{margin-top:8px}
 #sheet .filled{background:#FEF9C3}
 body[data-tab=chat] .fab{display:none!important}
+.ch-row[draggable]{cursor:grab}.ch-row.drag{opacity:.4}.ch-row.over{box-shadow:inset 0 2px 0 var(--navy)}

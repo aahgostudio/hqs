@@ -131,7 +131,8 @@
       <span class="t"><b>${esc(r.title)}${r.kind !== 'dm' ? ` <small style="color:var(--epc-mute);font-weight:600;font-size:12px">${r.n}</small>` : ''}</b>
       <p>${r.last ? esc((r.kind === 'dm' ? '' : r.last.name + ': ') + r.last.body) : '아직 대화가 없어요'}</p></span>
       <span class="r">${r.last ? short(r.last.at) : ''}${r.unread ? `<span class="epc-bd">${r.unread > 99 ? '99+' : r.unread}</span>` : ''}</span></button>`;
-    const g = k => rs.filter(r => k.includes(r.kind));
+    const ord = (ICONS && ICONS._order) || [], ix = id => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };   // 대표가 정한 방 순서
+    const g = k => rs.filter(r => k.includes(r.kind)).map((r, i) => [r, i]).sort((a, b) => ix(a[0].id) - ix(b[0].id) || a[1] - b[1]).map(x => x[0]);
     w.innerHTML = `<div class="epc-h"><button class="epc-back" data-close="1" aria-label="닫기">←</button><span class="sp"><b>대화</b>${total ? `<small>안 읽음 ${total}</small>` : ''}</span></div>
       <div class="epc-list">
         ${g(['dm']).length ? `<div class="epc-sec">1:1</div>${g(['dm']).map(row).join('')}` : ''}
