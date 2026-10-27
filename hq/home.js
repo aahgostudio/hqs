@@ -77,7 +77,7 @@ H.view('home', {label:'홈',
     // 청소
     const deps = month.filter(j=>+j.deposit_amount);
     const cleanMoney = S.owner ? `<div class="kp" style="margin-top:8px">
-        <div class="k"><span>이번 달 청소 예상 수익</span><b>${won(month.reduce((n,j)=>n+H.jobRevenue(j),0))}</b><small>계약 + 추가금 · 원</small></div>
+        <div class="k"><span>이번 달 클린 예상 수익</span><b>${won(month.reduce((n,j)=>n+H.jobRevenue(j),0))}</b><small>계약 + 추가금 · 원</small></div>
         <div class="k"><span>임금 지출 (마감분)</span><b>${won(month.reduce((n,j)=>n+H.jobLabor(j),0))}</b><small>원</small></div>
         <div class="k"><span>예약금 받음</span><b>${won(deps.filter(j=>j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>j.deposit_paid).length}건 · 원</small></div>
         <div class="k ${deps.filter(j=>!j.deposit_paid).length?'wait':''}"><span>예약금 대기</span><b>${won(deps.filter(j=>!j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>!j.deposit_paid).length}건 · 원</small></div>
@@ -92,12 +92,12 @@ H.view('home', {label:'홈',
       </div>${cleanMoney}
       ${short.length?`<div class="ptitle">사람이 더 필요한 현장</div>${short.slice(0,6).map(j=>`<div class="rw"><span>${md(j.job_date)} ${j.start_time?j.start_time.slice(0,5):''} ${esc(j.title)}</span><span class="pill p-warn">${appr(j).length}/${j.headcount}명</span></div>`).join('')}`:''}`;
 
-    const todayList = [...todayJ.map(j=>({t:j.start_time, h:`<span class="tag" style="background:var(--clean)">청소</span> ${esc(j.title)} <span class="note">${appr(j).map(a=>esc(H.P(a.staff_id).name)).join('·')||'미배정'}</span>`})),
+    const todayList = [...todayJ.map(j=>({t:j.start_time, h:`<span class="tag" style="background:var(--clean)">클린</span> ${esc(j.title)} <span class="note">${appr(j).map(a=>esc(H.P(a.staff_id).name)).join('·')||'미배정'}</span>`})),
       ...(S.events||[]).filter(e=>e.ev_date===today && (!e.staff_id || e.show_boss)).map(e=>({t:e.ev_time, h:`<span class="tag" style="background:${e.staff_id?'var(--res)':'#6B7280'}">${e.staff_id?esc(H.P(e.staff_id).name):'내 일정'}</span> ${esc(e.kind)} ${esc(e.title)}`}))]
       .sort((a,b)=>(a.t||'').localeCompare(b.t||''));
 
     return `
-    ${(S.needV3||S.needV9) && S.isOwner ? `<section class="box"><div class="banner warn v3bar"><b>업데이트 1개 (${S.needV3?'v3':S.needV5?'v5':S.needV6?'v6':S.needV7?'v7':'v9'})</b> ${S.needV3?'프로필 사진 · 정기 반복 일정 · 문나원 퇴사 정리':S.needV5?'팀 대화 + 대표님 현장 → 직원 화면 상태 자동 (카카오워크 졸업)':S.needV6?'대화: 관리자(HQS)도 참여 · 방 관리는 대표만':S.needV7?'인사카드 대표 전용 칸':'인사카드 주민번호·계좌 칸 + 1:1 대화 입금 자동 기록'} — SQL 한 번만 실행해 주세요<span style="margin-left:auto;display:flex;gap:6px"><button class="btn sm" data-a="copyV3">SQL 복사</button><a class="btn sm ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></span></div></section>` : ''}
+    ${(S.needV3||S.needV10) && S.isOwner ? `<section class="box"><div class="banner warn v3bar"><b>업데이트 1개 (${S.needV3?'v3':S.needV5?'v5':S.needV6?'v6':S.needV7?'v7':S.needV9?'v9':'v10'})</b> ${S.needV3?'프로필 사진 · 정기 반복 일정 · 문나원 퇴사 정리':S.needV5?'팀 대화 + 대표님 현장 → 직원 화면 상태 자동 (카카오워크 졸업)':S.needV6?'대화: 관리자(HQS)도 참여 · 방 관리는 대표만':S.needV7?'인사카드 대표 전용 칸':S.needV9?'인사카드 주민번호·계좌 칸 + 1:1 대화 입금 자동 기록':"이름 '청소' → '클린' (팀·대화방)"} — SQL 한 번만 실행해 주세요<span style="margin-left:auto;display:flex;gap:6px"><button class="btn sm" data-a="copyV3">SQL 복사</button><a class="btn sm ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></span></div></section>` : ''}
     ${H.teamStrip ? H.teamStrip() : ''}
     ${alerts.length?`<section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">누르면 해당 화면으로 가요</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${alerts.map(([c,t,go])=>`<a class="banner ${c==='warn'?'warn':'info'}" href="#${go}" style="text-decoration:none;padding:8px 12px">${esc(t)} →</a>`).join('')}</div></section>`:''}
@@ -106,14 +106,14 @@ H.view('home', {label:'홈',
         ${todayList.map(x=>`<div class="rw"><span>${x.t?x.t.slice(0,5)+' · ':''}${x.h}</span></div>`).join('') || '<div class="note">오늘 일정이 없어요</div>'}</section>
       <section class="box"><div class="bh"><h3>직원에게 보이는 대표 상태</h3></div>
         <div class="banner info"><b>${esc((S.boss||{}).state||'근무중')}</b>${(S.boss||{}).memo?' · '+esc(S.boss.memo):''}${esc(H.untilTxt((S.boss||{}).until))}${S.owner?'<button class="btn sm" style="margin-left:auto" data-a="bossSheet">바꾸기</button>':''}</div>
-        <div class="note" style="margin-top:8px">청소 일정판·매물노트 맨 위에 보여요. 시간이 지나면 자동으로 근무중.</div></section>
+        <div class="note" style="margin-top:8px">클린 일정판·매물노트 맨 위에 보여요. 시간이 지나면 자동으로 근무중.</div></section>
     </div>
     <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>리츠부동산</h3>${S.owner&&S.mcode?`<a class="btn sm ghost" href="../maemul/?k=${encodeURIComponent(S.mcode)}">매물노트 열기 →</a>`:''}</div>${resHtml}</section>
     <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>리츠종합클린</h3><a class="btn sm ghost" href="#sched">일정판 →</a></div>${cleanHtml}</section>`;
   }
 });
 
-H.ACT.copyV3 = async () => { const t = await (await fetch(H.S.needV3 ? 'update_v3.sql' : H.S.needV5 ? 'update_v5.sql' : H.S.needV6 ? 'update_v6.sql' : H.S.needV7 ? 'update_v7.sql' : 'update_v9.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL을 복사했어요 · SQL Editor에 붙여넣고 Run → 새로고침'); };
+H.ACT.copyV3 = async () => { const t = await (await fetch(H.S.needV3 ? 'update_v3.sql' : H.S.needV5 ? 'update_v5.sql' : H.S.needV6 ? 'update_v6.sql' : H.S.needV7 ? 'update_v7.sql' : H.S.needV9 ? 'update_v9.sql' : 'update_v10.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL을 복사했어요 · SQL Editor에 붙여넣고 Run → 새로고침'); };
 H.ACT.bossIcs = () => { const k = H.S.settings.ics_key; H.copy(`${H.MAEMUL_API}?ics=${encodeURIComponent(typeof k === 'string' ? k : String(k))}&boss=1`, '구독 주소를 복사했어요 · 반영까지 몇 시간 걸릴 수 있어요'); };
 // 매물노트 연결 (대표 링크 붙여넣기)
 H.ACT.mmLink = () => H.open(`<form data-f="mmLink"><h3>매물노트 연결</h3><p class="note">대표님 매물노트 개인 링크를 붙여넣어 주세요. 예) team.earningplace.kr/maemul/?k=…</p>

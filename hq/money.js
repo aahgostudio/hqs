@@ -23,15 +23,15 @@ H.view('money', {label:'돈', owner:true,
     return `<div class="bh" style="margin:0"><div style="display:flex;gap:6px;align-items:center"><button class="btn ghost sm" data-a="monNav" data-n="-1">${H.I('left')}</button><b>${m.getFullYear()}년 ${m.getMonth()+1}월</b><button class="btn ghost sm" data-a="monNav" data-n="1">${H.I('right')}</button></div><span class="note">세금·공제는 기본 계산이에요 · 신고 전 세무사 확인</span></div>
     <section class="box money"><div class="bh"><h3>${m.getMonth()+1}월 전체 수익</h3><button class="btn sm ghost" data-a="monXlsx">엑셀 받기 (세무사용)</button></div>
       <div class="mrow">
-        <div><span>총 매출</span><b>${won(R.rev)}</b><small> 청소 ${won(R.cleanRev)} · 부동산 ${won(R.resRev)}</small></div>
-        <div><span>− 청소 인건비</span><b style="font-size:20px">${won(R.labor)}</b></div>
+        <div><span>총 매출</span><b>${won(R.rev)}</b><small> 클린 ${won(R.cleanRev)} · 부동산 ${won(R.resRev)}</small></div>
+        <div><span>− 클린 인건비</span><b style="font-size:20px">${won(R.labor)}</b></div>
         <div><span>− 부동산 배분</span><b style="font-size:20px">${won(R.shareTot)}</b></div>
         <div><span>− 외주 · 매입</span><b style="font-size:20px">${won(R.puTot)}</b></div>
         <div><span>− 운영비</span><b style="font-size:20px">${won(R.exTot)}</b></div>
         <div><span>미수금</span><b style="font-size:20px;color:#FCA5A5">${won(R.unpaid)}</b></div>
         <div class="net"><span>순수익</span><b>${won(R.net)}</b></div>
       </div></section>
-    <nav class="mtabs">${[['sum','요약'],['clean','청소 정산'],['res','부동산 정산'],['cost','운영비 · 매입']].map(([k,l])=>`<button data-a="monSec" data-k="${k}" aria-pressed="${sec===k}">${l}</button>`).join('')}</nav>
+    <nav class="mtabs">${[['sum','요약'],['clean','클린 정산'],['res','부동산 정산'],['cost','운영비 · 매입']].map(([k,l])=>`<button data-a="monSec" data-k="${k}" aria-pressed="${sec===k}">${l}</button>`).join('')}</nav>
     ${sec==='sum' ? `<div class="g2">
       <section class="box"><div class="bh"><h3>매출 구분</h3><span class="sub">둘 다 합계에 포함</span></div>
         <div class="ptitle">리츠종합클린</div>${bar(R.clean.issued, R.clean.not, 'var(--clean)')}
@@ -41,15 +41,15 @@ H.view('money', {label:'돈', owner:true,
         <div class="rw"><span>증빙 발행</span><b>${won(R.res.issued)}</b></div>
         <div class="rw"><span>증빙 안 함 ${R.res.need?`<span class="pill p-warn">${R.res.need}건</span>`:''}${R.res.wait?` <span class="pill p-wait">수령 전 ${R.res.wait}건</span>`:''}</span><b>${won(R.res.not)}</b></div>
         <p class="note">현금영수증 의무발행 업종은 10만원 이상 현금 거래에 발행이 필요해요. 미발행분은 세무사와 처리 방법을 정해 주세요.</p></section>
-      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>청소 · 현장별 수익</h3><span class="sub">${R.cleanJobs.length}곳</span></div>
+      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>클린 · 현장별 수익</h3><span class="sub">${R.cleanJobs.length}곳</span></div>
         <div class="tbl"><table><thead><tr><th>현장</th><th class="num">매출</th><th class="num">추가금</th><th class="num">인건비</th><th class="num">외주</th><th class="num">현장 이익</th></tr></thead><tbody>
         ${R.cleanJobs.map(x=>`<tr><td>${md(x.j.job_date)} ${esc(x.j.title)}${x.j.contract_mode?` <span class="tag" style="background:var(--prt)">도급 ${x.j.contract_mode}</span>`:''}</td><td class="num">${won(x.rev)}</td><td class="num">${x.ext?'+'+won(x.ext):'-'}</td><td class="num">${won(x.lab)}</td><td class="num">${x.pu?won(x.pu):'-'}</td><td class="num"><b>${won(x.rev-x.lab-x.pu)}</b>${x.unpaid?' <span class="pill p-warn">미수</span>':''}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">이 달 현장이 없어요</td></tr>'}
         </tbody></table></div>
         <div class="ptitle">추가금 사유 TOP</div>${R.extraTop.map(([k,v])=>`<div class="rw"><span>${esc(k)}</span><b>${v.n}건 · ${won(v.s)}</b></div>`).join('') || '<div class="note">이 달 추가금이 없어요</div>'}
-        <p class="note">도급 A는 예약금만 본사 매출, B는 전액 매출이고 잔금 송금은 외주 지급(청소 도급)으로 넣어 주세요.</p></section>
+        <p class="note">도급 A는 예약금만 본사 매출, B는 전액 매출이고 잔금 송금은 외주 지급(클린 도급)으로 넣어 주세요.</p></section>
     </div>` : ''}
     ${sec==='clean' ? `
-      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>청소 · 직원별 정산 <button class="btn sm" data-a="daySettle" style="margin-left:6px">💰 오늘 정산</button></h3><span class="sub">이름을 누르면 현장별 상세</span></div>
+      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>클린 · 직원별 정산 <button class="btn sm" data-a="daySettle" style="margin-left:6px">💰 오늘 정산</button></h3><span class="sub">이름을 누르면 현장별 상세</span></div>
         <div class="tbl"><table><thead><tr><th>직원</th><th>지급 방식</th><th class="num">현장</th><th class="num">지급 총액</th><th class="num">공제</th><th class="num">실지급</th><th>상태</th></tr></thead><tbody>
         ${(() => { const bj = (H.S.mJobs||[]).filter(j => j.boss_on && j.status !== 'cancelled' && j.status !== 'quote'), dn = bj.filter(j => j.status === 'done');
           return `<tr class="grp"><td colspan="7">대표</td></tr><tr class="boss"><td><b>권성환</b> <span class="note">대표 · 직접 현장</span></td><td class="note">사업 소득</td><td class="num">${dn.length}${bj.length>dn.length?`<div class="note">예정 ${bj.length-dn.length}</div>`:''}</td><td class="num">${won(dn.reduce((a,j)=>a+H.jobRevenue(j),0))}<div class="note">현장 매출</div></td><td class="num">-</td><td class="num">-</td><td class="note">${dn.slice(0,3).map(j=>esc(j.title||'')).join(' · ')}${dn.length>3?' 외':''}</td></tr>`; })()}
@@ -83,7 +83,7 @@ H.view('money', {label:'돈', owner:true,
       <section class="box"><div class="bh"><h3><i class="dot" style="background:#6B7280"></i>운영비 · 구좌별</h3><span class="sub">${won(R.exTot)}</span></div>
         <div class="ptitle">항목별</div>${R.exByCat.map(([k,v])=>`<div class="rw"><span>${esc(k)}</span><b>${won(v)}</b></div>`).join('') || '<div class="note">없음</div>'}
         <div class="ptitle">결제 구좌별</div>${R.exByAcc.map(([k,v])=>`<div class="rw"><span>${esc(k)}${k==='현금'&&R.exNoRcpt?` <span class="pill p-wait">영수증 없음 ${R.exNoRcpt}건</span>`:''}</span><b>${won(v)}</b></div>`).join('') || '<div class="note">없음</div>'}
-        ${R.exTot?`<div class="hb" style="margin-top:10px">${R.exByBiz.map(([k,v])=>`<i style="width:${v/R.exTot*100}%;background:${k==='clean'?'var(--clean)':k==='res'?'var(--res)':k==='ago'?'#2E8B57':'#9CA3AF'}"></i>`).join('')}</div><div class="note">${R.exByBiz.map(([k,v])=>`${({clean:'청소',res:'부동산',common:'공통',ago:'아고'})[k]||k} ${Math.round(v/R.exTot*100)}%`).join(' · ')}</div>`:''}</section>
+        ${R.exTot?`<div class="hb" style="margin-top:10px">${R.exByBiz.map(([k,v])=>`<i style="width:${v/R.exTot*100}%;background:${k==='clean'?'var(--clean)':k==='res'?'var(--res)':k==='ago'?'#2E8B57':'#9CA3AF'}"></i>`).join('')}</div><div class="note">${R.exByBiz.map(([k,v])=>`${({clean:'클린',res:'부동산',common:'공통',ago:'아고'})[k]||k} ${Math.round(v/R.exTot*100)}%`).join(' · ')}</div>`:''}</section>
       <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--prt)"></i>매입 · 외주 지급</h3><span class="sub">매출과 따로</span></div>
         <div class="kp" style="grid-template-columns:1fr 1fr"><div class="k"><span>매입 합계</span><b>${won(R.puTot)}</b></div><div class="k ok"><span>증빙 받음</span><b>${won(R.pu.got)}</b></div>
           <div class="k wait"><span>요청 중</span><b>${won(R.pu.req)}</b></div><div class="k ${R.pu.none?'warn':''}"><span>증빙 없음</span><b>${won(R.pu.none)}</b></div></div>
@@ -187,14 +187,14 @@ H.ACT.monXlsx = async () => {
   if (!window.XLSX) await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
   const S = H.S, R = H.calcMonth(), m = V.money.month, wb = XLSX.utils.book_new();
   const add = (name, rows) => XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), name);
-  add('요약', [['항목','금액'],['청소 매출',R.cleanRev],['부동산 매출',R.resRev],['청소 인건비',R.labor],['부동산 배분',R.shareTot],['외주·매입',R.puTot],['운영비',R.exTot],['순수익',R.net],['미수금',R.unpaid],[],['청소 증빙 발행',R.clean.issued],['청소 증빙 안 함',R.clean.not],['부동산 증빙 발행',R.res.issued],['부동산 증빙 안 함',R.res.not]]);
+  add('요약', [['항목','금액'],['클린 매출',R.cleanRev],['부동산 매출',R.resRev],['클린 인건비',R.labor],['부동산 배분',R.shareTot],['외주·매입',R.puTot],['운영비',R.exTot],['순수익',R.net],['미수금',R.unpaid],[],['클린 증빙 발행',R.clean.issued],['클린 증빙 안 함',R.clean.not],['부동산 증빙 발행',R.res.issued],['부동산 증빙 안 함',R.res.not]]);
   const cl = [['날짜','현장','계약금액','도급','예약금','예약금 결제','예약금 증빙','예약금 발행','잔금','잔금 결제','잔금 증빙','잔금 발행','추가금','추가금 내역','본사 매출','인건비','외주']];
   R.cleanJobs.forEach(({j,rev,lab,pu}) => cl.push([j.job_date, j.title, j.total_amount||0, j.contract_mode||'', j.deposit_amount||0, j.deposit_how||'', j.deposit_proof||'', j.deposit_issued?'O':'', j.balance_amount||0, j.balance_how||'', j.balance_proof||'', j.balance_issued?'O':'', H.extrasSum(j), (j.extras||[]).map(x=>`${x.name} ${x.amount}${x.issued?'(발행)':''}`).join(', '), rev, lab, pu]));
-  add('청소 매출', cl);
+  add('클린 매출', cl);
   const rs = [['계약일','매물번호','계약','종류','받는 쪽','중개보수','결제','증빙','발행','받음','담당']];
   (S.mDeals||[]).forEach(d => (d.sides||[]).forEach(x => rs.push([d.deal_date, d.maemul_id||'', d.title, d.deal_kind||'', x.side, x.amount||0, x.how||'', x.proof||'', x.issued?'O':'', x.paid===false?'':'O', (d.agents||[]).map(a=>H.P(a).name).join('·')||'대표'])));
   add('부동산 매출', rs);
-  const pc = [['직원','팀','지급 방식','현장 수','지급 총액','공제','실지급','지급 완료']]; R.pay.forEach(p => pc.push([p.s.name, p.s.team, H.PT[p.s.pay_type], p.n, p.gross, p.ded, p.gross-p.ded, p.paid?'O':''])); add('청소 정산', pc);
+  const pc = [['직원','팀','지급 방식','현장 수','지급 총액','공제','실지급','지급 완료']]; R.pay.forEach(p => pc.push([p.s.name, p.s.team, H.PT[p.s.pay_type], p.n, p.gross, p.ded, p.gross-p.ded, p.paid?'O':''])); add('클린 정산', pc);
   const pr = [['직원','배분율','계약 몫','개인 수익','지급 방식','공제','실지급']]; R.res.rows.forEach(r => pr.push([r.s.name, r.rate??'', r.base, r.inc, H.PT[r.s.pay_type], r.ded, r.inc-r.ded])); add('부동산 배분', pr);
   const ex = [['날짜','사업','항목','내용','금액','결제 구좌','영수증']]; (S.mEx||[]).forEach(x => ex.push([x.ex_date, x.biz, x.category, x.memo||'', x.amount, x.account||'', x.has_receipt?'O':''])); add('운영비', ex);
   const pu = [['날짜','현장','항목','지급처','금액','증빙','증빙 상태','지급 방법','메모']]; (S.mPu||[]).forEach(p => { const j = (S.mJobs||[]).find(x=>x.id===p.job_id); pu.push([p.pu_date, j?j.title:'', p.category, p.vendor||'', p.amount, p.proof||'', p.proof_status, p.pay_how||'', p.memo||'']); }); add('매입', pu);

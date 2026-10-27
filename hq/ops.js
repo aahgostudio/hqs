@@ -6,9 +6,9 @@ const SUBS = [['order','오더 접수함'],['match','인력 매칭'],['money','�
 const sub = () => { const s = (location.hash.split('/')[1]||''); return SUBS.some(x=>x[0]===s) ? s : 'order'; };
 const EXP_CAT = ['광고비','비품비','소모품','차량·유류','통신비','수수료','식대','교육','기타'];
 const ACCOUNTS = ['사업용 카드','사업자 통장','현금','개인 카드'];
-const BUY_CAT = ['청소 도급','철거','시설관리','폐기물 처리','장비 임대','자재','기타'];
+const BUY_CAT = ['클린 도급','철거','시설관리','폐기물 처리','장비 임대','자재','기타'];
 const BUY_PROOF = ['세금계산서','현금영수증(지출증빙)','카드','원천징수(3.3%)','없음'];
-const BIZ = [['clean','청소'],['res','부동산'],['common','공통'],['ago','아고']];
+const BIZ = [['clean','클린'],['res','부동산'],['common','공통'],['ago','아고']];
 const bizL = k => (BIZ.find(b=>b[0]===k)||[0,k])[1];
 
 H.view('ops', {label:'운영',

@@ -109,8 +109,8 @@ H.view('team', {label:'팀',
     return `<section class="box"><div class="tm-head"><div><h2>지금 우리 팀</h2><small>${when} · 자동으로 갱신돼요</small></div><button class="btn sm ghost" data-a="teamRefresh">새로고침</button></div>
       <div class="chips2"><span>🧹 현장 ${on.length}곳 진행 · ${on.reduce((a,x)=>a+x.ppl.length,0)}명</span><span>✅ ${d.sites.filter(x=>x.state==='done').length}곳 끝</span>${S.owner?`<span>🏠 부동산 ${d.people.length}명</span>`:''}${d.warnN?`<span class="w">⚠ 확인 ${d.warnN}건</span>`:''}</div></section>
     <div class="${S.owner?'g2':''}">
-      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>청소 현장판 <span class="sub">오늘 ${d.sites.length}곳</span></h3><a class="btn sm ghost" href="#sched">일정판 →</a></div>
-        <div class="tm-sites">${d.sites.map(siteCard).join('') || '<div class="note">오늘 청소 현장이 없어요</div>'}</div>
+      <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>클린 현장판 <span class="sub">오늘 ${d.sites.length}곳</span></h3><a class="btn sm ghost" href="#sched">일정판 →</a></div>
+        <div class="tm-sites">${d.sites.map(siteCard).join('') || '<div class="note">오늘 클린 현장이 없어요</div>'}</div>
         ${d.free.length?`<div class="tm-free">오늘 일정 없는 사람: ${d.free.map(x => x.ok ? `<b>${esc(x.s.name)} ✓</b>` : esc(x.s.name)).join(' · ')} <span style="opacity:.7">(✓ = 오늘 가능 표시함)</span></div>`:''}</section>
       ${S.owner?`<section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>부동산 사람판 <span class="sub">리츠부동산</span></h3>${S.mcode?`<a class="btn sm ghost" href="../maemul/?k=${encodeURIComponent(S.mcode)}">매물노트 →</a>`:''}</div>
         ${d.people.map(personRow).join('') || '<div class="note">근무 중인 부동산 직원이 없어요</div>'}
@@ -118,7 +118,7 @@ H.view('team', {label:'팀',
     </div>
     ${S.owner && d.partners.length ? `<section class="box"><div class="bh"><h3><i class="dot" style="background:var(--ago)"></i>아고 파트너판 <span class="sub">레이블 co-work</span></h3></div>
       ${d.partners.map(p => `<div class="tm-per">${H.av(p.s, 40, 'ago')}<div><b>${esc(p.s.name)} ${esc((p.s.role||'사장').replace(/님$/,''))}님</b><div class="now">${p.icon} ${esc(p.now)}</div><div class="meta">오늘 일정 ${p.evN}건</div></div><div class="rt"><strong>${p.seen ? H.ago(p.seen) : '-'}</strong>접속</div></div>`).join('')}</section>` : ''}
-    <p class="tm-foot">직원 화면엔 안 보여요${S.owner?' · 관리자(HQS)에게는 청소 현장판만 보여요':''}</p>`;
+    <p class="tm-foot">직원 화면엔 안 보여요${S.owner?' · 관리자(HQS)에게는 클린 현장판만 보여요':''}</p>`;
   }
 });
 H.ACT.teamRefresh = () => H.refresh();

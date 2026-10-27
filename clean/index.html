@@ -95,6 +95,10 @@ body{background:var(--bg)}
 .pay .tot b{font-size:22px;font-weight:900}
 .pay ul{list-style:none;margin:8px 0 0;padding:0;font-size:13.5px}
 .pay li{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);gap:8px}
+/* 내 정산 · 캘린더 */
+.paydet{margin-top:8px}.paydet summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--sub);padding:6px 2px;list-style:none}.paydet summary::after{content:' ▾'}.paydet[open] summary::after{content:' ▴'}
+.icsrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.icsrow b{display:block;font-size:14px}.icsrow small{display:block;font-size:11.5px;color:var(--sub);margin-top:2px}
 /* tabbar */
 .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:var(--card);border-top:1px solid var(--line);padding:6px 6px calc(8px + env(safe-area-inset-bottom));z-index:20}
 .tabbar nav{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:520px;align-items:center}
@@ -325,12 +329,9 @@ function mineView(){
       ${items.length?`<ul>${items.map(x=>`<li><span>${md(x.date)} ${esc(x.title)}${x.extra?` <small style="color:var(--sub)">(추가 ${won(x.extra)})</small>`:''}</span><span>${won(x.amount)}${x.paid?' · 지급완료':''}</span></li>`).join('')}</ul>`:''}
       <p class="foot" style="text-align:left;margin-top:8px">${pt==='none'||pt==='contract'?'공제 없이 그대로 지급돼요.':'세금 공제 방식은 대표님과 정한 대로 표시돼요.'}</p></div>`;
   }
-  const ics = V2() ? `<div class="bar" style="margin-top:18px"><h3>내 구글 캘린더에 넣기</h3></div>
-    <div class="form"><div style="font-size:13.5px;line-height:1.6">'구글 캘린더에 넣기'를 켠 내 일정과 확정된 현장이 들어가요.<br>구글 캘린더 → 다른 캘린더 <b>+</b> → <b>URL로 추가</b> → 아래 주소 붙여넣기</div>
-      <div class="ics">${esc(GAS)}?ics=${esc(TOKEN)}</div><button class="btn ghost sm" data-icscopy="1">주소 복사</button>
-      <div style="font-size:12px;color:var(--sub)">구글이 몇 시간에 한 번씩 가져가서, 반영까지 하루까지 걸릴 수 있어요. 이 주소도 나만 쓰는 거예요.</div></div>` : '';
+  const ics = V2() ? `<div class="icsrow"><div><b>📅 내 구글 캘린더에 넣기</b><small>주소 복사 → 구글 캘린더 › 다른 캘린더 + › URL로 추가</small></div><button class="btn ghost sm" data-icscopy="1">주소 복사</button></div>` : '';
   return `<div class="bar"><h3>다가오는 내 일정</h3>${V2()?'<button class="btn ghost sm" data-plus="1">＋ 넣기</button>':''}</div>` + (evs.map(evCard).join('') + up.map(card).join('') || '<p class="empty">다가오는 일정이 없어요</p>') +
-    `<div class="bar" style="margin-top:18px"><h3>${isAGO()?'파트너 정산':'내 정산'}</h3></div>` + EPMoney.html() + (payBox || '<p class="empty">불러오는 중…</p>') + ics;
+    `<div class="bar" style="margin-top:18px"><h3>${isAGO()?'파트너 정산':'내 정산'}</h3></div>` + EPMoney.html() + (payBox ? `<details class="paydet"><summary>${month.getMonth()+1}월 현장별 보기</summary>${payBox}</details>` : '') + ics;
 }
 
 function reportView(){
@@ -351,7 +352,7 @@ function reportView(){
 
 function noticeView(){
   return `<div class="bar"><h3>공지</h3></div>` + (D.notices.map(n => `<article class="notice ${n.read?'':'new'}">
-     <small>${n.team ? (n.team==='OPS'?'청소':n.team==='RES'?'부동산':esc(D.me.team_name))+' 공지' : '전체 공지'} · ${new Date(n.at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})}${n.read?'':' · <b style="color:var(--info)">새 공지</b>'}</small>
+     <small>${n.team ? (n.team==='OPS'?'클린':n.team==='RES'?'부동산':esc(D.me.team_name))+' 공지' : '전체 공지'} · ${new Date(n.at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})}${n.read?'':' · <b style="color:var(--info)">새 공지</b>'}</small>
      ${n.title?`<h4>${esc(n.title)}</h4>`:''}<p>${esc(n.body)}</p>
      ${n.important ? (n.confirmed ? '<div style="margin-top:10px"><span class="pill p-ok">확인 완료</span></div>' : `<div class="acts"><button class="btn" data-nconf="${n.id}">확인했어요</button></div>`) : ''}
    </article>`).join('') || '<p class="empty">공지가 없어요</p>');

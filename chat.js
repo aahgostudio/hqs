@@ -26,9 +26,9 @@
     home: {on:true, me:{id:'me', name:'김지원'}, rooms:[
       {id:1, kind:'dm', title:'대표님', unread:1, n:2, last:{name:'대표', body:'내일 7시 반까지 와주세요', at:ago(12)}},
       {id:2, kind:'all', title:'전체', unread:0, n:9, last:{name:'대표', body:'11/1부터 일정판에서 대화해요!', at:ago(95)}},
-      {id:3, kind:'team', title:'청소팀', unread:3, n:6, last:{name:'김준호', body:'장비 챙겨서 출발합니다', at:ago(4)}},
+      {id:3, kind:'team', title:'클린팀', unread:3, n:6, last:{name:'김준호', body:'장비 챙겨서 출발합니다', at:ago(4)}},
       {id:4, kind:'site', title:'10/27 망미동 SK뷰 35평', unread:1, n:4, last:{name:'나미정', body:'사진', at:ago(30)}}]},
-    room: {3: {room:{id:3, kind:'team', title:'청소팀', members:[{name:'김준호',role:'팀장'},{name:'신봉진',role:'실장'},{name:'나미정',role:'지원'},{name:'서은호',role:'지원'},{name:'김지원',role:'지원'}]},
+    room: {3: {room:{id:3, kind:'team', title:'클린팀', members:[{name:'김준호',role:'팀장'},{name:'신봉진',role:'실장'},{name:'나미정',role:'지원'},{name:'서은호',role:'지원'},{name:'김지원',role:'지원'}]},
       msgs:[{id:11, who:'boss', name:'대표', mine:false, body:'내일 망미동 7시 반까지 사무실 모여요 🙌', at:ago(70)},
             {id:12, who:'a', name:'신봉진', mine:false, body:'저는 양정 퇴실 끝나고 합류할게요', at:ago(40)},
             {id:13, who:'me', name:'김지원', mine:true, body:'네! 저도 7시 반 도착해요 👍', at:ago(20), edited:true},

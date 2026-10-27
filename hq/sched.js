@@ -13,7 +13,7 @@ H.view('sched', {label:'일정',
     const newRep = (S.reports||[]).filter(r=>!r.checked_at).length;
     const head = `<div class="bh"><h3>${v.anchor.getFullYear()}년 ${v.anchor.getMonth()+1}월</h3>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <div class="chips">${[['clean','청소','var(--clean)'],['res','부동산','var(--res)'],['ntc','공지','var(--notice)'],['me','내 일정','#9CA3AF'],['avail','가능·불가일','#86EFAC']].map(([k,l,c])=>`<label><input type="checkbox" data-c="schedF" value="${k}" ${v.f[k]?'checked':''}><span><i style="background:${c}"></i>${l}</span></label>`).join('')}</div>
+        <div class="chips">${[['clean','클린','var(--clean)'],['res','부동산','var(--res)'],['ntc','공지','var(--notice)'],['me','내 일정','#9CA3AF'],['avail','가능·불가일','#86EFAC']].map(([k,l,c])=>`<label><input type="checkbox" data-c="schedF" value="${k}" ${v.f[k]?'checked':''}><span><i style="background:${c}"></i>${l}</span></label>`).join('')}</div>
         <div class="seg"><button data-a="schedMode" data-m="month" aria-pressed="${v.mode==='month'}">달력</button><button data-a="schedMode" data-m="list" aria-pressed="${v.mode==='list'}">목록</button></div>
         <button class="btn ghost sm" data-a="schedNav" data-n="-1" aria-label="이전 달">${I('left')}</button><button class="btn ghost sm" data-a="schedNav" data-n="0">오늘</button><button class="btn ghost sm" data-a="schedNav" data-n="1" aria-label="다음 달">${I('right')}</button>
         <button class="btn sm" data-a="addMenu">${I('plus')}올리기</button></div></div>`;
@@ -75,7 +75,7 @@ function daySide(s){
   const evs = (S.events||[]).filter(e=>e.ev_date===s && (!e.staff_id || e.show_boss));
   const av = (S.avail||[]).filter(a=>a.day===s);
   const ok = av.filter(a=>a.kind==='ok').map(a=>H.P(a.staff_id).name), no = av.filter(a=>a.kind==='no').map(a=>H.P(a.staff_id).name);
-  return `<div class="acts" style="margin:0 0 10px"><button class="btn sm" data-a="jobNew" data-d="${s}">+ 청소 현장</button><button class="btn sm ghost" data-a="evNew" data-d="${s}">+ 내 일정</button><button class="btn sm ghost" data-a="schedSide" data-s="ntc">+ 공지</button></div>
+  return `<div class="acts" style="margin:0 0 10px"><button class="btn sm" data-a="jobNew" data-d="${s}">+ 클린 현장</button><button class="btn sm ghost" data-a="evNew" data-d="${s}">+ 내 일정</button><button class="btn sm ghost" data-a="schedSide" data-s="ntc">+ 공지</button></div>
     ${ok.length?`<div class="avl">이날 가능: ${ok.map(esc).join(' · ')}</div>`:''}${no.length?`<div class="avl no">이날 불가: ${no.map(esc).join(' · ')}</div>`:''}
     ${jobs.map(jobCard).join('')}
     ${evs.map(evCard).join('')}
@@ -119,7 +119,7 @@ function jobCard(j){
 }
 function evCard(e){
   const who = e.staff_id ? H.P(e.staff_id) : null;
-  const biz = {res:'부동산', clean:'청소', ago:'아고', common:'공통', me:'개인'}[e.biz] || e.biz;
+  const biz = {res:'부동산', clean:'클린', ago:'아고', common:'공통', me:'개인'}[e.biz] || e.biz;
   return `<div class="card" style="--tc:${who?'var(--res)':'#9CA3AF'}">
     <div class="t"><span>${e.ev_time?e.ev_time.slice(0,5):'종일'}</span>${who?`<b>${esc(who.name)}</b>`:'<span class="tag" style="background:#6B7280">내 일정</span>'} ${esc(e.kind)} ${e.maemul_id?`<span class="tag" style="background:var(--res)">${esc(e.maemul_id)}</span>`:''}${!who?`<span class="tag" style="background:#9CA3AF">${esc(biz)}</span>`:''}</div>
     <div class="m">${esc(e.title)}${!who&&e.memo?' · '+esc(e.memo):''}</div>
@@ -141,7 +141,7 @@ async function loadRepPhotos(){
   (H.S.reports||[]).forEach(r => { const box = document.querySelector(`[data-pics="${r.id}"]`); if (!box) return;
     box.querySelectorAll('a').forEach((a,i) => { const u = map[r.photos[i]]; if (u){ a.href = u; a.target = '_blank'; a.querySelector('img').src = u; } }); });
 }
-const SCOPE = [['','전체'],['OPS','청소 (직영·지원·도급)'],['RES','부동산']];
+const SCOPE = [['','전체'],['OPS','클린 (직영·지원·도급)'],['RES','부동산']];
 function ntcView(){
   const S = H.S; const active = S.staff.filter(s => s.status !== 'left');
   const target = n => active.filter(s => !n.team || s.team === n.team || (n.team==='OPS' && ['SPT','PRT'].includes(s.team)));
@@ -153,7 +153,7 @@ function ntcView(){
       const read = n.notice_reads.filter(r => tg.some(s => s.id === r.staff_id));
       const unread = tg.filter(s => !read.some(r => r.staff_id === s.id));
       const conf = n.notice_reads.filter(r => r.confirmed_at).length;
-      return `<div class="rep"><div class="t"><span class="tag" style="background:var(--notice)">${n.team==='OPS'?'청소':n.team==='RES'?'부동산':n.team?esc(H.T(n.team).name):'전체'}</span>${n.title?`<b>${esc(n.title)}</b>`:''}<small>${H.ago(n.created_at)}</small></div><p>${esc(n.body)}</p>
+      return `<div class="rep"><div class="t"><span class="tag" style="background:var(--notice)">${n.team==='OPS'?'클린':n.team==='RES'?'부동산':n.team?esc(H.T(n.team).name):'전체'}</span>${n.title?`<b>${esc(n.title)}</b>`:''}<small>${H.ago(n.created_at)}</small></div><p>${esc(n.body)}</p>
         <div class="people"><span class="pill p-ok">읽음 ${read.length}/${tg.length}</span>${n.important?`<span class="pill p-info">확인 ${conf}</span>`:''}${unread.length?`<span class="pill p-warn">안 읽음: ${esc(unread.map(s=>s.name).join(', '))}</span>`:''}
         <button class="btn ghost sm" data-a="ntcDel" data-id="${n.id}">삭제</button></div></div>`; }).join('');
 }
@@ -168,7 +168,7 @@ H.ACT.schedNav = async el => { const n = +el.dataset.n; const v = st();
 H.ACT.schedPick = el => { st().sel = el.dataset.d; st().side = 'day'; H.render(); if (window.innerWidth < 1100) setTimeout(()=>document.getElementById('dayside').scrollIntoView({behavior:'smooth'}), 50); };
 H.ACT.schedSide = el => { st().side = el.dataset.s; H.render(); };
 H.ACT.addMenu = () => H.open(`<h3>무엇을 올릴까요?</h3><div style="display:flex;flex-direction:column;gap:8px">
-  <button class="btn" data-a="jobNew" data-d="${st().sel}">청소 현장 (일정)</button>
+  <button class="btn" data-a="jobNew" data-d="${st().sel}">클린 현장 (일정)</button>
   <button class="btn ghost" data-a="quoteNew">오더 접수 (견적 중)</button>
   <button class="btn ghost" data-a="evNew" data-d="${st().sel}">내 일정 (사업 꼬리표)</button>
   <button class="btn ghost" data-a="ntcGo">공지</button></div>`);
@@ -288,7 +288,7 @@ function jobSheet(j, def){
   const chans = S.settings.order_channels || [];
   const tgt = j.target_staff || [];
   const lock = I('lock').replace('class="i"','class="i" style="width:14px;height:14px"');
-  H.open(`<form data-f="job"><h3>${j.id?'현장 수정':j.status==='quote'?'오더 접수':'청소 현장 올리기'}</h3><div class="fg">
+  H.open(`<form data-f="job"><h3>${j.id?'현장 수정':j.status==='quote'?'오더 접수':'클린 현장 올리기'}</h3><div class="fg">
     <div class="field full"><label>볼 수 있는 팀 (여러 개 가능)</label><div class="chips">${S.teams.filter(t=>t.code!=='HQS').map(t=>`<label><input type="checkbox" name="teams" value="${t.code}" ${(j.teams||[]).includes(t.code)?'checked':''}><span>${t.code} · ${esc(t.name)}</span></label>`).join('')}</div></div>
     <div class="field"><label>날짜${j.id?'':' (첫 날)'}</label><input type="date" name="job_date" value="${j.job_date}" required data-c="repPrev"></div>
     <div class="field"><label>시간</label><input type="time" name="start_time" value="${(j.start_time||'').slice(0,5)}" data-c="repPrev"></div>
@@ -411,7 +411,7 @@ H.FORM.pay = async v => { const id = +v.get('id'); const j = J(id);
   H.close(); H.toast('마감 저장 · 직원들이 자기 금액을 볼 수 있어요'); H.refresh(); };
 
 /* 내 일정 (대표) */
-const BIZ = [['clean','청소'],['res','부동산'],['ago','아고'],['common','공통'],['me','개인']];
+const BIZ = [['clean','클린'],['res','부동산'],['ago','아고'],['common','공통'],['me','개인']];
 function evSheet(e){
   e = e || {ev_date: st().sel, kind:'기타', biz:'common'};
   H.open(`<form data-f="ev"><h3>${e.id?'내 일정 수정':'내 일정 올리기'}</h3><div class="fg">
