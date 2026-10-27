@@ -10,24 +10,25 @@ const tm = iso => { const d = new Date(iso); return `${String(d.getHours()).padS
 const dt = iso => { const d = new Date(iso); return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${tm(iso)}`; };
 const day = iso => { const d = new Date(iso); return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`; };
 const short = iso => { const d = new Date(iso), t = new Date(); return d.toDateString() === t.toDateString() ? tm(iso) : `${d.getMonth()+1}/${d.getDate()}`; };
+const OWN = () => !!H.S.owner;
 const rpc = async (fn, args) => { const {data, error} = await H.sb.rpc(fn, args || {}); if (error) throw error; return data; };
 
 async function loadHome(){ C.home = await rpc('chat_admin_home'); H.S.chatUnread = C.home.rooms.reduce((a,r) => a + (r.closed ? 0 : r.unread||0), 0); }
 
 function listHtml(){
   const rs = (C.home && C.home.rooms) || [], q = C.q.trim();
-  const vis = rs.filter(r => (C.showClosed ? r.closed : !r.closed) && (r.kind !== 'site' || r.live || r.count || C.showClosed) && (!q || r.title.includes(q)));
+  const vis = rs.filter(r => (OWN() || (r.mgr && !r.closed && r.live)) && (C.showClosed ? r.closed : !r.closed) && (r.kind !== 'site' || r.live || r.count || C.showClosed) && (!q || r.title.includes(q)));
   const grp = [['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['현장', r => r.kind === 'site'], ['1:1', r => r.kind === 'dm']];
   const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}" data-a="chOpen" data-id="${r.id}"><span class="ch-ic">${ICON[r.kind]}</span>
-    <span class="t"><b>${esc(r.title)}${r.keep?' 📌':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
+    <span class="t"><b>${esc(r.title)}${r.keep?' 📌':''}${OWN()&&r.mgr&&!H.S.needV6?' <small class="ch-tag" title="관리자도 참여">관리자</small>':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
     <span class="r">${r.last?short(r.last.at):''}${r.unread?`<i class="ch-bd">${r.unread}</i>`:''}</span></button>`;
   const nClosed = rs.filter(r => r.closed).length;
-  const due = rs.filter(r => r.kind === 'dm' && r.left_at && !r.keep && (Date.now() - new Date(r.left_at)) > 365*864e5);
+  const due = !OWN() ? [] : rs.filter(r => r.kind === 'dm' && r.left_at && !r.keep && (Date.now() - new Date(r.left_at)) > 365*864e5);
   const dueHtml = due.map(r => `<div class="ch-due">⏳ <b>${esc(r.title)}</b> 퇴사 1년 지남 · 1:1 대화 ${r.count}건<span><button class="btn sm" data-a="chKeepId" data-id="${r.id}">장기 보관</button><button class="btn sm ghost" data-a="chPurge" data-id="${r.id}">정리</button></span></div>`).join('');
-  return `${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1"><button class="btn sm" data-a="chNew">＋ 새 방</button></div>
+  return `${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
     ${C.showClosed ? `<div class="ch-sec">보관함 (닫은 방) <button class="link" data-a="chClosed">← 돌아가기</button></div>${vis.map(row).join('') || '<p class="note" style="padding:10px">닫은 방이 없어요</p>'}`
       : grp.map(([l, f]) => { const a = vis.filter(f); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
-        + `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>`}`;
+        + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')}`;
 }
 
 function roomHtml(){
@@ -45,13 +46,14 @@ function roomHtml(){
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
   return `<div class="ch-rh"><div style="min-width:0"><b>${ICON[R.kind]} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div></div>
-      <div class="ch-ra">${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}
+      <div class="ch-ra">${OWN() ? `${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}
+        ${H.S.needV6?'':`<button class="btn sm ghost" data-a="chMgr" title="관리자(HQS)도 이 방을 보고 대화">${r.mgr?'👥 관리자 참여 중':'👥 관리자 빼고'}</button>`}
         <button class="btn sm ghost" data-a="chKeep" title="기간이 지나도 정리하지 않아요">${r.keep?'📌 고정 해제':'📌 보관 고정'}</button>
         <button class="btn sm ghost" data-a="chExport">내보내기(PDF)</button>
-        <button class="btn sm ghost" data-a="chClose">${r.closed?'다시 열기':'방 닫기'}</button></div></div>
+        <button class="btn sm ghost" data-a="chClose">${r.closed?'다시 열기':'방 닫기'}</button>` : '<span class="note">관리자로 참여 중</span>'}</div></div>
     <div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
     ${r.closed ? '<div class="ch-in note" style="justify-content:center">닫은 방이에요 · 직원 화면엔 안 보여요</div>' :
-    `<div class="ch-in"><label class="btn ghost sm" style="cursor:pointer">📷<input type="file" accept="image/*" hidden data-chfile="1"></label><textarea id="chT" rows="1" placeholder="대표로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
+    `<div class="ch-in"><label class="btn ghost sm" style="cursor:pointer">📷<input type="file" accept="image/*" hidden data-chfile="1"></label><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
 }
 
 function paint(keep){
@@ -69,6 +71,7 @@ function paint(keep){
 }
 
 async function openRoom(id){
+  const rr = C.home && C.home.rooms.find(x => x.id === id); if (!OWN() && rr && !(rr.mgr && !rr.closed && rr.live)) { C.cur = null; C.room = null; return paint(); }
   C.cur = id; C.room = await rpc('chat_admin_load', {p_room: id, p_after: 0, p_before: null, p_limit: 300});
   C.msgs = C.room.msgs; C.unread = C.room.unread || {};
   const r = C.home.rooms.find(x => x.id === id); if (r) r.unread = 0;
@@ -93,11 +96,13 @@ async function sendPhoto(f){
   } catch(e){ H.fail(e); }
 }
 
-H.view('chat', {label:'대화', owner:true,
-  async load(){ if (H.S.needV5) return; await loadHome(); },
+H.view('chat', {label:'대화',
+  async load(){ if (H.S.needV5 || (!H.S.owner && H.S.needV6)) return; await loadHome(); },
   render(){
-    if (H.S.needV5) return `<section class="box"><div class="banner warn"><b>대화 기능을 쓰려면 업데이트(v5)가 필요해요</b> — 홈 화면 위 'SQL 복사' → SQL Editor에 붙여넣고 Run → 새로고침</div></section>`;
+    if (H.S.needV5 || (!H.S.owner && H.S.needV6)) return `<section class="box"><div class="banner warn"><b>대화 기능을 쓰려면 업데이트가 필요해요</b> — ${H.S.isOwner?"홈 화면 위 'SQL 복사' → SQL Editor에 붙여넣고 Run → 새로고침":'대표님께 업데이트를 요청해 주세요'}</div></section>`;
     const on = C.home && C.home.on;
+    if (!H.S.owner) return `<section class="box ch-top"><div><h2 style="margin:0">대화</h2><small class="note">관리자 참여 방 · 대화와 사진은 업무 기록으로 보관돼요</small></div></section>
+      <div class="ch-wrap"><aside class="box ch-list" id="chList"></aside><section class="box ch-room" id="chRoom"></section></div>`;
     return `<section class="box ch-top"><div><h2 style="margin:0">대화</h2><small class="note">직원은 자기 방만 봐요 · 방 개설·인원·닫기는 대표만 · 대화와 사진은 3년 보관</small></div>
       <label class="ch-sw"><input type="checkbox" id="chOnTg" ${on?'checked':''} data-a="chOn"><span></span><b>${on?'직원에게 열림':'직원에게 닫힘 (준비 중)'}</b></label></section>
       <div class="ch-wrap"><aside class="box ch-list" id="chList"></aside><section class="box ch-room" id="chRoom"></section></div>`;
@@ -123,6 +128,7 @@ H.ACT.chOn = async el => {
   if (on && !confirm('직원 전원 화면에 [대화] 탭이 열려요. 열까요?')) { el.checked = false; return; }
   await rpc('chat_admin_set', {p_on: on, p_beta: null}); await loadHome(); H.toast(on ? '직원에게 대화를 열었어요' : '직원 화면에서 대화를 닫았어요'); H.render();
 };
+H.ACT.chMgr = async () => { const r = C.home.rooms.find(x => x.id === C.cur); await rpc('chat_admin_room_flag', {p_id: C.cur, p_closed: null, p_keep: null, p_mgr: !r.mgr}); await loadHome(); paint(true); H.toast(r.mgr ? '관리자 화면에서 이 방을 뺐어요' : '관리자도 이 방에 참여해요'); };
 H.ACT.chKeep = async () => { const r = C.home.rooms.find(x => x.id === C.cur); await rpc('chat_admin_room_flag', {p_id: C.cur, p_closed: null, p_keep: !r.keep}); await loadHome(); paint(true); H.toast(r.keep ? '보관 고정을 풀었어요' : '보관 고정 · 기간이 지나도 정리하지 않아요'); };
 H.ACT.chClose = async () => { const r = C.home.rooms.find(x => x.id === C.cur);
   if (!r.closed && !confirm(`'${r.title}' 방을 닫을까요?\n직원 목록에서 사라지고, 대화 기록은 보관함에 남아요.`)) return;

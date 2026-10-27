@@ -3,7 +3,10 @@
    레벨·서류·메모는 settings 'staff_hr' {직원id: {...}} 에 저장 (주민번호·계좌번호 같은 민감 정보는 넣지 않기) */
 (function(H){
 const {esc, sb} = H;
-const LV = ['교육생','가정청소 팀원','가정청소 고정팀원','가정청소 팀장 · 상가 팀원','상가·특수청소 팀장'];
+const LV_CLEAN = ['교육생','가정청소 팀원','가정청소 고정팀원','가정청소 팀장 · 상가 팀원','상가·특수청소 팀장'];
+const LV_RES = ['교육생','중개보조원','소속공인중개사','실장','소장'];   // (제안) 부동산 교육과정 정해지면 바꾸기
+const LV_AGO = ['교육생','파트너'];
+const LV = t => t === 'RES' ? LV_RES : t === 'AGO' ? LV_AGO : LV_CLEAN;
 const DOCS = [['contract','계약서 (근로·용역·도급)'],['bank','지급 계좌 확인'],['id','신분 확인'],['consent','업무 연락·대화 보관 동의'],['edu','신입 교육 이수']];
 const hrMap = () => (H.S.settings && H.S.settings.staff_hr) || {};
 const ym = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
@@ -12,10 +15,12 @@ const tel = p => String(p||'').replace(/[^0-9]/g,'');
 H.ACT.stCard = async el => {
   const s = (H.S.staffAll||H.S.staff||[]).find(x => x.id === el.dataset.s); if (!s) return;
   H.open(`<div class="hr"><div class="spin"></div></div>`, true);
-  const [asg, nr, av] = await Promise.all([
+  const isRes = s.team === 'RES';
+  const [asg, nr, av, evs] = await Promise.all([
     H.q(sb.from('assignments').select('*, jobs(id, job_date, title, status, kind, teams)').eq('staff_id', s.id)),
     H.q(sb.from('notice_reads').select('read_at, confirmed_at').eq('staff_id', s.id)).catch(() => []),
-    H.q(sb.from('availability').select('day, kind').eq('staff_id', s.id).gte('day', ym(new Date()) + '-01')).catch(() => [])
+    H.q(sb.from('availability').select('day, kind').eq('staff_id', s.id).gte('day', ym(new Date()) + '-01')).catch(() => []),
+    isRes ? H.q(sb.from('events').select('ev_date, kind, title').eq('staff_id', s.id).order('ev_date', {ascending:false}).limit(200)).catch(() => []) : []
   ]);
   const hr = hrMap()[s.id] || {}, own = H.S.owner, now = new Date(), thisM = ym(now), lastM = ym(new Date(now.getFullYear(), now.getMonth()-1, 1));
   const ok = (asg||[]).filter(a => a.status === 'approved' && a.jobs && a.jobs.status !== 'cancelled').sort((a,b) => String(b.jobs.job_date).localeCompare(a.jobs.job_date));
@@ -39,22 +44,25 @@ H.ACT.stCard = async el => {
       ${s.status!=='left'?`<button type="button" class="btn sm ghost" data-a="stLink" data-s="${s.id}">🔗 링크 복사</button>`:''}
       <button type="button" class="btn sm ghost" data-a="stEdit" data-s="${s.id}">✏️ 기본 정보 수정</button></div>
     <div class="hr-k">
-      <div><span>이번 달 현장</span><b>${nThis}</b><small>지난달 ${nLast}</small></div>
+      ${isRes ? (() => { const e = evs||[], m = e.filter(x => String(x.ev_date).startsWith(thisM)), c = k => m.filter(x => x.kind === k).length;
+        return `<div><span>이번 달 계약</span><b>${c('계약')}</b><small>잔금 ${c('잔금')}</small></div><div><span>이번 달 안내</span><b>${c('안내')}</b><small>일정 ${m.length}건</small></div><div><span>누적 일정</span><b>${e.length}</b><small>계약 ${e.filter(x=>x.kind==='계약').length}</small></div>`; })()
+      : `<div><span>이번 달 현장</span><b>${nThis}</b><small>지난달 ${nLast}</small></div>
       <div><span>누적 현장</span><b>${ok.length}</b><small>예정 ${upcoming}</small></div>
       ${own?`<div><span>이번 달 지급</span><b>${H.won(payThis)}</b><small>누적 ${H.won(payAll)}원</small></div>`:''}
-      <div><span>이번 달 가능일</span><b>${avOk}</b><small>불가 ${avNo}</small></div>
+      <div><span>이번 달 가능일</span><b>${avOk}</b><small>불가 ${avNo}</small></div>`}
       <div><span>공지</span><b>${nRead}</b><small>읽음 · 확인 ${nConf}</small></div>
       <div><span>서류</span><b>${docN}/${DOCS.length}</b><small>체크</small></div>
     </div>
     <div class="fg">
-      <div class="field"><label>레벨 (등급제)</label><select name="level"><option value="">미정</option>${LV.map(l => `<option ${hr.level===l?'selected':''}>${l}</option>`).join('')}</select><div class="hint">무단결근 시 레벨 하향 규칙</div></div>
+      <div class="field"><label>레벨 (등급제)</label><select name="level"><option value="">미정</option>${LV(s.team).map(l => `<option ${hr.level===l?'selected':''}>${l}</option>`).join('')}</select><div class="hint">${s.team==='RES'?'부동산 교육과정 정해지면 단계 조정':s.team==='AGO'?'아고 파트너 단계':'무단결근 시 레벨 하향 규칙'}</div></div>
       <div class="field"><label>지급 방식</label><input value="${esc(H.PT[s.pay_type]||'')}${s.can_collect?' · 수금 가능':''}" disabled><div class="hint">기본 정보 수정에서 바꿔요 · 세금 방식은 세무사 확인</div></div>
       <div class="field full"><label>서류 · 확인</label><div class="hr-docs">${DOCS.map(([k,l]) => `<label><input type="checkbox" name="doc_${k}" ${(hr.docs||{})[k]?'checked':''}> ${l}</label>`).join('')}</div>
         <div class="hint">체크만 해요 · 주민번호·계좌번호·신분증 사진은 여기에 넣지 마세요</div></div>
       <div class="field full"><label>인사 메모 <small>(대표·관리자만 보여요)</small></label><textarea name="memo" rows="4" placeholder="면담 내용, 근태, 칭찬·주의 기록 등 — 날짜와 함께 적어두면 나중에 근거가 돼요">${esc(hr.memo||'')}</textarea></div>
     </div>
+    ${isRes ? `<div class="ptitle">최근 일정</div><div class="hr-jobs">${(evs||[]).slice(0,12).map(e => `<div><span>${String(e.ev_date).slice(5).replace('-','/')}</span><b>${esc(e.title||'')}</b><span class="note">${esc(e.kind||'')}</span></div>`).join('') || '<p class="note">아직 일정이 없어요</p>'}</div>` : `
     <div class="ptitle">최근 근무 ${ok.length ? `<span class="note">(${ok.length}건 중 최근 12건)</span>` : ''}</div>
-    <div class="hr-jobs">${ok.slice(0,12).map(a => `<div><span>${String(a.jobs.job_date).slice(5).replace('-','/')}</span><b>${esc(a.jobs.title||'현장')}</b><span class="note">${a.jobs.status==='done'?'완료':'예정'}</span>${own?`<span class="num">${a.jobs.status==='done'?H.won(pay(a)):''}</span>`:''}</div>`).join('') || '<p class="note">아직 근무 기록이 없어요</p>'}</div>
+    <div class="hr-jobs">${ok.slice(0,12).map(a => `<div><span>${String(a.jobs.job_date).slice(5).replace('-','/')}</span><b>${esc(a.jobs.title||'현장')}</b><span class="note">${a.jobs.status==='done'?'완료':'예정'}</span>${own?`<span class="num">${a.jobs.status==='done'?H.won(pay(a)):''}</span>`:''}</div>`).join('') || '<p class="note">아직 근무 기록이 없어요</p>'}</div>`}
     ${H.sacts('인사카드 저장')}</form>`, true);
 };
 H.ACT.hrChat = el => { if (H.chatGo) H.chatGo(el.dataset.s); };
