@@ -9,8 +9,8 @@
   var k = new URLSearchParams(location.search).get('k') || '', room = '';
   var m = k.match(/^(.*)\.(\d+)$/); if (m) { k = m[1]; room = m[2]; }
   if (k === 'hq') { location.replace('../hq/#chat' + (room ? '/' + room : '')); return; }
-  if (k.indexOf('m.') === 0) { k = k.slice(2); location.replace('../maemul/?k=' + encodeURIComponent(k) + '&chat=' + (room || '1')); return; }
-  if (k) { location.replace('../clean/?k=' + encodeURIComponent(k) + '&chat=' + (room || '1')); return; }
+  if (k.indexOf('m.') === 0) { k = k.slice(2); location.replace('../maemul/?k=' + encodeURIComponent(k) + '&chat=' + (room || 'list')); return; }
+  if (k) { location.replace('../clean/?k=' + encodeURIComponent(k) + '&chat=' + (room || 'list')); return; }
   location.replace('../go/');
 })();
 </script></body></html>

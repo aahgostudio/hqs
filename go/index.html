@@ -7,7 +7,7 @@
 (function(){
   var q = new URLSearchParams(location.search), to = q.get('to') || 'chat', k = '', where = '';
   try { k = localStorage.getItem('ep_k') || ''; where = 'clean'; if (!k) { k = localStorage.getItem('ritz_k') || ''; where = 'maemul'; } } catch(e){}
-  if (k) { location.replace('../' + where + '/?k=' + encodeURIComponent(k) + (to === 'chat' ? '&chat=1' : '')); return; }
+  if (k) { location.replace('../' + where + '/?k=' + encodeURIComponent(k) + (to === 'chat' ? '&chat=list' : '')); return; }
   document.getElementById('c').innerHTML = '<img src="../logo.svg" alt=""><h2>처음 한 번만 해주세요</h2><p>대표님께 받은 <b>개인 링크</b>를 이 폰에서 한 번 열어주세요.<br>그다음부터는 이 버튼으로 바로 열려요.</p>';
 })();
 </script></body></html>
