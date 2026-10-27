@@ -160,7 +160,7 @@ button.kpi:hover{border-color:var(--accent-2)}
 .s-진행{background:var(--ok-soft);color:var(--ok)}.s-휴직{background:#EDE9FE;color:#7C3AED}
 .bossbar{display:flex;gap:8px;align-items:center;border-radius:12px;padding:9px 13px;font-size:13.5px;margin:0 0 14px;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA}.bossbar.busy{background:#FEF2F2;color:#991B1B;border-color:#FECACA}
 .schedbtn{display:inline-flex;align-items:center;gap:6px}
-.statusrow{display:flex;justify-content:flex-end;margin:0 0 10px}
+.statusrow{display:flex;justify-content:flex-end;margin:0 0 -8px}.statusrow.abs{position:absolute;top:0;right:0;margin:0;z-index:3}
 .evp{margin:0 0 16px}.evp .panel-h{margin-bottom:8px}.evp h2 small{font-size:12px;font-weight:400;color:var(--ink-3);margin-left:6px}
 .evrow{display:grid;grid-template-columns:78px auto 1fr;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);color:inherit;text-decoration:none}
 .evrow:first-of-type{border-top:0}.evrow .d{font-size:13px;line-height:1.25}.evrow .d b{display:block;font-size:14px;white-space:nowrap}.evrow .d small{color:var(--ink-3)}
@@ -467,7 +467,7 @@ function render(){
       <div class="who"><div class="avatar">${ini(S.data.me.name)}</div><div><b>${esc(S.data.me.name)} ${esc(S.data.me.role)}</b><small>리츠부동산</small></div></div>
     </aside>
     <main><div class="glow" aria-hidden="true"></div><div class="wrap">
-      <div class="statusrow">${EPStatus.pill()}</div>
+      <div class="statusrow ${S.view==='home'?'abs':''}">${EPStatus.pill()}</div>
       ${S.demo?`<div class="demo">${ic('alert')}지금 보이는 매물은 화면 미리보기용 예시예요. 실제 프로그램에서는 각자 시트의 매물이 나옵니다.</div>`:''}
       ${S.view==='home'?viewHome(all,live,mine,myLive,stale):S.view==='find'?viewFind(live):viewMine(mine)}
     </div></main>

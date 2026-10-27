@@ -43,7 +43,7 @@
 
   function pill(){
     const c = current(), L = LOOK[c.state] || LOOK['근무중'];
-    return `<button type="button" class="epst-pill t-${L.t}" data-epst="1" aria-label="대표님 상태 · 연락하기"><span class="dot"></span><span class="tx"><small>대표님</small><b>${L.i} ${esc(c.state)}</b></span><span class="call">연락</span></button>`;
+    return `<button type="button" class="epst-ic t-${L.t}" data-epst="1" title="대표님 ${esc(c.state)} · 눌러서 연락" aria-label="대표님 ${esc(c.state)}, 연락하기"><span class="em">${L.i}</span><span class="dot"></span></button>`;
   }
 
   function openSheet(){
@@ -80,6 +80,12 @@
   document.addEventListener('click', e => { if (e.target.closest('[data-epst]')) { e.preventDefault(); e.stopPropagation(); openSheet(); } }, true);
 
   const css = `
+.epst-ic{position:relative;width:38px;height:38px;border-radius:50%;border:2px solid var(--epc);background:var(--epbg);display:inline-grid;place-items:center;padding:0;cursor:pointer;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.epst-ic .em{font-size:18px;line-height:1}
+.epst-ic .dot{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;background:var(--epc);border:2px solid var(--epbg)}
+.epst-ic.t-field .dot,.epst-ic.t-busy .dot{animation:epst-p 1.6s ease-in-out infinite}
+@keyframes epst-p{50%{box-shadow:0 0 0 4px var(--eps)}}
+@media (prefers-reduced-motion:reduce){.epst-ic .dot{animation:none!important}}
 .epst-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--epl);background:var(--epbg);color:var(--epink);border-radius:99px;padding:5px 6px 5px 11px;font:inherit;cursor:pointer;max-width:100%;box-shadow:0 1px 2px rgba(0,0,0,.05);flex-shrink:0}
 .epst-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--epc);box-shadow:0 0 0 3px var(--eps);flex-shrink:0}
 .epst-pill .tx{display:flex;flex-direction:column;line-height:1.15;text-align:left;min-width:0}
