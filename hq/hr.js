@@ -68,7 +68,7 @@ H.ACT.stCard = async el => {
     ${H.sacts('인사카드 저장')}</form>`, true);
 };
 H.ACT.hrChat = el => { if (H.chatGo) H.chatGo(el.dataset.s); };
-H.FORM.stHr = async f => {
+H.FORM.stHr = async (fd0, f) => {
   const fd = new FormData(f), id = fd.get('id'), m = {...hrMap()};
   m[id] = {level: fd.get('level') || '', memo: (fd.get('memo')||'').slice(0, 5000), docs: Object.fromEntries(DOCS.map(([k]) => [k, !!fd.get('doc_'+k)])), at: new Date().toISOString()};
   await H.q(sb.from('settings').upsert({key:'staff_hr', value:m})); H.S.settings.staff_hr = m;

@@ -149,7 +149,7 @@ H.ACT.chRename = async () => { const r = C.home.rooms.find(x => x.id === C.cur);
   await rpc('chat_admin_room_save', {p_id: r.id, p_title: v, p_members: null}); await loadHome(); await openRoom(r.id); H.toast('이름을 바꿨어요 · 직원 화면에도 이 이름으로 보여요'); };
 H.ACT.chNew = () => roomForm(null);
 H.ACT.chEdit = () => roomForm(C.home.rooms.find(x => x.id === C.cur));
-H.FORM.chRoom = async f => {
+H.FORM.chRoom = async (fd0, f) => {
   const fd = new FormData(f), id = fd.get('id') ? +fd.get('id') : null;
   const rid = await rpc('chat_admin_room_save', {p_id: id, p_title: fd.get('title'), p_members: fd.getAll('m')});
   H.close(); await loadHome(); H.toast(id ? '저장했어요' : '방을 만들었어요'); await openRoom(rid);
