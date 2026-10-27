@@ -38,7 +38,7 @@ function listHtml(){
   const grp = [['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['현장', r => r.kind === 'site'], ['1:1', r => r.kind === 'dm']];
   const dnd = OWN() && !C.showClosed;
   const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}${r._kid?' ch-kid':''}" data-kid="${r._kid?1:0}" data-kids="${r._kids||0}" data-a="chOpen" data-id="${r.id}" ${dnd?`draggable="true" data-sec="${['all','team','custom'].includes(r.kind)?'g':r.kind}"`:''}><span class="ch-ic">${icOf(r)}</span>
-    <span class="t"><b>${esc(r.title)}${r.keep?' 📌':''}${OWN()&&r.mgr&&!H.S.needV6?' <small class="ch-tag" title="관리자도 참여">관리자</small>':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
+    <span class="t"><b>${esc(r.title)}${r.keep?' 📌':''}${OWN()&&r.mgr&&!H.S.needV6?' <small class="ch-mgr" title="관리자(HQS)도 참여하는 방">🛡️</small>':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
     <span class="r">${r.last?short(r.last.at):''}${r.unread?`<i class="ch-bd">${r.unread}</i>`:''}${r._kids?`<i class="ch-fold" data-fold="${r.id}" title="하위 방 접기/펴기">${C.fold[r.id]?'▸':'▾'} ${r._kids}</i>`:''}</span></button>`;
   const nClosed = rs.filter(r => r.closed).length;
   const due = !OWN() ? [] : rs.filter(r => r.kind === 'dm' && r.left_at && !r.keep && (Date.now() - new Date(r.left_at)) > 365*864e5);
