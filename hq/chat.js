@@ -102,9 +102,12 @@ H.view('chat', {label:'대화', owner:true,
       <label class="ch-sw"><input type="checkbox" id="chOnTg" ${on?'checked':''} data-a="chOn"><span></span><b>${on?'직원에게 열림':'직원에게 닫힘 (준비 중)'}</b></label></section>
       <div class="ch-wrap"><aside class="box ch-list" id="chList"></aside><section class="box ch-room" id="chRoom"></section></div>`;
   },
-  after(){ paint(); if (C.cur) openRoom(C.cur).catch(H.fail); else poll(); }
+  after(){
+    if (C.goStaff && C.home) { const r = C.home.rooms.find(x => x.kind === 'dm' && x.staff_id === C.goStaff); C.goStaff = null; if (r) { C.showClosed = false; C.cur = r.id; } }
+    paint(); if (C.cur) openRoom(C.cur).catch(H.fail); else poll(); }
 });
 
+H.chatGo = staffId => { C.goStaff = staffId; H._loaded = null; H.close(); H.go('chat'); };
 H.ACT.chOpen = el => openRoom(+el.dataset.id);
 H.ACT.chKeepId = async el => { await rpc('chat_admin_room_flag', {p_id: +el.dataset.id, p_closed: null, p_keep: true}); await loadHome(); paint(true); H.toast('장기 보관으로 고정했어요'); };
 H.ACT.chPurge = async el => { const r = C.home.rooms.find(x => x.id === +el.dataset.id);

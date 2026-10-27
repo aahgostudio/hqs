@@ -17,7 +17,8 @@ async function saveLeft(id, status){ const m = {...leftMap()};
   try { await H.q(sb.from('settings').upsert({key:'staff_left', value:m})); H.S.settings.staff_left = m; } catch(e){} }
 H.saveLeft = saveLeft;
 H.view('staff', {label:'직원',
-  async load(){ H.S.staffAll = await H.q(sb.from('staff').select('*').order('created_at')); H.S.staff = H.S.staffAll.filter(x => !x.hidden);  // 숨김 = 처음부터 없던 사람 if (H.S.owner) H.S.payRules = await H.q(sb.from('pay_rules').select('*'));
+  async load(){ H.S.staffAll = await H.q(sb.from('staff').select('*').order('created_at')); H.S.staff = H.S.staffAll.filter(x => !x.hidden);  /* 숨김 = 처음부터 없던 사람 */
+    if (H.S.owner) H.S.payRules = await H.q(sb.from('pay_rules').select('*'));
     // 퇴사 날짜가 없는 예전 퇴사자는 오늘부터 30일 계산
     const m = leftMap(), miss = H.S.staff.filter(s => s.status === 'left' && !m[s.id]);
     if (miss.length) { const n = {...m}; miss.forEach(s => n[s.id] = ymd(new Date())); try { await H.q(sb.from('settings').upsert({key:'staff_left', value:n})); H.S.settings.staff_left = n; } catch(e){} } },
@@ -27,7 +28,7 @@ H.view('staff', {label:'직원',
     const b = S.boss || {state:'근무중'};
     const leftOn = s => { const d = leftMap()[s.id]; return d ? ` <span class="note">${d.slice(5).replace('-','/')} 퇴사</span>` : ''; };
     const row = s => { const m = mStaff.find(x=>x.name===s.name); const mis = s.team==='RES' && m && M2S[m.status||'재직'] !== s.status;
-      return `<tr><td>${H.av(s, 26, s.team==='RES'?'':'cl')} <b>${esc(s.name)}</b> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}${s.status==='left'?leftOn(s):''}</td>
+      return `<tr><td><span data-a="stCard" data-s="${s.id}" style="cursor:pointer">${H.av(s, 26, s.team==='RES'?'':'cl')}</span> <button class="st-name" data-a="stCard" data-s="${s.id}" title="인사카드 열기"><b>${esc(s.name)}</b></button> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}${s.status==='left'?leftOn(s):''}</td>
         <td><span class="tag" style="background:${H.T(s.team).color}">${s.team}</span></td>
         <td><select class="in sm" style="width:auto" data-c="stStatus" data-s="${s.id}">${Object.entries(H.ST).map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select>
           ${mis?`<div class="note" style="color:var(--warn)">매물노트는 '${esc(m.status)}' <button class="btn sm ghost" style="padding:0 6px" data-a="stSync" data-s="${s.id}">맞추기</button></div>`:''}</td>

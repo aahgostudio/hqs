@@ -254,3 +254,15 @@ tr.boss td{background:#F5F7FF}
 .ch-pick{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px}.ch-pick small{color:var(--sub)}
 .fl{display:block;font-size:12.5px;color:var(--sub);margin:10px 0 4px;font-weight:500}.fl .inp{margin-top:4px;color:var(--ink)}
 @media (max-width:860px){.ch-wrap{grid-template-columns:1fr;height:auto}.ch-list{max-height:320px}.ch-room{height:70vh}}
+/* 인사카드 */
+.st-name{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px}
+.st-name:hover{text-decoration-color:currentColor}
+.hr-top{display:flex;gap:14px;align-items:center;margin-bottom:10px}
+.hr-tags{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0;font-size:12.5px}
+.hr-acts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.hr-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
+.hr-k div{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.hr-k span{display:block;font-size:11.5px;color:var(--sub)}.hr-k b{display:block;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums}.hr-k small{font-size:11px;color:var(--sub)}
+.hr-docs{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px}.hr-docs input{width:auto}
+.hr-jobs div{display:grid;grid-template-columns:48px 1fr auto auto;gap:10px;padding:6px 2px;border-bottom:1px solid var(--line);font-size:13px;align-items:center}
+.hr-jobs b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
