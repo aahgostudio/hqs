@@ -107,7 +107,7 @@
 .epst-btns{display:grid;gap:8px}
 .epst-btn{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--epl);border-radius:14px;padding:14px 16px;font-size:15px;font-weight:700;color:var(--epink);text-decoration:none;background:var(--epbg)}
 .epst-btn small{font-size:12px;font-weight:500;color:var(--epsub)}
-.epst-btn.pri{background:#0F7A55;border-color:#0F7A55;color:#fff}.epst-btn.pri small{color:rgba(255,255,255,.8)}
+.epst-btn.pri{background:var(--accent,var(--navy,#16347A));border-color:transparent;color:#fff}.epst-btn.pri small{color:rgba(255,255,255,.8)}
 .epst-close{width:100%;margin-top:10px;border:0;background:none;color:var(--epsub);font:inherit;font-size:14px;padding:10px}
 .epst-foot{text-align:center;font-size:11.5px;color:var(--epsub);margin:0}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);

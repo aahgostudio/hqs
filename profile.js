@@ -74,7 +74,7 @@
 
   document.addEventListener('click', e => { if (e.target.closest('[data-epprof]')) { e.preventDefault(); e.stopPropagation(); sheet(); } }, true);
   const css = `
-.ep-av{border-radius:50%;display:inline-grid;place-items:center;flex-shrink:0;font-weight:700;letter-spacing:-.04em;background:var(--accent-soft,#E2F2EA);color:var(--accent,#0F7A55);position:relative;border:0;padding:0;overflow:visible;font-family:inherit;line-height:1}
+.ep-av{border-radius:50%;display:inline-grid;place-items:center;flex-shrink:0;font-weight:700;letter-spacing:-.04em;background:var(--accent-soft,var(--infob,#EAF0FF));color:var(--accent,var(--navy,#16347A));position:relative;border:0;padding:0;overflow:visible;font-family:inherit;line-height:1}
 .ep-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 button.ep-av{cursor:pointer}.ep-cam{position:absolute;right:-3px;bottom:-3px;font-style:normal;font-size:10px;width:17px;height:17px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 .ep-av.big{font-size:30px!important}`;

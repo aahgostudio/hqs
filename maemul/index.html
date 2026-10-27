@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#0F5A41">
+<meta name="theme-color" content="#5B21B6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="매물노트">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -14,46 +14,46 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
-/* Layout: app shell — left rail on desktop, bottom tab bar + raised center add button on phone. Light by default, night-green when the phone is in dark mode. */
+/* Layout: app shell — left rail on desktop, bottom tab bar + raised center add button on phone. Light by default, night-purple when the phone is in dark mode. */
 :root{
-  --bg:#F3F6F4; --surface:#FFFFFF; --sunk:#EAF0EC; --line:#D9E2DD;
-  --ink:#0E1B16; --ink-2:#3F5148; --ink-3:#5F7168;
-  --accent:#0F7A55; --accent-2:#13946A; --accent-soft:#E2F2EA; --on-accent:#FFFFFF;
-  --hero-a:#0F5A41; --hero-b:#0A2E23; --hero-line:#0F5A41; --hero-sub:#B5E3CF; --hero-ink:#FFFFFF; --hero-track:#062219;
-  --rail:#FFFFFF; --rail-ink:#3F5148; --rail-active:#0E1B16; --hover:#EEF3F0; --current:#E2F2EA; --glow-o:.10;
+  --bg:#F6F4FA; --surface:#FFFFFF; --sunk:#EFEBF6; --line:#DED8EB;
+  --ink:#17132A; --ink-2:#4A4560; --ink-3:#6B6680;
+  --accent:#6D28D9; --accent-2:#7C3AED; --accent-soft:#EDE9FE; --on-accent:#FFFFFF;
+  --hero-a:#5B21B6; --hero-b:#2E1065; --hero-line:#5B21B6; --hero-sub:#DDD6FE; --hero-ink:#FFFFFF; --hero-track:#1E0B45;
+  --rail:#FFFFFF; --rail-ink:#4A4560; --rail-active:#17132A; --hover:#F2EFF8; --current:#EDE9FE; --glow-o:.10;
   --ok:#047857; --ok-soft:#E2F2EA; --warn:#A15C07; --warn-soft:#FEF3C7; --bad:#C2410C; --bad-soft:#FFF1E8; --bad-line:#FCCFB0;
-  --wolse:#0284C7; --wolse-soft:#E0F2FE; --jeonse:#CA8A04; --jeonse-soft:#FEF6CC; --maemae:#EA580C; --maemae-soft:#FFEDD5; --dangi:#7C3AED; --dangi-soft:#EDE9FE;
+  --wolse:#0284C7; --wolse-soft:#E0F2FE; --jeonse:#CA8A04; --jeonse-soft:#FEF6CC; --maemae:#EA580C; --maemae-soft:#FFEDD5; --dangi:#0D9488; --dangi-soft:#CCFBF1;
   --lock:#BE123C; --lock-soft:#FFF1F3;
-  --shadow:0 1px 2px rgba(14,27,22,.05),0 10px 28px -14px rgba(14,27,22,.22);
+  --shadow:0 1px 2px rgba(23,19,42,.05),0 10px 28px -14px rgba(23,19,42,.22);
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
   --r:18px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
 
-  --bg:#08100D; --surface:#101A16; --sunk:#16231E; --line:#1F3029;
-  --ink:#ECF4F0; --ink-2:#A9BCB3; --ink-3:#6E837A;
-  --accent:#34D399; --accent-2:#6EE7B7; --accent-soft:#12302A; --on-accent:#05130E;
-  --hero-a:#0F4433; --hero-b:#0B1B16; --hero-line:#1E5C47; --hero-sub:#9FD8C0;
-  --rail:#060C0A; --rail-ink:#86998F; --rail-active:#FFFFFF;
+  --bg:#0D0A16; --surface:#16121F; --sunk:#1E1829; --line:#2B2440;
+  --ink:#F1EEF8; --ink-2:#B8B0CC; --ink-3:#7D7594;
+  --accent:#A78BFA; --accent-2:#C4B5FD; --accent-soft:#2A1F45; --on-accent:#120A24;
+  --hero-a:#3B1D7A; --hero-b:#150E26; --hero-line:#4C2A94; --hero-sub:#CDBEFB;
+  --rail:#09070F; --rail-ink:#958CAB; --rail-active:#FFFFFF;
   --ok:#34D399; --ok-soft:#12302A; --warn:#FBBF5A; --warn-soft:#33270F; --bad:#FB923C; --bad-soft:#2E1A10; --bad-line:#5A2E17;
-  --wolse:#7DD3FC; --wolse-soft:#0F2836; --jeonse:#FDE047; --jeonse-soft:#2E2A0E; --maemae:#FB923C; --maemae-soft:#33200F; --dangi:#C4A5FF; --dangi-soft:#251C3D;
+  --wolse:#7DD3FC; --wolse-soft:#0F2836; --jeonse:#FDE047; --jeonse-soft:#2E2A0E; --maemae:#FB923C; --maemae-soft:#33200F; --dangi:#5EEAD4; --dangi-soft:#0F2E2B;
   --lock:#FB7190; --lock-soft:#2A1219;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -12px rgba(0,0,0,.7);
-    --hero-ink:#ECF4F0; --hero-track:#08100D; --hover:rgba(255,255,255,.06); --current:rgba(255,255,255,.1); --glow-o:.16;
+    --hero-ink:#F1EEF8; --hero-track:#0D0A16; --hover:rgba(255,255,255,.06); --current:rgba(255,255,255,.1); --glow-o:.18;
   color-scheme:dark}}
 :root[data-theme="dark"]{
 
-  --bg:#08100D; --surface:#101A16; --sunk:#16231E; --line:#1F3029;
-  --ink:#ECF4F0; --ink-2:#A9BCB3; --ink-3:#6E837A;
-  --accent:#34D399; --accent-2:#6EE7B7; --accent-soft:#12302A; --on-accent:#05130E;
-  --hero-a:#0F4433; --hero-b:#0B1B16; --hero-line:#1E5C47; --hero-sub:#9FD8C0;
-  --rail:#060C0A; --rail-ink:#86998F; --rail-active:#FFFFFF;
+  --bg:#0D0A16; --surface:#16121F; --sunk:#1E1829; --line:#2B2440;
+  --ink:#F1EEF8; --ink-2:#B8B0CC; --ink-3:#7D7594;
+  --accent:#A78BFA; --accent-2:#C4B5FD; --accent-soft:#2A1F45; --on-accent:#120A24;
+  --hero-a:#3B1D7A; --hero-b:#150E26; --hero-line:#4C2A94; --hero-sub:#CDBEFB;
+  --rail:#09070F; --rail-ink:#958CAB; --rail-active:#FFFFFF;
   --ok:#34D399; --ok-soft:#12302A; --warn:#FBBF5A; --warn-soft:#33270F; --bad:#FB923C; --bad-soft:#2E1A10; --bad-line:#5A2E17;
-  --wolse:#7DD3FC; --wolse-soft:#0F2836; --jeonse:#FDE047; --jeonse-soft:#2E2A0E; --maemae:#FB923C; --maemae-soft:#33200F; --dangi:#C4A5FF; --dangi-soft:#251C3D;
+  --wolse:#7DD3FC; --wolse-soft:#0F2836; --jeonse:#FDE047; --jeonse-soft:#2E2A0E; --maemae:#FB923C; --maemae-soft:#33200F; --dangi:#5EEAD4; --dangi-soft:#0F2E2B;
   --lock:#FB7190; --lock-soft:#2A1219;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -12px rgba(0,0,0,.7);
-    --hero-ink:#ECF4F0; --hero-track:#08100D; --hover:rgba(255,255,255,.06); --current:rgba(255,255,255,.1); --glow-o:.16;
+    --hero-ink:#F1EEF8; --hero-track:#0D0A16; --hover:rgba(255,255,255,.06); --current:rgba(255,255,255,.1); --glow-o:.18;
   color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -262,11 +262,11 @@ fieldset.priv legend{color:var(--lock)}
 @media (max-width:420px){.cards{grid-template-columns:1fr}}
 [hidden]{display:none!important}.req{color:#c2410c}
 .feegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.fa{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2,#555)}.seg-in input[type=checkbox]{position:absolute;opacity:0}
-.af{border:1px dashed var(--accent-2,#2e8b57);border-radius:14px;padding:12px 14px;background:var(--accent-soft,#e7f5ee)}.af summary{cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:6px;list-style:none}.af summary::-webkit-details-marker{display:none}.af summary .muted{font-size:12px;flex-basis:100%}.af-body{display:flex;flex-direction:column;gap:8px;margin-top:10px}.af-drop{display:block;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px}.af-drop input{position:absolute;opacity:0;width:1px;height:1px}#af-text,#bk-text{min-height:70px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit;background:var(--surface)}
-.bk-sum{font-size:14px}.bk-list{display:flex;flex-direction:column;gap:8px}.bk-row{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;cursor:pointer}.bk-row.dup{opacity:.6}.bk-row input{margin-top:4px;width:18px;height:18px;flex:0 0 auto}.bk-miss{font-size:12px;color:#c2410c;margin-top:3px}.bk-ok{font-size:12px;color:var(--accent-2,#2e8b57);margin-top:3px}
+.af{border:1px dashed var(--accent-2,#7C3AED);border-radius:14px;padding:12px 14px;background:var(--accent-soft,#e7f5ee)}.af summary{cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:6px;list-style:none}.af summary::-webkit-details-marker{display:none}.af summary .muted{font-size:12px;flex-basis:100%}.af-body{display:flex;flex-direction:column;gap:8px;margin-top:10px}.af-drop{display:block;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px}.af-drop input{position:absolute;opacity:0;width:1px;height:1px}#af-text,#bk-text{min-height:70px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit;background:var(--surface)}
+.bk-sum{font-size:14px}.bk-list{display:flex;flex-direction:column;gap:8px}.bk-row{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;cursor:pointer}.bk-row.dup{opacity:.6}.bk-row input{margin-top:4px;width:18px;height:18px;flex:0 0 auto}.bk-miss{font-size:12px;color:#c2410c;margin-top:3px}.bk-ok{font-size:12px;color:var(--accent-2,#7C3AED);margin-top:3px}
 .admin{display:flex;flex-direction:column;gap:16px;margin-top:8px;padding-top:18px;border-top:2px dashed var(--line)}.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}@media (max-width:820px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}.kpi .track{height:6px;border-radius:9px;background:var(--line);overflow:hidden;display:flex}.kpi a{color:inherit;text-decoration:underline}
 .tbl{overflow-x:auto}.tbl table{width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap}.tbl th{font-size:12px;color:var(--ink-3);font-weight:500;text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}.tbl td{padding:9px 10px;border-bottom:1px solid var(--line)}.tbl tr:last-child td{border-bottom:0}
-.cols{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;align-items:end;height:150px}.col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;font-size:12px}.col i{display:block;width:70%;min-height:2px;border-radius:6px 6px 2px 2px;background:var(--accent-2,#2e8b57)}.col small{color:var(--ink-3);font-size:11px}
+.cols{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;align-items:end;height:150px}.col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;font-size:12px}.col i{display:block;width:70%;min-height:2px;border-radius:6px 6px 2px 2px;background:var(--accent-2,#7C3AED)}.col small{color:var(--ink-3);font-size:11px}
 .ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}.ph{position:relative;display:block;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--line)}.ph img{width:100%;height:100%;object-fit:cover;display:block}.ph button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:16px;line-height:1;cursor:pointer}
 .card-ph{width:calc(100% + 32px);margin:-16px -16px 0;max-width:none;aspect-ratio:16/9;object-fit:cover;border-radius:var(--r) var(--r) 0 0;display:block}
 .addst{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}.addst input,.addst select,.tbl select{border:1px solid var(--line);border-radius:8px;padding:6px 9px;font:inherit;background:var(--surface)}.addst input{width:120px}.tbl tr.left td{opacity:.55}.btn.sm{padding:5px 10px;font-size:12.5px}
@@ -552,7 +552,7 @@ function viewAdmin(all){
     <div class="kpi"><span class="l">이번 달 등록</span><span class="v num">${reg(ym)}<small>건</small></span><span class="s">지난달 ${reg(pm)}건</span></div>
     <div class="kpi ${held.length?'alert':''}"><span class="l">보류·빈칸 확인</span><span class="v num">${held.length}<small>건</small></span><span class="s">전 직원 합계</span></div>
     <div class="kpi ${staleAll.length?'alert':''}"><span class="l">30일 넘게 미확인</span><span class="v num">${staleAll.length}<small>건</small></span><span class="s">진행 매물 중</span></div>
-    <div class="kpi"><span class="l">자동 채우기 (${esc(ai.month||ym)})</span><span class="v num">${ai.count||0}<small>회 · $${(ai.cost||0).toFixed(2)}</small></span><div class="track"><i style="width:${pct}%;background:var(--accent-2,#2e8b57)"></i></div><span class="s">월 $100 크레딧 중 · <a href="https://platform.claude.com/usage" target="_blank" rel="noopener">콘솔에서 정확히 보기</a></span></div>
+    <div class="kpi"><span class="l">자동 채우기 (${esc(ai.month||ym)})</span><span class="v num">${ai.count||0}<small>회 · $${(ai.cost||0).toFixed(2)}</small></span><div class="track"><i style="width:${pct}%;background:var(--accent-2,#7C3AED)"></i></div><span class="s">월 $100 크레딧 중 · <a href="https://platform.claude.com/usage" target="_blank" rel="noopener">콘솔에서 정확히 보기</a></span></div>
   </div>
   <section class="panel"><div class="panel-h"><h2>직원 관리</h2><a class="link" href="https:\/\/docs.google.com\/spreadsheets\/d\/1OOqyUVnKNEM2d53uLoj_LU0BUNi33rUluCTfIsP-iY4" target="_blank" rel="noopener">기록 시트 열기</a></div>
     <div class="tbl"><table><thead><tr><th>직원</th><th>상태</th><th>진행</th><th>보류</th><th>완료</th><th>이번 달 등록</th><th>30일 미확인</th><th>마지막 등록</th><th>자동 채우기</th><th>개인 링크</th></tr></thead><tbody>
@@ -566,7 +566,7 @@ function viewAdmin(all){
     <section class="panel"><div class="panel-h"><h2>등록 추이</h2><div class="seg mini" role="group" aria-label="기간">${[['day','일간'],['week','주간'],['month','월간']].map(([k,l])=>`<button data-tr="${k}" aria-pressed="${TR===k}">${l}</button>`).join('')}</div></div>
       <div class="cols" style="grid-template-columns:repeat(${weeks.length},1fr)">${weeks.map(w=>`<div class="col"><span class="num">${w.n}</span><i style="height:${w.n/maxW*100}%"></i><small>${w.l}</small></div>`).join('')}</div></section>
     <section class="panel"><div class="panel-h"><h2>종류별 진행 매물</h2></div>
-      ${byType.length?`<div class="bars">${byType.map(x=>`<div class="bar"><span>${x.t}</span><div class="track"><i style="width:${x.n/maxT*100}%;background:var(--accent-2,#2e8b57)"></i></div><span class="n num">${x.n}건</span></div>`).join('')}</div>`:'<div class="muted">진행 매물이 없어요.</div>'}</section>
+      ${byType.length?`<div class="bars">${byType.map(x=>`<div class="bar"><span>${x.t}</span><div class="track"><i style="width:${x.n/maxT*100}%;background:var(--accent-2,#7C3AED)"></i></div><span class="n num">${x.n}건</span></div>`).join('')}</div>`:'<div class="muted">진행 매물이 없어요.</div>'}</section>
   </div>
   <div class="grid2">
     <section class="panel"><div class="panel-h"><h2>평균 시세 (진행 매물)</h2><span class="muted" style="font-size:12px">만원</span></div>

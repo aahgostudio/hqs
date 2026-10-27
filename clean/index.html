@@ -15,6 +15,7 @@ body{background:var(--bg)}
 .head{background:var(--card);padding:16px 16px 14px;border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);font-weight:500}
 .brand .logo{width:24px;height:24px;border-radius:6px}
+:root[data-biz=res]{--navy:#5B21B6;--info:#6D28D9;--infob:#EDE9FE}
 .hi{min-width:0;word-break:keep-all}
 .hirow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:10px}.hirow .epst-ic{margin-top:12px}
 .cheer{margin:3px 0 4px;font-size:14px;color:var(--ink,#1f2937);opacity:.8}
@@ -424,7 +425,8 @@ function render(){
   const acks = D.jobs.filter(j=>j.need_ack).length;
   const mm = isRES() && /^[a-f0-9]{20}$/.test(TOKEN) ? `<a class="btn ghost sm" href="../maemul/?k=${encodeURIComponent(TOKEN)}" style="margin-left:auto">매물노트로</a>` : '';
   const evN = D.events.filter(e=>e.date>=ymd(today)).length;
-  const gr = EPGreet.get('clean');
+  const gr = EPGreet.get(isRES() ? 'maemul' : 'clean');
+  document.documentElement.dataset.biz = isRES() ? 'res' : 'clean';
   const main = tab==='board'?boardView():tab==='mine'?mineView():tab==='report'?reportView():tab==='paint'?paintView():tab==='ev'?evForm():tab==='shoot'?shootView():noticeView();
   app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${esc(C.BRAND)} 일정판${mm}</div>
      <div class="hirow"><div style="display:flex;gap:12px;align-items:center;min-width:0">${EPProfile.av(D.me.name,46,{me:true})}<div class="hi"><b>${esc(D.me.name)}님, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}</small></div></div>${EPStatus.pill()}</div>
