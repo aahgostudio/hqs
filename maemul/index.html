@@ -978,7 +978,7 @@ function demoCall(fn,arg){
 }
 
 (async()=>{
-  try{S.demo=!hasGAS;S.data=await call('getBootstrap');render()}
+  try{S.demo=!hasGAS;S.data=await call('getBootstrap');if(new URLSearchParams(location.search).has('new')){S.edit={status:'진행',deal:'월세'};try{const u=new URL(location.href);u.searchParams.delete('new');history.replaceState(null,'',u.pathname+u.search)}catch(_){}}render()}
   catch(e){root.innerHTML=`<div class="loading"><div style="text-align:center;max-width:360px;padding-inline:16px"><b style="color:var(--ink)">매물 정보를 불러오지 못했어요</b><br>시트 접근 권한을 확인하고 새로고침해 주세요.<br><span class="muted" style="font-size:12px">${esc(e&&e.message||e)}</span></div></div>`}
 })();
 })();

@@ -288,7 +288,11 @@ function jobSheet(j, def){
   const chans = S.settings.order_channels || [];
   const tgt = j.target_staff || [];
   const lock = I('lock').replace('class="i"','class="i" style="width:14px;height:14px"');
-  H.open(`<form data-f="job"><h3>${j.id?'현장 수정':j.status==='quote'?'오더 접수':'클린 현장 올리기'}</h3><div class="fg">
+  H.open(`<form data-f="job"><h3>${j.id?'현장 수정':j.status==='quote'?'오더 접수':'클린 현장 올리기'}</h3>
+    ${j.id ? '' : `<details class="jpaste" ${def&&def.paste?'open':''}><summary>📋 예약글(계약서) 붙여넣기 → 자동 채우기</summary>
+      <textarea id="jpaste" rows="5" placeholder="손님께 보낸 계약서 글을 통째로 붙여넣으세요"></textarea>
+      <button type="button" class="btn" data-a="jobPaste" style="width:100%">자동 채우기</button><div id="jpaste-out" class="note"></div></details>`}
+    <div class="fg">
     <div class="field full"><label>볼 수 있는 팀 (여러 개 가능)</label><div class="chips">${S.teams.filter(t=>t.code!=='HQS').map(t=>`<label><input type="checkbox" name="teams" value="${t.code}" ${(j.teams||[]).includes(t.code)?'checked':''}><span>${t.code} · ${esc(t.name)}</span></label>`).join('')}</div></div>
     <div class="field"><label>날짜${j.id?'':' (첫 날)'}</label><input type="date" name="job_date" value="${j.job_date}" required data-c="repPrev"></div>
     <div class="field"><label>시간</label><input type="time" name="start_time" value="${(j.start_time||'').slice(0,5)}" data-c="repPrev"></div>
@@ -316,7 +320,7 @@ ${j.id ? repScopeHtml(j) : repHtml(j)}
   <input type="hidden" name="id" value="${j.id||''}"></form>`);
   const rf = document.querySelector('#sheet form [name="rep"]'); if (rf) H.CHANGE.repPrev(rf);
 }
-H.ACT.jobNew = el => { H.close(); setTimeout(()=>jobSheet(null, {job_date: el.dataset.d || st().sel}), 10); };
+H.ACT.jobNew = el => { H.close(); setTimeout(()=>{ jobSheet(null, {job_date: el.dataset.d || st().sel, paste: el.dataset.paste === '1'}); if (el.dataset.paste === '1') { const t = document.getElementById('jpaste'); if (t) t.focus(); } }, 10); };
 H.ACT.quoteNew = () => { H.close(); setTimeout(()=>jobSheet(null, {status:'quote', headcount:2}), 10); };
 H.ACT.jobEdit = el => jobSheet(J(el.dataset.j));
 H.ACT.jobDel = async el => { const j = J(el.dataset.j);

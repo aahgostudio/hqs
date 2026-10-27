@@ -163,6 +163,7 @@ H.bossChip = () => {
 
 H.render = async () => {
   const S = H.S, k = H.cur(), v = H.views[k];
+  document.body.dataset.tab = k;
   document.title = `${S.owner ? 'HQ' : 'HQS'} · ${v.label} · 어닝플레이스`;
   const tabs = ORDER.filter(x => H.views[x] && (!H.views[x].owner || S.owner))
     .map(x => `<a href="#${x}" ${x===k?'aria-current="page"':''}>${H.views[x].label}</a>`).join('');
@@ -170,7 +171,7 @@ H.render = async () => {
       <a class="brand" href="#home" title="본사 홈" style="text-decoration:none;color:inherit"><img class="logo" src="../logo.svg" alt=""><div><b>어닝플레이스 ${S.owner ? 'HQ' : 'HQS'}</b><small>${S.owner ? '대표 · 본사 홈' : '본사일정관리팀'}</small></div></a>
       <nav class="tabs" aria-label="메뉴">${tabs}</nav>
       <div class="me">${S.isOwner ? `<button class="mode ${S.owner?'owner':'mgr'}" data-a="modeSwap" title="${S.owner?'눌러서 관리자(HQS) 화면 보기':'눌러서 대표 화면으로 돌아가기'}" style="border:0;cursor:pointer">${S.owner?'대표 모드 ⇄':'관리자 모드 · 미리보기 ⇄'}</button>` : `<span class="mode mgr">관리자 모드</span>`}${H.bossChip()}<span style="color:var(--sub)">${H.esc(S.name||'')}</span><button class="btn ghost sm" data-a="logout">로그아웃</button></div>
-    </div></header><main class="wrap" id="main"><div class="spin"></div></main>`;
+    </div></header><main class="wrap" id="main"><div class="spin"></div></main><button class="fab" data-a="quickAdd" aria-label="올리기">＋</button>`;
   if (!document.querySelector('header.top') || H._lastShell !== tabs + S.owner) { $('#app').innerHTML = shell; H._lastShell = tabs + S.owner; }
   else { const bc = document.querySelector('header .bstat'); if (bc) bc.outerHTML = H.bossChip(); }
   try {
@@ -182,6 +183,15 @@ H.render = async () => {
 // 데이터가 바뀌었을 때 다시 그리기
 H.ACT.modeSwap = () => { try { if (H.S.owner) localStorage.setItem('hq_preview_mgr','1'); else localStorage.removeItem('hq_preview_mgr'); } catch(e){}
   const u = new URL(location.href); u.searchParams.delete('mode'); history.replaceState(null, '', u.pathname + u.search + u.hash); location.reload(); };
+// 폰: 어느 화면에서든 [＋] → 바로 올리기
+H.ACT.quickAdd = () => { const S = H.S;
+  H.open(`<h3>무엇을 올릴까요?</h3><div class="qadd">
+    <button class="qa" data-a="jobNew" data-paste="1"><b>🧹 클린 현장</b><small>예약글 붙여넣으면 자동으로 채워져요</small></button>
+    <button class="qa" data-a="evNew"><b>📅 내 일정</b><small>계약 · 잔금 · 안내 · 미팅 · 견적</small></button>
+    ${S.owner && S.mcode ? `<a class="qa" href="../maemul/?k=${encodeURIComponent(S.mcode)}&new=1"><b>🏠 매물 등록</b><small>매물노트에서 캡처·글로 자동 채우기</small></a>` : ''}
+    <button class="qa" data-a="quoteNew"><b>📝 오더 접수 (견적 중)</b><small>아직 날짜 안 정해진 문의</small></button>
+    <button class="qa" data-a="ntcGo"><b>📣 공지</b><small>직원 일정판에 공지 올리기</small></button>
+  </div><div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button></div>`); };
 H.refresh = async () => { H._dirty = Date.now(); await H.loadBossStatus(); await H.render(); };
 
 /* ---------- 시트 ---------- */
