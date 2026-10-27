@@ -17,7 +17,7 @@ async function saveLeft(id, status){ const m = {...leftMap()};
   try { await H.q(sb.from('settings').upsert({key:'staff_left', value:m})); H.S.settings.staff_left = m; } catch(e){} }
 H.saveLeft = saveLeft;
 H.view('staff', {label:'직원',
-  async load(){ H.S.staff = await H.q(sb.from('staff').select('*').order('created_at')); if (H.S.owner) H.S.payRules = await H.q(sb.from('pay_rules').select('*'));
+  async load(){ H.S.staffAll = await H.q(sb.from('staff').select('*').order('created_at')); H.S.staff = H.S.staffAll.filter(x => !x.hidden);  // 숨김 = 처음부터 없던 사람 if (H.S.owner) H.S.payRules = await H.q(sb.from('pay_rules').select('*'));
     // 퇴사 날짜가 없는 예전 퇴사자는 오늘부터 30일 계산
     const m = leftMap(), miss = H.S.staff.filter(s => s.status === 'left' && !m[s.id]);
     if (miss.length) { const n = {...m}; miss.forEach(s => n[s.id] = ymd(new Date())); try { await H.q(sb.from('settings').upsert({key:'staff_left', value:n})); H.S.settings.staff_left = n; } catch(e){} } },
