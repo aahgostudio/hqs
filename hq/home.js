@@ -32,6 +32,9 @@ H.view('home', {label:'홈',
     const newRep = (S.reports||[]).filter(r=>!r.checked_at).length;
     const serLast = {}; S.jobs.forEach(j => { if (j.series_id && (!serLast[j.series_id] || j.job_date > serLast[j.series_id])) serLast[j.series_id] = j.job_date; });
     const repEnding = Object.values(serLast).filter(d => d >= today && d <= H.ymd(H.addDays(T,14)));
+    // 끝난 현장인데 아직 [입금 완료] 안 누른 직원 (지난 14일, 클린)
+    const unpaidPay = new Set(); past14.filter(j => j.job_date < today && (j.work_done_at || j.done_at || j.status === 'done'))
+      .forEach(j => appr(j).forEach(a => { const s = H.P(a.staff_id); if (!a.paid && s.team !== 'RES' && s.pay_type !== 'salary') unpaidPay.add(a.staff_id); }));
 
     const alerts = [
       short.length && ['warn', `인원 미달 ${short.length}건 (7일 안)`, 'sched'],
@@ -44,6 +47,7 @@ H.view('home', {label:'홈',
       needRcpt && ['warn', `현금영수증 발행 필요 ${needRcpt}건 (이번 달)`, S.owner?'money':'ops/money'],
       puOld.length && ['warn', `외주 세금계산서 요청 7일 넘음 ${puOld.length}건`, 'ops/buy'],
       unpaidCollect.length && ['wait', `현장 잔금 미수 ${unpaidCollect.length}건`, 'ops/money'],
+      S.owner && unpaidPay.size && ['warn', `입금 완료 안 누른 직원 ${unpaidPay.size}명 (지난 현장)`, 'pay'],
       repEnding.length && ['wait', `정기 일정 2주 안에 끝남 ${repEnding.length}곳 (연장하기)`, 'sched'],
       S.owner && T.getDate() <= 10 && [T.getDate() >= 8 ? 'warn' : 'info', `부동산 ${T.getMonth() || 12}월 정산 · ${T.getMonth()+1}/10 지급${T.getDate() === 10 ? ' (오늘!)' : ` (D-${10 - T.getDate()})`}`, 'money']
     ].filter(Boolean);
