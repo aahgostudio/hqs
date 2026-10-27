@@ -108,6 +108,7 @@ H.view('chat', {label:'대화',
       <div class="ch-wrap"><aside class="box ch-list" id="chList"></aside><section class="box ch-room" id="chRoom"></section></div>`;
   },
   after(){
+    { const m = (location.hash||'').match(/^#chat\/(\d+)/); if (m && C.home) { const id = +m[1]; if (C.home.rooms.some(x => x.id === id)) { C.showClosed = false; C.cur = id; } history.replaceState(null, '', location.pathname + location.search + '#chat'); } }   // 알림톡 [대화 보기] → 그 방 바로 열기
     if (C.goStaff && C.home) { const r = C.home.rooms.find(x => x.kind === 'dm' && x.staff_id === C.goStaff); C.goStaff = null; if (r) { C.showClosed = false; C.cur = r.id; } }
     paint(); if (C.cur) openRoom(C.cur).catch(H.fail); else poll(); }
 });
