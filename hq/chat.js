@@ -2,7 +2,7 @@
 (function(H){
 const {esc} = H;
 const ICON = {dm:'👤', all:'📣', team:'👥', site:'📍', custom:'💬'};
-const icOf = r => (((H.S.settings||{}).chat_icons||{})[r.id]) || ICON[r.kind];   // 대표가 고른 방 아이�N
+const icOf = r => (((H.S.settings||{}).chat_icons||{})[r.id]) || ICON[r.kind];   // 대표가 고른 방 아이콘
 const ICONS = ['📣','👥','🧹','🏢','🏠','🔧','🧽','🚚','🌱','⭐','🔥','💬','📋','💼','📷','🏗️','🌿','👔','🙌','☀️'];
 const KIND = {all:'전체', team:'팀', site:'현장', dm:'1:1', custom:'대표가 만든 방'};
 const URL_ = (window.EP_CONFIG||{}).SUPABASE_URL;
