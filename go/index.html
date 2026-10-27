@@ -1,0 +1,13 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>어닝플레이스</title>
+<style>body{margin:0;font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#F4F6FB;color:#141A2A;display:grid;place-items:center;min-height:100vh;text-align:center}
+.c{padding:28px 22px;max-width:340px}img{width:52px;height:52px}h2{font-size:19px;margin:14px 0 8px}p{font-size:14.5px;line-height:1.6;color:#4B5563}</style></head>
+<body><div class="c" id="c"><img src="../logo.svg" alt=""><h2>여는 중…</h2></div>
+<script>
+// 카톡 채널 메뉴 [대화하기] → 이 주소. 한 번이라도 개인 링크를 연 폰이면 그 사람 대화로 바로 가요.
+(function(){
+  var q = new URLSearchParams(location.search), to = q.get('to') || 'chat', k = '', where = '';
+  try { k = localStorage.getItem('ep_k') || ''; where = 'clean'; if (!k) { k = localStorage.getItem('ritz_k') || ''; where = 'maemul'; } } catch(e){}
+  if (k) { location.replace('../' + where + '/?k=' + encodeURIComponent(k) + (to === 'chat' ? '&chat=1' : '')); return; }
+  document.getElementById('c').innerHTML = '<img src="../logo.svg" alt=""><h2>처음 한 번만 해주세요</h2><p>대표님께 받은 <b>개인 링크</b>를 이 폰에서 한 번 열어주세요.<br>그다음부터는 이 버튼으로 바로 열려요.</p>';
+})();
+</script></body></html>

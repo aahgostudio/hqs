@@ -178,6 +178,7 @@ const GAS = C.MAEMUL_API || 'https://script.google.com/macros/s/AKfycbxZFsXwTIii
 const qs = new URLSearchParams(location.search);
 const DEMO = qs.has('demo');
 const TOKEN = (qs.get('k') || '').trim();
+try { if (TOKEN && !qs.has('demo')) localStorage.setItem('ep_k', TOKEN); } catch(_){}   // 카톡 채널 [대화하기] 버튼(/go)이 기억해서 바로 열기
 const sb = DEMO ? null : window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_KEY, {auth:{persistSession:false}});
 
 /* ---------- api ---------- */
