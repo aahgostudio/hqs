@@ -163,7 +163,8 @@ function pickMedia(onFiles){
     const i = document.createElement('input'); i.type = 'file'; i.style.display = 'none';
     if (k === 'cam') { i.accept = 'image/*'; i.setAttribute('capture', 'environment'); }
     else if (k === 'vid') { i.accept = 'video/*'; i.setAttribute('capture', 'environment'); }
-    else { i.accept = 'image/*,video/*'; if (!/Android/i.test(navigator.userAgent)) i.multiple = true; }   // 갤럭시(카톡 안)는 여러 장 선택이면 창이 안 열려서 한 장씩
+    else if (/Android/i.test(navigator.userAgent)) { i.accept = '.jpg,.jpeg,.png,.webp,.heic,.mp4,.mov,.3gp,.webm'; }   // 갤럭시: 카메라 선택창 건너뛰고 바로 사진·파일 고르기로
+    else { i.accept = 'image/*,video/*'; i.multiple = true; }   // 갤럭시(카톡 안)는 여러 장 선택이면 창이 안 열려서 한 장씩
     i.onchange = () => { const fs = [...(i.files || [])]; i.remove(); if (fs.length) onFiles(fs); };
     document.body.appendChild(i); i.click();
   });
