@@ -162,12 +162,16 @@
     const n = (room.room.members || []).length + 1;
     const oldIn = w.querySelector('.epc-in'), edKey = editing ? String(editing.id) : '';
     const keepIn = oldIn && w.dataset.room === String(room.room.id) && w.dataset.ed === edKey;   // 글 쓰는 중엔 입력칸 유지 (키보드 안 닫히게)
-    w.innerHTML = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
+    const html = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
       <div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
       ${editing ? `<div class="epc-edit"><span>✏️ 메시지 수정 중</span><button data-epccancel="1">취소</button></div>` : ''}
       <div class="epc-in"><button class="epc-ph" data-photo="1" aria-label="사진">📷</button><input type="file" accept="image/*" hidden id="epc-file">
         <textarea id="epc-t" rows="1" placeholder="메시지 입력" enterkeyhint="enter"></textarea><button class="epc-send" data-send="1" aria-label="보내기">↑</button></div>`;
-    if (keepIn) w.querySelector('.epc-in').replaceWith(oldIn);
+    if (keepIn) {   // 입력칸은 그대로(움직이면 키보드 닫힘) · 위쪽 줄과 메시지만 바꿈
+      const tmp = document.createElement('div'); tmp.innerHTML = html;
+      w.querySelector('.epc-h').replaceWith(tmp.querySelector('.epc-h'));
+      w.querySelector('.epc-msgs').innerHTML = tmp.querySelector('.epc-msgs').innerHTML;
+    } else w.innerHTML = html;
     w.dataset.room = String(room.room.id); w.dataset.ed = edKey;
     const box = w.querySelector('.epc-msgs');
     box.scrollTop = keepScroll && !atBottom ? prevTop : box.scrollHeight;
@@ -180,6 +184,7 @@
     bindBox(box);
   }
   function bindBox(box){
+    if (box._bound) return; box._bound = true;
     let pressT; box.addEventListener('pointerdown', e => { const b = e.target.closest('[data-own]'); if (!b) return; pressT = setTimeout(() => menu(+b.dataset.own), 450); });
     ['pointerup','pointerleave','pointercancel'].forEach(ev => box.addEventListener(ev, () => clearTimeout(pressT)));
     box.addEventListener('contextmenu', e => { const b = e.target.closest('[data-own]'); if (b) { e.preventDefault(); menu(+b.dataset.own); } });

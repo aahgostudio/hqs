@@ -107,8 +107,12 @@ function paint(keep){
   const oldIn = R.querySelector('.ch-in'), same = oldIn && R.dataset.room === String(C.cur);
   const tmp = document.createElement('div'); tmp.innerHTML = roomHtml();
   const newIn = tmp.querySelector('.ch-in');
-  if (same && newIn && oldIn.querySelector('#chT') && newIn.querySelector('#chT')) newIn.replaceWith(oldIn);
-  R.replaceChildren(...tmp.childNodes); R.dataset.room = String(C.cur);
+  const oRh = R.querySelector('.ch-rh'), nRh = tmp.querySelector('.ch-rh'), oM = R.querySelector('#chMsgs'), nM = tmp.querySelector('#chMsgs');
+  if (same && newIn && oldIn.querySelector('#chT') && newIn.querySelector('#chT') && oRh && nRh && oM && nM) {
+    // 입력칸은 건드리지 않고(움직이기만 해도 키보드가 닫힘) 위쪽 줄과 메시지만 바꿈
+    if (oRh.classList.contains('open')) nRh.classList.add('open'); oRh.replaceWith(nRh); oM.innerHTML = nM.innerHTML;
+  } else { R.replaceChildren(...tmp.childNodes); }
+  R.dataset.room = String(C.cur);
   const box = document.getElementById('chMsgs'); if (box) box.scrollTop = keep && !atB ? top : box.scrollHeight;
   const t = document.getElementById('chT');
   if (t && !t._bound) { t._bound = true;
