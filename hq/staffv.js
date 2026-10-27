@@ -80,7 +80,7 @@ function staffSheet(s){
   </div>${H.sacts('저장', s.id?`<button type="button" class="btn ghost" data-a="stToken" data-s="${s.id}" style="flex:0 0 auto">링크 새로 발급</button>`:'')}<input type="hidden" name="id" value="${s.id||''}"></form>`);
 }
 H.ACT.stNew = () => staffSheet();
-H.CHANGE.stTeam = el => { const r = el.form.role; if (el.value === 'AGO' && !r.value) r.value = '사장님'; };
+H.CHANGE.stTeam = el => { const r = el.form.role; if (el.value === 'AGO' && !r.value) r.value = '사장님'; if (el.value === 'RES' && !el.form.id.value) el.form.pay_type.value = 'freelance33'; };  // 부동산 기본 3.3%
 H.ACT.stEdit = el => staffSheet(H.S.staff.find(x=>x.id===el.dataset.s));
 H.ACT.stToken = async el => { if (!confirm('새 링크를 만들면 예전 링크는 바로 막혀요. 계속할까요?')) return;
   const tok = [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');
