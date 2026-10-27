@@ -33,6 +33,14 @@ function people(){
     .sort((a,b) => a.done - b.done || b.net - a.net);
 }
 
+// 홈 요약용: 그 날 현장 직원별 보낼 돈 (jobs = assignments 포함)
+H.paySummary = jobs => { const by = {};
+  (jobs||[]).filter(j => j.status !== 'cancelled' && j.status !== 'quote').forEach(j => (j.assignments||[]).filter(a => a.status === 'approved').forEach(a => {
+    const s = H.P(a.staff_id); if (s.team === 'RES') return; const p = by[a.staff_id] = by[a.staff_id] || {s, g: 0, paid: true, done: true};
+    p.g += baseOf(s, a) + (+a.extra_amount || 0); if (!a.paid) p.paid = false; if (!(j.work_done_at || j.done_at || j.status === 'done')) p.done = false; }));
+  const ps = Object.values(by).map(p => Object.assign(p, {net: p.g - (p.s.pay_type === 'salary' ? 0 : H.deduct(p.s.pay_type, p.g, 1))}));
+  return {n: ps.length, left: ps.filter(p => !p.paid), net: ps.filter(p => !p.paid).reduce((a,p) => a + p.net, 0), notDone: ps.filter(p => !p.done).length, paidN: ps.filter(p => p.paid).length};
+};
 H.view('pay', {label:'정산', owner:true,
   async load(){ await load(P.d || H.ymd(new Date())); },
   render(){

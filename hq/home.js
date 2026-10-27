@@ -108,9 +108,13 @@ H.view('home', {label:'홈',
     <div class="g2">
       <section class="box"><div class="bh"><h3>오늘 ${md(today)}</h3><span style="display:flex;gap:6px">${S.owner?'<a class="btn sm" href="#pay" style="text-decoration:none">💸 오늘 정산</a>':''}<a class="btn sm ghost" href="#sched">일정판 →</a></span></div>
         ${todayList.map(x=>`<div class="rw"><span>${x.t?x.t.slice(0,5)+' · ':''}${x.h}</span></div>`).join('') || '<div class="note">오늘 일정이 없어요</div>'}</section>
-      <section class="box"><div class="bh"><h3>직원에게 보이는 대표 상태</h3></div>
-        <div class="banner info"><b>${esc((S.boss||{}).state||'근무중')}</b>${(S.boss||{}).memo?' · '+esc(S.boss.memo):''}${esc(H.untilTxt((S.boss||{}).until))}${S.owner?'<button class="btn sm" style="margin-left:auto" data-a="bossSheet">바꾸기</button>':''}</div>
-        <div class="note" style="margin-top:8px">클린 일정판·매물노트 맨 위에 보여요. 시간이 지나면 자동으로 근무중.</div></section>
+      ${S.owner && H.paySummary ? (() => { const ps = H.paySummary(todayJ);
+        return `<section class="box"><div class="bh"><h3>💸 오늘 정산</h3><a class="btn sm" href="#pay" style="text-decoration:none">정산 열기 →</a></div>
+        ${ps.n ? `<div class="hp-k"><div><span>보낼 돈</span><b>${won(ps.net)}</b></div><div><span>남은 입금</span><b>${ps.left.length}명</b></div><div><span>입금 완료</span><b>${ps.paidN}명</b></div></div>
+          ${ps.notDone ? `<div class="note" style="margin-top:8px">⏳ 아직 작업 끝 안 누른 직원 ${ps.notDone}명 · 끝나면 금액이 확정돼요</div>` : '<div class="note" style="margin-top:8px">✓ 오늘 현장 모두 끝났어요</div>'}
+          ${ps.left.length ? `<div class="hp-list">${ps.left.slice(0,4).map(p => `<span>${esc(p.s.name)} <b>${won(p.net)}</b></span>`).join('')}${ps.left.length > 4 ? `<span>외 ${ps.left.length - 4}명</span>` : ''}</div>` : ''}`
+        : '<div class="note">오늘 지급할 현장이 없어요</div>'}</section>`; })()
+      : `<section class="box"><div class="bh"><h3>대표님 상태</h3></div><div class="note">${esc((S.boss||{}).state||'근무중')}${(S.boss||{}).memo?' · '+esc(S.boss.memo):''}</div></section>`}
     </div>
     <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>리츠부동산</h3>${S.owner&&S.mcode?`<a class="btn sm ghost" href="../maemul/?k=${encodeURIComponent(S.mcode)}">매물노트 열기 →</a>`:''}</div>${resHtml}</section>
     <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>리츠종합클린</h3><a class="btn sm ghost" href="#sched">일정판 →</a></div>${cleanHtml}</section>`;
