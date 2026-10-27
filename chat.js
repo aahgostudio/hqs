@@ -136,7 +136,7 @@
         ${g(['dm']).length ? `<div class="epc-sec">1:1</div>${g(['dm']).map(row).join('')}` : ''}
         ${g(['all','team','custom']).length ? `<div class="epc-sec">함께하는 방</div>${g(['all','team','custom']).map(row).join('')}` : ''}
         ${g(['site']).length ? `<div class="epc-sec">내 현장</div>${g(['site']).map(row).join('')}` : ''}
-        <p class="epc-note">🔒 내가 속한 방만 보여요. 현장방은 작업 완료 보고 7일 뒤 목록에서 빠져요.<br>대화와 사진은 업무 기록으로 보관돼요.</p>
+        <p class="epc-note">🔒 내가 속한 방만 보여요.${g(['site']).length ? ' 현장방은 작업 완료 보고 7일 뒤 목록에서 빠져요.' : ''}<br>대화와 사진은 업무 기록으로 보관돼요.</p>
       </div>`;
   }
   function drawRoom(keepScroll){
