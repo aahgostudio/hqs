@@ -28,11 +28,20 @@
   function html(){
     if (!D) return '';
     css(); const cur = (D.months||[])[0] || {}, ms = (D.months||[]).filter(m => m.n || m.received);
+    const PT = {freelance33:'3.3% 공제', daily:'일용직 (하루 15만원 넘는 부분만 공제)', none:'공제 없음', contract:'도급 (공제 없음)'}[D.pay_type] || '';
+    if (D.pay_type === 'salary') return `<div class="epm"><div class="epm-k">
+        <div><span>이번 달 근무</span><b>${cur.n||0}<small style="font-size:12px;font-weight:600"> ${D.team==='RES'?'건':'현장'}</small></b></div>
+        <div class="ok"><span>이번 달 받은 급여</span><b>${won(cur.received)}</b></div>
+        <div><span>지난달 근무</span><b>${((D.months||[])[1]||{}).n||0}</b></div></div>
+      <p>급여제 · 급여는 정해진 날 한 번에 들어와요 · 세금·4대보험은 급여명세서 기준</p>
+      <button class="epm-more" type="button" data-epm="1">${open ? '접기' : '월별 근무 · 입금 내역 보기'}</button>
+      ${open ? `<table><tr><th>월</th><th>근무</th><th></th><th>받은 돈</th></tr>${ms.map(m => `<tr><td>${+m.ym.slice(5)}월</td><td>${m.n}</td><td></td><td>${won(m.received)}</td></tr>`).join('') || '<tr><td colspan="4">아직 기록이 없어요</td></tr>'}</table>` : ''}
+      <p>궁금한 점은 대표님께 1:1로 말씀해주세요.</p></div>`;
     return `<div class="epm"><div class="epm-k">
         <div><span>이번 달 번 돈</span><b>${won(cur.net)}</b></div>
         <div class="ok"><span>이번 달 받은 돈</span><b>${won(cur.received)}</b></div>
         <div class="${D.due > 0 ? 'due' : 'ok'}"><span>아직 안 받은 돈</span><b>${won(D.due)}</b></div></div>
-      <p>${D.team === 'RES' ? '계약 몫(배분율) − 3.3%' : '마감된 현장 지급액 − 공제'} 기준 · ${D.payday} · ${String(D.since).slice(5).replace('-','/')}부터 계산${D.due > 0 && D.team === 'RES' ? ' · 이번 달 몫은 다음 달 10일에 들어와요' : ''}</p>
+      <p>${D.team === 'RES' ? '계약 몫(배분율)' : '마감된 현장 지급액'}${D.pay_type==='none'||D.pay_type==='contract'?'':' − 공제'} 기준 · ${PT} · ${D.payday} · ${String(D.since).slice(5).replace('-','/')}부터 계산${D.due > 0 && D.team === 'RES' ? ' · 이번 달 몫은 다음 달 10일에 들어와요' : ''}</p>
       <button class="epm-more" type="button" data-epm="1">${open ? '접기' : '월별 · 입금 내역 보기'}</button>
       ${open ? `<table><tr><th>월</th><th>건수</th><th>번 돈</th><th>받은 돈</th></tr>${ms.map(m => `<tr><td>${+m.ym.slice(5)}월</td><td>${m.n}</td><td>${won(m.net)}</td><td>${won(m.received)}</td></tr>`).join('') || '<tr><td colspan="4">아직 기록이 없어요</td></tr>'}</table>
         ${(D.recent||[]).length ? `<table><tr><th>입금일</th><th></th><th></th><th>금액</th></tr>${D.recent.map(r => `<tr><td>${String(r.date).slice(5).replace('-','/')}</td><td></td><td></td><td>${won(r.amount)}</td></tr>`).join('')}</table>` : ''}` : ''}

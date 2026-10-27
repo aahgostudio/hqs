@@ -317,10 +317,13 @@ function mineView(){
     const tot = items.reduce((a,x)=>a+x.amount,0);
     const ded = pt === 'freelance33' ? Math.floor(tot*0.033/10)*10 : pt === 'daily' ? items.reduce((a,x)=>a+Math.floor(Math.max(0,x.amount-150000)*0.06*0.45*1.1/10)*10,0) : 0;
     const ptl = {freelance33:'3.3% 공제', daily:'일용직', salary:'급여', contract:'도급', none:'공제 없음'}[pt] || '';
-    payBox = `<div class="pay"><div class="tot"><span>${month.getMonth()+1}월 정산 (마감된 현장)</span><b>${won(tot)}</b></div>
-      ${!Array.isArray(payData) && tot ? `<div class="row2" style="margin-top:4px;gap:10px;flex-wrap:wrap"><span>${ptl}${ded?' · 공제 '+won(ded):''}</span><b>${pt==="salary"?"급여로 지급":"받을 돈 "+won(tot-ded)}</b></div>` : ''}
+    if (pt === 'salary') payBox = `<div class="pay"><div class="tot"><span>${month.getMonth()+1}월 근무 기록 (마감된 현장)</span><b>${items.length}곳</b></div>
+      ${items.length?`<ul>${items.map(x=>`<li><span>${md(x.date)} ${esc(x.title)}</span><span></span></li>`).join('')}</ul>`:''}
+      <p class="foot" style="text-align:left;margin-top:8px">급여제라 현장별 금액 대신 근무 기록만 보여요.</p></div>`;
+    else payBox = `<div class="pay"><div class="tot"><span>${month.getMonth()+1}월 정산 (마감된 현장)</span><b>${won(tot)}</b></div>
+      ${!Array.isArray(payData) && tot ? `<div class="row2" style="margin-top:4px;gap:10px;flex-wrap:wrap"><span>${ded?ptl+' · 공제 '+won(ded):ptl}</span><b>받을 돈 ${won(tot-ded)}</b></div>` : ''}
       ${items.length?`<ul>${items.map(x=>`<li><span>${md(x.date)} ${esc(x.title)}${x.extra?` <small style="color:var(--sub)">(추가 ${won(x.extra)})</small>`:''}</span><span>${won(x.amount)}${x.paid?' · 지급완료':''}</span></li>`).join('')}</ul>`:''}
-      <p class="foot" style="text-align:left;margin-top:8px">세금 공제 방식은 대표님과 정한 대로 표시돼요.</p></div>`;
+      <p class="foot" style="text-align:left;margin-top:8px">${pt==='none'||pt==='contract'?'공제 없이 그대로 지급돼요.':'세금 공제 방식은 대표님과 정한 대로 표시돼요.'}</p></div>`;
   }
   const ics = V2() ? `<div class="bar" style="margin-top:18px"><h3>내 구글 캘린더에 넣기</h3></div>
     <div class="form"><div style="font-size:13.5px;line-height:1.6">'구글 캘린더에 넣기'를 켠 내 일정과 확정된 현장이 들어가요.<br>구글 캘린더 → 다른 캘린더 <b>+</b> → <b>URL로 추가</b> → 아래 주소 붙여넣기</div>
