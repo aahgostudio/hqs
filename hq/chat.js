@@ -71,7 +71,7 @@ function roomHtml(){
         <button class="btn sm ghost" data-a="chClose">${r.closed?'다시 열기':'방 닫기'}</button>` : '<span class="note">관리자로 참여 중</span>'}</div></div>
     <div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
     ${r.closed ? '<div class="ch-in note" style="justify-content:center">닫은 방이에요 · 직원 화면엔 안 보여요</div>' :
-    `<div class="ch-in">${OWN() && R.kind==='dm' && !H.S.needV9 ? '<button class="btn ghost sm" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''}<button class="btn ghost sm" data-a="chMedia" title="사진·동영상">📷</button><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
+    `<div class="ch-in">${OWN() && R.kind==='dm' && !H.S.needV9 ? '<button class="btn ghost sm" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''}<button class="btn ghost sm ch-plus" data-a="chMedia" title="사진·동영상">＋</button><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
 }
 
 // 방 순서: PC에서 끌어다 놓기 (같은 묶음 안에서만)
@@ -153,17 +153,17 @@ function pickMedia(onFiles){
   const d = document.createElement('div'); d.id = 'mpick';
   d.innerHTML = `<style>#mpick{position:fixed;inset:0;z-index:300;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center}
 #mpick .sh{width:100%;max-width:480px;background:#fff;color:#141A2A;border-radius:22px 22px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-family:inherit}
-#mpick .sh button{border:0;background:#F1F4F9;border-radius:18px;padding:18px 6px;font:inherit;font-size:14px;font-weight:700;color:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
-#mpick .sh button i{font-style:normal;font-size:30px}
+#mpick .sh button{border:0;background:#F4F6FA;border-radius:18px;padding:18px 6px;font:inherit;font-size:14px;font-weight:700;color:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+#mpick .sh button i{font-style:normal;display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:#fff;color:#334155}
 #mpick .sh .x{grid-column:1/-1;background:none;padding:12px;color:#6B7385;font-weight:600}</style>
-<div class="sh"><button data-pk="cam"><i>📷</i>사진 찍기</button><button data-pk="vid"><i>🎬</i>동영상 찍기</button><button data-pk="alb"><i>🖼️</i>앨범</button><button class="x" data-pk="x">취소</button></div>`;
+<div class="sh"><button data-pk="cam"><i><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg></i>사진 찍기</button><button data-pk="vid"><i><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg></i>동영상 찍기</button><button data-pk="alb"><i><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 9"/></svg></i>앨범</button><button class="x" data-pk="x">취소</button></div>`;
   d.addEventListener('click', e => {
     const b = e.target.closest('[data-pk]'); if (!b && e.target !== d) return;
     const k = b ? b.dataset.pk : 'x'; d.remove(); if (k === 'x') return;
     const i = document.createElement('input'); i.type = 'file'; i.style.display = 'none';
     if (k === 'cam') { i.accept = 'image/*'; i.setAttribute('capture', 'environment'); }
     else if (k === 'vid') { i.accept = 'video/*'; i.setAttribute('capture', 'environment'); }
-    else { i.accept = 'image/*,video/*'; i.multiple = true; }
+    else { i.accept = 'image/*,video/*'; if (!/Android/i.test(navigator.userAgent)) i.multiple = true; }   // 갤럭시(카톡 안)는 여러 장 선택이면 창이 안 열려서 한 장씩
     i.onchange = () => { const fs = [...(i.files || [])]; i.remove(); if (fs.length) onFiles(fs); };
     document.body.appendChild(i); i.click();
   });
