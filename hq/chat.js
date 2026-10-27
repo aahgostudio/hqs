@@ -4,6 +4,12 @@ const {esc} = H;
 const ICON = {dm:'👤', all:'📣', team:'👥', site:'📍', custom:'💬'};
 const ordOf = () => ((((H.S.settings||{}).chat_icons)||{})._order) || [];
 const byOrd = arr => { const o = ordOf(); const ix = id => { const i = o.indexOf(id); return i < 0 ? 1e6 : i; }; return arr.map((r, i) => [r, i]).sort((a, b) => ix(a[0].id) - ix(b[0].id) || a[1] - b[1]).map(x => x[0]); };   // 대표가 끌어서 정한 방 순서
+const parOf = () => ((((H.S.settings||{}).chat_icons)||{})._parent) || {};
+// 하위 방: 윗방 바로 밑으로 모으기 (한 단계만)
+const tree = arr => { const P = parOf(), ids = new Set(arr.map(r => r.id)), out = [];
+  arr.forEach(r => { const p = P[r.id]; if (p && ids.has(+p) && !P[p]) return; out.push(r);
+    arr.filter(k => +P[k.id] === r.id).forEach(k => { k._kid = true; if (!C.fold[r.id]) out.push(k); }); r._kids = arr.filter(k => +P[k.id] === r.id).length; });
+  return out; };
 const icOf = r => (((H.S.settings||{}).chat_icons||{})[r.id]) || ICON[r.kind];   // 대표가 고른 방 아이콘
 const ICON_SETS = [
   ['공지·전체', ['📣','📢','🔔','📌','⭐','🌟','✨','🎉','🙌','👏','💪','🔥']],
@@ -16,7 +22,7 @@ const ICON_SETS = [
 const KIND = {all:'전체', team:'팀', site:'현장', dm:'1:1', custom:'대표가 만든 방'};
 const URL_ = (window.EP_CONFIG||{}).SUPABASE_URL;
 const pub = p => `${URL_}/storage/v1/object/public/chat/${p}`;
-const C = {home:null, cur:null, room:null, msgs:[], unread:{}, t:null, q:'', showClosed:false};
+const C = {fold: {}, home:null, cur:null, room:null, msgs:[], unread:{}, t:null, q:'', showClosed:false};
 const tm = iso => { const d = new Date(iso); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
 const dt = iso => { const d = new Date(iso); return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${tm(iso)}`; };
 const day = iso => { const d = new Date(iso); return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`; };
@@ -31,15 +37,15 @@ function listHtml(){
   const vis = rs.filter(r => (OWN() || (r.mgr && !r.closed && r.live)) && (C.showClosed ? r.closed : !r.closed) && (r.kind !== 'site' || r.live || r.count || C.showClosed) && (!q || r.title.includes(q)));
   const grp = [['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['현장', r => r.kind === 'site'], ['1:1', r => r.kind === 'dm']];
   const dnd = OWN() && !C.showClosed;
-  const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}" data-a="chOpen" data-id="${r.id}" ${dnd?`draggable="true" data-sec="${['all','team','custom'].includes(r.kind)?'g':r.kind}"`:''}><span class="ch-ic">${icOf(r)}</span>
+  const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}${r._kid?' ch-kid':''}" data-kid="${r._kid?1:0}" data-kids="${r._kids||0}" data-a="chOpen" data-id="${r.id}" ${dnd?`draggable="true" data-sec="${['all','team','custom'].includes(r.kind)?'g':r.kind}"`:''}><span class="ch-ic">${icOf(r)}</span>
     <span class="t"><b>${esc(r.title)}${r.keep?' 📌':''}${OWN()&&r.mgr&&!H.S.needV6?' <small class="ch-tag" title="관리자도 참여">관리자</small>':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
-    <span class="r">${r.last?short(r.last.at):''}${r.unread?`<i class="ch-bd">${r.unread}</i>`:''}</span></button>`;
+    <span class="r">${r.last?short(r.last.at):''}${r.unread?`<i class="ch-bd">${r.unread}</i>`:''}${r._kids?`<i class="ch-fold" data-fold="${r.id}" title="하위 방 접기/펴기">${C.fold[r.id]?'▸':'▾'} ${r._kids}</i>`:''}</span></button>`;
   const nClosed = rs.filter(r => r.closed).length;
   const due = !OWN() ? [] : rs.filter(r => r.kind === 'dm' && r.left_at && !r.keep && (Date.now() - new Date(r.left_at)) > 365*864e5);
   const dueHtml = due.map(r => `<div class="ch-due">⏳ <b>${esc(r.title)}</b> 퇴사 1년 지남 · 1:1 대화 ${r.count}건<span><button class="btn sm" data-a="chKeepId" data-id="${r.id}">장기 보관</button><button class="btn sm ghost" data-a="chPurge" data-id="${r.id}">정리</button></span></div>`).join('');
   return `${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
     ${C.showClosed ? `<div class="ch-sec">보관함 (닫은 방) <button class="link" data-a="chClosed">← 돌아가기</button></div>${vis.map(row).join('') || '<p class="note" style="padding:10px">닫은 방이 없어요</p>'}`
-      : grp.map(([l, f]) => { const a = byOrd(vis.filter(f)); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
+      : grp.map(([l, f]) => { const a = tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
         + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')}`;
 }
 
@@ -73,13 +79,22 @@ function bindDnd(L){
   if (L._dnd) return; L._dnd = true; let src = null;
   L.addEventListener('dragstart', e => { const b = e.target.closest('.ch-row[draggable]'); if (!b) return; src = b; b.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', b.dataset.id); } catch(_){} });
   L.addEventListener('dragend', () => { if (src) src.classList.remove('drag'); src = null; L.querySelectorAll('.ch-row.over').forEach(x => x.classList.remove('over')); });
+  const zone = (t, e) => { const r = t.getBoundingClientRect(), y = (e.clientY - r.top) / r.height;
+    const nest = y > .28 && y < .72 && t.dataset.sec === 'g' && t.dataset.kid !== '1' && src.dataset.kids === '0';
+    return nest ? 'in' : (y < .5 ? 'up' : 'down'); };
+  const clear = () => L.querySelectorAll('.ch-row.over,.ch-row.over-dn,.ch-row.into').forEach(x => x.classList.remove('over','over-dn','into'));
   L.addEventListener('dragover', e => { const t = e.target.closest('.ch-row[draggable]'); if (!src || !t || t === src || t.dataset.sec !== src.dataset.sec) return; e.preventDefault();
-    L.querySelectorAll('.ch-row.over').forEach(x => x.classList.remove('over')); t.classList.add('over'); });
+    clear(); const z = zone(t, e); t.classList.add(z === 'in' ? 'into' : z === 'up' ? 'over' : 'over-dn'); });
+  L.addEventListener('click', e => { const f = e.target.closest('[data-fold]'); if (!f) return; e.stopPropagation(); e.preventDefault(); const id = +f.dataset.fold; C.fold[id] = !C.fold[id]; paint(true); }, true);
   L.addEventListener('drop', async e => { const t = e.target.closest('.ch-row[draggable]'); if (!src || !t || t === src || t.dataset.sec !== src.dataset.sec) return; e.preventDefault();
-    const r = t.getBoundingClientRect(); t.parentNode.insertBefore(src, e.clientY > r.top + r.height / 2 ? t.nextSibling : t);
-    const ids = [...L.querySelectorAll('.ch-row[draggable]')].map(x => +x.dataset.id);
-    const m = Object.assign({}, (H.S.settings||{}).chat_icons || {}); m._order = ids;
-    try { await H.q(H.sb.from('settings').upsert({key:'chat_icons', value:m})); H.S.settings.chat_icons = m; H.toast('방 순서를 바꿨어요 · 직원 화면도 이 순서예요'); } catch(err){ H.fail(err); }
+    const z = zone(t, e); clear();
+    const m = Object.assign({}, (H.S.settings||{}).chat_icons || {}), P = Object.assign({}, m._parent || {}), sid = +src.dataset.id, tid = +t.dataset.id;
+    if (z === 'in') { P[sid] = tid; t.parentNode.insertBefore(src, t.nextSibling); }
+    else { t.parentNode.insertBefore(src, z === 'down' ? t.nextSibling : t);
+      if (t.dataset.kid === '1' && src.dataset.kids === '0') P[sid] = P[tid]; else delete P[sid]; }
+    m._order = [...L.querySelectorAll('.ch-row[draggable]')].map(x => +x.dataset.id); m._parent = P;
+    try { await H.q(H.sb.from('settings').upsert({key:'chat_icons', value:m})); H.S.settings.chat_icons = m;
+      H.toast(z === 'in' ? '하위 방으로 넣었어요' : P[sid] ? '순서를 바꿨어요' : '방 순서를 바꿨어요 · 직원 화면도 이 순서예요'); } catch(err){ H.fail(err); }
     paint(true); });
 }
 

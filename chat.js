@@ -64,6 +64,7 @@
 .epc-h .sp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .epc-list{flex:1;overflow:auto;padding:6px 0 30px}
 .epc-sec{font-size:12px;color:var(--epc-mute);font-weight:700;padding:14px 18px 6px}
+.epc-kid{padding-left:46px!important;position:relative}.epc-kid::before{content:'';position:absolute;left:30px;top:-2px;width:10px;height:28px;border-left:2px solid #CBD5E1;border-bottom:2px solid #CBD5E1;border-bottom-left-radius:8px}
 .epc-row{display:flex;align-items:center;gap:12px;width:100%;border:0;background:var(--epc-card);padding:12px 16px;border-bottom:1px solid var(--epc-line);text-align:left;color:inherit;font:inherit;cursor:pointer}
 .epc-ic{width:44px;height:44px;border-radius:14px;background:var(--epc-bg);display:grid;place-items:center;font-size:21px;flex:none}
 .epc-row .t{flex:1;min-width:0}.epc-row b{display:block;font-size:15px}
@@ -127,16 +128,19 @@
   function drawList(){
     const w = shell(), rs = (home && home.rooms) || [];
     const total = rs.reduce((a, r) => a + (r.unread || 0), 0);
-    const row = r => `<button class="epc-row" data-room="${r.id}"><span class="epc-ic">${(ICONS && ICONS[r.id]) || ICON[r.kind] || '💬'}</span>
+    const row = r => `<button class="epc-row${r._kid ? ' epc-kid' : ''}" data-room="${r.id}"><span class="epc-ic">${(ICONS && ICONS[r.id]) || ICON[r.kind] || '💬'}</span>
       <span class="t"><b>${esc(r.title)}${r.kind !== 'dm' ? ` <small style="color:var(--epc-mute);font-weight:600;font-size:12px">${r.n}</small>` : ''}</b>
       <p>${r.last ? esc((r.kind === 'dm' ? '' : r.last.name + ': ') + r.last.body) : '아직 대화가 없어요'}</p></span>
       <span class="r">${r.last ? short(r.last.at) : ''}${r.unread ? `<span class="epc-bd">${r.unread > 99 ? '99+' : r.unread}</span>` : ''}</span></button>`;
     const ord = (ICONS && ICONS._order) || [], ix = id => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };   // 대표가 정한 방 순서
     const g = k => rs.filter(r => k.includes(r.kind)).map((r, i) => [r, i]).sort((a, b) => ix(a[0].id) - ix(b[0].id) || a[1] - b[1]).map(x => x[0]);
+    const P = (ICONS && ICONS._parent) || {};
+    const gt = k => { const a = g(k), ids = new Set(a.map(r => r.id)), out = [];   // 하위 방은 윗방 바로 밑에
+      a.forEach(r => { const p = P[r.id]; if (p && ids.has(+p) && !P[p]) return; out.push(r); a.filter(x => +P[x.id] === r.id).forEach(x => out.push(Object.assign({}, x, {_kid: true}))); }); return out; };
     w.innerHTML = `<div class="epc-h"><button class="epc-back" data-close="1" aria-label="닫기">←</button><span class="sp"><b>대화</b>${total ? `<small>안 읽음 ${total}</small>` : ''}</span></div>
       <div class="epc-list">
         ${g(['dm']).length ? `<div class="epc-sec">1:1</div>${g(['dm']).map(row).join('')}` : ''}
-        ${g(['all','team','custom']).length ? `<div class="epc-sec">함께하는 방</div>${g(['all','team','custom']).map(row).join('')}` : ''}
+        ${g(['all','team','custom']).length ? `<div class="epc-sec">함께하는 방</div>${gt(['all','team','custom']).map(row).join('')}` : ''}
         ${g(['site']).length ? `<div class="epc-sec">내 현장</div>${g(['site']).map(row).join('')}` : ''}
         <p class="epc-note">🔒 내가 속한 방만 보여요.${g(['site']).length ? ' 현장방은 작업 완료 보고 7일 뒤 목록에서 빠져요.' : ''}<br>대화와 사진은 업무 기록으로 보관돼요.</p>
       </div>`;
