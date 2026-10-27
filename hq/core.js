@@ -145,7 +145,7 @@ H.photosOf = jid => (H.S.photos||[]).filter(p => p.job_id === jid);
 
 /* ---------- 화면 틀 ---------- */
 H.view = (key, def) => { H.views[key] = def; };
-const ORDER = ['home','team','sched','ops','promo','money','staff'];
+const ORDER = ['home','team','chat','sched','ops','promo','money','staff'];
 H.cur = () => { const h = (location.hash||'').replace('#',''); const k = h.split('/')[0]; return H.views[k] && (!H.views[k].owner || H.S.owner) ? k : 'home'; };
 H.go = k => { if (location.hash !== '#'+k) location.hash = k; else H.render(); };
 
@@ -267,7 +267,7 @@ H.boot = async () => {
     if (error || !isAdmin){ await sb.auth.signOut(); return loginView('관리자 계정이 아니에요'); }
     const ver = await sb.rpc('hq_schema_version');
     if (ver.error || (ver.data||0) < 2) return setupView();
-    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4;
+    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4; H.S.needV5 = (ver.data||0) < 5;
     const own = await sb.rpc('is_owner');
     H.S.isOwner = !!own.data && (session.user.email||'').toLowerCase() === OWNER_EMAIL;
     // 대표님이 관리자(HQS) 화면을 미리 볼 수 있게: ?mode=hqs 로 들어오거나 모드 버튼을 누르면 전환

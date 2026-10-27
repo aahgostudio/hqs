@@ -146,6 +146,7 @@ body{background:var(--bg)}
  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+ <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></symbol>
  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
@@ -164,6 +165,7 @@ body{background:var(--bg)}
 <script src="../status.js"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
+<script src="../chat.js"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -438,10 +440,16 @@ function render(){
      <div class="summary">${EVT()?`<div><b>${evN}</b><span>다가오는 내 일정</span></div>`:`<div><b>${ok}</b><span>확정된 일정</span></div>`}<div><b style="color:var(--warn)">${EVT()?ok:open}</b><span>${isAGO()?'확정 일정':isRES()?'확정 현장':'신청 가능'}</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div></header>
    <main class="body">${main}
    <p class="foot">${esc(C.BRAND)} · 이 링크는 ${esc(who())} 전용이에요. 다른 사람과 공유하지 마세요.</p></main>`;
+  tabbar();
+}
+function tabbar(){
+  if (!D) return;
+  const acks = D.jobs.filter(j=>j.need_ack).length, unread = D.notices.filter(n=>!n.read || (n.important && !n.confirmed)).length, ch = EPChat.state;
   const tb = document.getElementById('tabbar'); tb.classList.remove('hidden');
-  const items = [['board','cal','일정판',acks],['mine','check','내 일정',0], V2() ? ['plus'] : null, ['report','cam',W('사진·보고','촬영·공유'),0],['notice','bell','공지',unread]].filter(Boolean);
+  const items = [['board','cal','일정판',acks], ch.on ? ['chat','chat','대화',ch.unread] : null, ['mine','check','내 일정',0], V2() ? ['plus'] : null, ['report','cam',W('사진·보고','촬영·공유'),0],['notice','bell','공지',unread]].filter(Boolean);
   tb.querySelector('nav').style.gridTemplateColumns = `repeat(${items.length},1fr)`;
   tb.querySelector('nav').innerHTML = items.map(([k,i,l,b]) => k==='plus' ? `<button class="plus" data-plus="1" aria-label="넣기">${I('plus')}</button>`
+    : k==='chat' ? `<button data-chat="1">${I(i)}${l}${b?`<span class="badge">${b>99?'99+':b}</span>`:''}</button>`
     : `<button data-tab="${k}" aria-pressed="${tab===k}">${I(i)}${l}${b?`<span class="badge">${b}</span>`:''}</button>`).join('');
 }
 
@@ -468,6 +476,7 @@ document.addEventListener('click', async e => {
     if (tab==='board' && (paint || shoot)){ paint = null; shoot = null; try{ await load(); }catch(_){} }
     render(); return; }
   if (d.plus){ plusMenu(); return; }
+  if (d.chat){ EPChat.open(); return; }
   if (d.view){ view = d.view; render(); return; }
   if (d.scope){ scope = d.scope; render(); return; }
   if (d.day){ const old = month; pick = d.day; const p = parse(pick); month = new Date(p.getFullYear(), p.getMonth(), 1);
@@ -568,6 +577,9 @@ document.addEventListener('submit', async e => {
 (async () => {
   if (!TOKEN && !DEMO){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>${esc(C.BRAND)} 일정판</h2><p>개인 링크로 들어와 주세요.<br>링크는 '${esc(C.BRAND)}' 카카오톡 채널로 받을 수 있어요.</p></div>`; return; }
   EPProfile.init({token:TOKEN, demo:DEMO, nameFn:()=>D&&D.me&&D.me.name, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }});
+  { let last = '';
+    EPChat.init({token:TOKEN, demo:DEMO && qs.has('chat'), accent:(getComputedStyle(document.documentElement).getPropertyValue('--navy')||'#16347A').trim(),
+      onState:st => { const k = st.on + '/' + st.unread; if (k !== last) { last = k; tabbar(); } }}); }
   EPStatus.init({manual:()=>D&&D.boss, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }, demo:DEMO});
   try { await load(); if (EVT()) scope = 'mine'; render(); if (tab==='mine'){ try{ payData = await rpc('staff_pay',{p_token:TOKEN,p_month:ymd(month)}); }catch(_){ payData=[]; } render(); } }
   catch(e){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>링크를 확인해주세요</h2><p>${esc(errMsg(e))}</p></div>`; }
