@@ -5,7 +5,7 @@
 const {esc, sb} = H, won = H.won;
 const LEVEL_PAY_DEF = {'교육생':50000, '가정청소 팀원 (일반)':70000, '가정청소 팀원 (고정)':80000, '가정청소 팀장':90000, '상가청소 팀장':100000, '특수청소 팀장':120000};
 const ROLE_LV = {'교육생':'교육생', '팀원':'가정청소 팀원 (일반)', '고정팀원':'가정청소 팀원 (고정)', '팀장':'가정청소 팀장', '상가팀장':'상가청소 팀장', '특수팀장':'특수청소 팀장'};
-const P = {d: null, jobs: [], pays: [], open: {}};
+const P = {d: null, jobs: [], pays: [], open: {}}; H._payState = P;
 const levelPay = () => Object.assign({}, LEVEL_PAY_DEF, (H.S.settings||{}).level_pay || {});
 const lvOf = s => (((H.S.settings||{}).staff_hr||{})[s.id]||{}).level || ROLE_LV[s.role] || '';
 const baseOf = (s, a) => a.pay_amount != null ? +a.pay_amount : (levelPay()[lvOf(s)] || 0);
