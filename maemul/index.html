@@ -437,7 +437,7 @@ function bossBar(){ const b=S.boss; if(!b||(b.state==='근무중'&&!b.memo)) ret
 async function loadBoss(){ try{ const r=await fetch(SB_URL+'/rest/v1/rpc/boss_status',{method:'POST',headers:{apikey:SB_KEY,'content-type':'application/json'},body:'{}'}); if(r.ok){ const b=await r.json(); const ch=JSON.stringify(b)!==JSON.stringify(S.boss)||!S.v2; S.boss=b; S.v2=true; if(ch&&S.data) render(); } }catch(e){} }
 // 다가오는 내 일정 (일정판 서버, 2주)
 const DEMO_EVS=(()=>{const f=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-  return [{date:f(0),time:'15:00',kind:'안내',maemul:'조-0005',title:'광안동 원룸 손님 안내'},{date:f(1),time:'11:00',kind:'계약',maemul:'권-0002',title:'양정동 분리형 원룸 계약'},{date:f(3),time:'',kind:'잔금',maemul:'김-0011',title:'연산동 상가 잔금'},{date:f(6),time:'14:00',kind:'안내',maemul:'',title:'수영동 투룸 2곳 안내'}]})();
+  return [{date:f(0),time:'15:00',kind:'안내',maemul:'2610-원005',title:'광안동 원룸 손님 안내'},{date:f(1),time:'11:00',kind:'계약',maemul:'2610-원002',title:'양정동 분리형 원룸 계약'},{date:f(3),time:'',kind:'잔금',maemul:'2610-원011',title:'연산동 상가 잔금'},{date:f(6),time:'14:00',kind:'안내',maemul:'',title:'수영동 투룸 2곳 안내'}]})();
 async function loadEvents(){ if(!KEY) return; try{ const f=today(),e=new Date();e.setDate(e.getDate()+14);
   const t=e.getFullYear()+'-'+String(e.getMonth()+1).padStart(2,'0')+'-'+String(e.getDate()).padStart(2,'0');
   const r=await fetch(SB_URL+'/rest/v1/rpc/staff_board',{method:'POST',headers:{apikey:SB_KEY,'content-type':'application/json'},body:JSON.stringify({p_token:KEY,p_from:f,p_to:t})});
@@ -948,6 +948,9 @@ function demoInit(){
     {agent:'김윤미',id:'김-0002',regDate:d(8),status:'진행',type:'사무실',deal:'월세',gu:'부산진구',dong:'전포동',loc:'서면 전포카페거리',floor:3,area:66,deposit:2000,rent:120,fee:20,feature:'인테리어 완료, 회의실 포함',checked:d(8)},
     {agent:'김윤미',id:'김-0003',regDate:d(20),status:'계약완료',type:'원룸',deal:'단기',gu:'수영구',dong:'수영동',loc:'수영역 인근',floor:5,area:16.5,deposit:100,rent:60,feature:'1개월 단위',checked:d(20)}
   ];
+  { // 예시도 새 매물번호(2610-원001)로
+    const TC={'원룸':'원','투룸':'투','오피스텔':'오','빌라':'빌','아파트':'아','상가':'상','사무실':'상','건물':'건','토지':'토','주택':'주'},cnt={};
+    [...all,...mine].sort((a,b)=>a.regDate.localeCompare(b.regDate)).forEach(o=>{const p=o.regDate.slice(2,4)+o.regDate.slice(5,7)+'-'+(TC[o.type]||'기');cnt[p]=(cnt[p]||0)+1;o.id=p+String(cnt[p]).padStart(3,'0');}); }
   DEMO={me:{name:'권성환',role:'대표',email:'demo'},units:{big:500,small:10},agents:[{name:'권성환',role:'대표'},{name:'조원경',role:'소장'},{name:'김윤미',role:'실장'},{name:'조수광',role:'소장'}],
     mine:mine.map(row),all:[...all,...mine].map(o=>{const r=row(o);return [...r.slice(0,20),'','','','','','',...r.slice(26,46)]})};
   if(new URLSearchParams(location.search).get('demo')==='staff'){const me='조원경';DEMO.me={name:me,role:'소장',email:'demo'};DEMO.mine=all.filter(o=>o.agent===me).map((o,i)=>row({...o,owner:'(예시) 박○○',phone:'010-0000-0000',addr:'(예시) 302호',photo:'https:\/\/drive.google.com\/drive\/folders\/demo#ids='+(i?'p2,p3,p1':'p1,p2,p3,p4')}));DEMO.staff=true}
