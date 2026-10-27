@@ -80,9 +80,9 @@
   document.addEventListener('click', e => { if (e.target.closest('[data-epst]')) { e.preventDefault(); e.stopPropagation(); openSheet(); } }, true);
 
   const css = `
-.epst-ic{position:relative;width:38px;height:38px;border-radius:50%;border:2px solid var(--epc);background:var(--epbg);display:inline-grid;place-items:center;padding:0;cursor:pointer;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.epst-ic .em{font-size:18px;line-height:1}
-.epst-ic .dot{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;background:var(--epc);border:2px solid var(--epbg)}
+.epst-ic{position:relative;width:30px;height:30px;border-radius:50%;border:2px solid var(--epc);background:var(--epbg);display:inline-grid;place-items:center;padding:0;cursor:pointer;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.epst-ic .em{font-size:15px;line-height:1}
+.epst-ic .dot{position:absolute;right:-3px;bottom:-3px;width:10px;height:10px;border-radius:50%;background:var(--epc);border:2px solid var(--epbg)}
 .epst-ic.t-field .dot,.epst-ic.t-busy .dot{animation:epst-p 1.6s ease-in-out infinite}
 @keyframes epst-p{50%{box-shadow:0 0 0 4px var(--eps)}}
 @media (prefers-reduced-motion:reduce){.epst-ic .dot{animation:none!important}}
