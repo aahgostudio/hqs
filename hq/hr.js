@@ -1,6 +1,6 @@
 /* 인사카드 — 직원 이름을 누르면 열림 (대표·관리자 화면 전용, 직원에겐 안 보임)
    기본 정보 · 레벨 · 서류 체크 · 근무 기록 · 정산(대표만) · 공지 확인 · 1:1 대화 · 인사 메모
-   레벨·서류·메모는 settings 'staff_hr' {직원id: {...}} 에 저장 (주민번호·계좌번호 같은 민감 정보는 넣지 않기) */
+   레벨·서류·메모는 settings 'staff_hr' 에 저장 · 주민번호·계좌는 vault.js (대표 비밀번호 암호화) */
 (function(H){
 const {esc, sb} = H;
 // 청소: 레벨 고르면 직급도 자동
@@ -60,8 +60,9 @@ H.ACT.stCard = async el => {
     <div class="fg">
       <div class="field"><label>레벨 (등급제)</label><select name="level"><option value="">미정</option>${LV(s.team).map(l => `<option value="${l}" ${hr.level===l?'selected':''}>${l}${s.team==='RES'?` · 직원 ${RES_RATE[l]/10} : 대표 ${10-RES_RATE[l]/10}`:''}</option>`).join('')}</select><div class="hint">${!['RES','AGO'].includes(s.team)?'저장하면 직급도 자동으로 바뀌어요 · ':''}${s.team==='RES'?`저장하면 배분율(직원 몫)도 같이 바뀌어요${own?` · 지금 ${(H.S.payRules||[]).find(p=>p.staff_id===s.id)?.share_rate ?? '미정'}%`:''}`:s.team==='AGO'?'아고 파트너 단계':'무단결근 시 레벨 하향 규칙'}</div></div>
       <div class="field"><label>지급 방식</label><input value="${esc(H.PT[s.pay_type]||'')}${s.team==='RES'?' · 비율제':''}${s.can_collect?' · 수금 가능':''}" disabled><div class="hint">기본 정보 수정에서 바꿔요 · 세금 방식은 세무사 확인</div></div>
+      <div class="field full">${H.vaultBox ? H.vaultBox(s) : ''}</div>
       <div class="field full"><label>서류 · 확인</label><div class="hr-docs">${DOCS.map(([k,l]) => `<label><input type="checkbox" name="doc_${k}" ${(hr.docs||{})[k]?'checked':''}> ${l}</label>`).join('')}</div>
-        <div class="hint">체크만 해요 · 주민번호·계좌번호·신분증 사진은 여기에 넣지 마세요</div></div>
+        <div class="hint">주민번호·계좌는 위 🔒 대표 전용 칸에 · 신분증 사진은 올리지 마세요</div></div>
       <div class="field full"><label>인사 메모 <small>(대표·관리자만 보여요)</small></label><textarea name="memo" rows="4" placeholder="면담 내용, 근태, 칭찬·주의 기록 등 — 날짜와 함께 적어두면 나중에 근거가 돼요">${esc(hr.memo||'')}</textarea></div>
     </div>
     ${isRes ? `<div class="ptitle">최근 일정</div><div class="hr-jobs">${(evs||[]).slice(0,12).map(e => `<div><span>${String(e.ev_date).slice(5).replace('-','/')}</span><b>${esc(e.title||'')}</b><span class="note">${esc(e.kind||'')}</span></div>`).join('') || '<p class="note">아직 일정이 없어요</p>'}</div>` : `

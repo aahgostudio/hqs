@@ -96,7 +96,7 @@ H.view('home', {label:'홈',
       .sort((a,b)=>(a.t||'').localeCompare(b.t||''));
 
     return `
-    ${(S.needV3||S.needV6) && S.isOwner ? `<section class="box"><div class="banner warn v3bar"><b>업데이트 1개 (${S.needV3?'v3':S.needV5?'v5':'v6'})</b> ${S.needV3?'프로필 사진 · 정기 반복 일정 · 문나원 퇴사 정리':S.needV5?'팀 대화 + 대표님 현장 → 직원 화면 상태 자동 (카카오워크 졸업)':'대화: 관리자(HQS)도 참여 · 방 관리는 대표만'} — SQL 한 번만 실행해 주세요<span style="margin-left:auto;display:flex;gap:6px"><button class="btn sm" data-a="copyV3">SQL 복사</button><a class="btn sm ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></span></div></section>` : ''}
+    ${(S.needV3||S.needV7) && S.isOwner ? `<section class="box"><div class="banner warn v3bar"><b>업데이트 1개 (${S.needV3?'v3':S.needV5?'v5':S.needV6?'v6':'v7'})</b> ${S.needV3?'프로필 사진 · 정기 반복 일정 · 문나원 퇴사 정리':S.needV5?'팀 대화 + 대표님 현장 → 직원 화면 상태 자동 (카카오워크 졸업)':S.needV6?'대화: 관리자(HQS)도 참여 · 방 관리는 대표만':'인사카드 대표 전용 금고 (주민번호·계좌 암호화)'} — SQL 한 번만 실행해 주세요<span style="margin-left:auto;display:flex;gap:6px"><button class="btn sm" data-a="copyV3">SQL 복사</button><a class="btn sm ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></span></div></section>` : ''}
     ${H.teamStrip ? H.teamStrip() : ''}
     ${alerts.length?`<section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">누르면 해당 화면으로 가요</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${alerts.map(([c,t,go])=>`<a class="banner ${c==='warn'?'warn':'info'}" href="#${go}" style="text-decoration:none;padding:8px 12px">${esc(t)} →</a>`).join('')}</div></section>`:''}
@@ -112,7 +112,7 @@ H.view('home', {label:'홈',
   }
 });
 
-H.ACT.copyV3 = async () => { const t = await (await fetch(H.S.needV3 ? 'update_v3.sql' : H.S.needV5 ? 'update_v5.sql' : 'update_v6.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL을 복사했어요 · SQL Editor에 붙여넣고 Run → 새로고침'); };
+H.ACT.copyV3 = async () => { const t = await (await fetch(H.S.needV3 ? 'update_v3.sql' : H.S.needV5 ? 'update_v5.sql' : H.S.needV6 ? 'update_v6.sql' : 'update_v7.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL을 복사했어요 · SQL Editor에 붙여넣고 Run → 새로고침'); };
 H.ACT.bossIcs = () => { const k = H.S.settings.ics_key; H.copy(`${H.MAEMUL_API}?ics=${encodeURIComponent(typeof k === 'string' ? k : String(k))}&boss=1`, '구독 주소를 복사했어요 · 반영까지 몇 시간 걸릴 수 있어요'); };
 // 매물노트 연결 (대표 링크 붙여넣기)
 H.ACT.mmLink = () => H.open(`<form data-f="mmLink"><h3>매물노트 연결</h3><p class="note">대표님 매물노트 개인 링크를 붙여넣어 주세요. 예) team.earningplace.kr/maemul/?k=…</p>
