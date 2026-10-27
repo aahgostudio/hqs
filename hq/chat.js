@@ -71,7 +71,7 @@ function roomHtml(){
         <button class="btn sm ghost" data-a="chClose">${r.closed?'다시 열기':'방 닫기'}</button>` : '<span class="note">관리자로 참여 중</span>'}</div></div>
     <div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
     ${r.closed ? '<div class="ch-in note" style="justify-content:center">닫은 방이에요 · 직원 화면엔 안 보여요</div>' :
-    `<div class="ch-in">${OWN() && R.kind==='dm' && !H.S.needV9 ? '<button class="btn ghost sm" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''}<label class="btn ghost sm" style="cursor:pointer">📷<input type="file" accept="image/*,video/*" hidden data-chfile="1"></label><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
+    `<div class="ch-in">${OWN() && R.kind==='dm' && !H.S.needV9 ? '<button class="btn ghost sm" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''}<button class="btn ghost sm" data-a="chMedia" title="사진·동영상">📷</button><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
 }
 
 // 방 순서: PC에서 끌어다 놓기 (같은 묶음 안에서만)
@@ -121,7 +121,6 @@ function paint(keep){
     t.oninput = () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; };
     if (!matchMedia('(pointer:fine)').matches) t.placeholder = (OWN() ? '대표' : '관리자') + '로 보내기'; }
   const q = L.querySelector('[data-chq]'); if (q) q.oninput = () => { C.q = q.value; const pos = q.selectionStart; L.innerHTML = listHtml(); const q2 = L.querySelector('[data-chq]'); q2.focus(); q2.setSelectionRange(pos,pos); q2.oninput = q.oninput; };
-  const f = R.querySelector('[data-chfile]'); if (f) f.onchange = e => { const x = e.target.files[0]; if (x) sendPhoto(x); };
   const tg = document.getElementById('chOnTg'); if (tg) tg.checked = !!(C.home && C.home.on);
 }
 
@@ -147,6 +146,30 @@ function poll(){ clearInterval(C.t); C.t = setInterval(tick, 4000); }
 
 const isVid = p => /\.(mov|mp4|m4v|webm|3gp)$/i.test(p || '');
 const extOf = f => { const n = ((f.name || '').split('.').pop() || '').toLowerCase(); if (/^(jpe?g|png|webp|heic|heif|mov|mp4|m4v|webm|3gp)$/.test(n)) return n.replace('jpeg','jpg'); const t = (f.type || '').split('/')[1] || 'jpg'; return t === 'quicktime' ? 'mov' : t.replace('jpeg','jpg'); };
+
+// 📷 누르면: 사진 찍기 / 동영상 찍기 / 앨범 — 폰 기본 선택창(카메라 2개+파일)보다 단순하게
+function pickMedia(onFiles){
+  const old = document.getElementById('mpick'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'mpick';
+  d.innerHTML = `<style>#mpick{position:fixed;inset:0;z-index:300;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center}
+#mpick .sh{width:100%;max-width:480px;background:#fff;color:#141A2A;border-radius:22px 22px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-family:inherit}
+#mpick .sh button{border:0;background:#F1F4F9;border-radius:18px;padding:18px 6px;font:inherit;font-size:14px;font-weight:700;color:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+#mpick .sh button i{font-style:normal;font-size:30px}
+#mpick .sh .x{grid-column:1/-1;background:none;padding:12px;color:#6B7385;font-weight:600}</style>
+<div class="sh"><button data-pk="cam"><i>📷</i>사진 찍기</button><button data-pk="vid"><i>🎬</i>동영상 찍기</button><button data-pk="alb"><i>🖼️</i>앨범</button><button class="x" data-pk="x">취소</button></div>`;
+  d.addEventListener('click', e => {
+    const b = e.target.closest('[data-pk]'); if (!b && e.target !== d) return;
+    const k = b ? b.dataset.pk : 'x'; d.remove(); if (k === 'x') return;
+    const i = document.createElement('input'); i.type = 'file'; i.style.display = 'none';
+    if (k === 'cam') { i.accept = 'image/*'; i.setAttribute('capture', 'environment'); }
+    else if (k === 'vid') { i.accept = 'video/*'; i.setAttribute('capture', 'environment'); }
+    else { i.accept = 'image/*,video/*'; i.multiple = true; }
+    i.onchange = () => { const fs = [...(i.files || [])]; i.remove(); if (fs.length) onFiles(fs); };
+    document.body.appendChild(i); i.click();
+  });
+  document.body.appendChild(d);
+}
+H.ACT.chMedia = () => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); });
 async function sendPhoto(f){
   const vid = /^video\//.test(f.type || '') || isVid(f.name);
   if (vid && f.size > 50*1024*1024) return H.toast('동영상은 50MB(약 30초~1분)까지 올릴 수 있어요');

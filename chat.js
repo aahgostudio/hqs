@@ -168,7 +168,7 @@
     const html = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
       <div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
       ${editing ? `<div class="epc-edit"><span>✏️ 메시지 수정 중</span><button data-epccancel="1">취소</button></div>` : ''}
-      <div class="epc-in"><button class="epc-ph" data-photo="1" aria-label="사진·동영상">📷</button><input type="file" accept="image/*,video/*" hidden id="epc-file">
+      <div class="epc-in"><button class="epc-ph" data-photo="1" aria-label="사진·동영상">📷</button>
         <textarea id="epc-t" rows="1" placeholder="메시지 입력" enterkeyhint="enter"></textarea><button class="epc-send" data-send="1" aria-label="보내기">↑</button></div>`;
     if (keepIn) {   // 입력칸은 그대로(움직이면 키보드 닫힘) · 위쪽 줄과 메시지만 바꿈
       const tmp = document.createElement('div'); tmp.innerHTML = html;
@@ -183,7 +183,6 @@
     if (editing) { t.value = editing.body || ''; t.focus(); }
     t.addEventListener('input', () => { t.style.height = 'auto'; t.style.height = Math.min(120, t.scrollHeight) + 'px'; });
     t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); send(); } });
-    w.querySelector('#epc-file').onchange = e => { const f = e.target.files[0]; if (f) sendPhoto(f); e.target.value = ''; };
     bindBox(box);
   }
   function bindBox(box){
@@ -252,6 +251,30 @@
     } catch(_) { alert('보내지 못했어요. 인터넷 연결을 확인해주세요.'); t.value = v; }
     busy = false;
   }
+
+  // 📷 누르면: 사진 찍기 / 동영상 찍기 / 앨범 — 폰 기본 선택창(카메라 2개+파일)보다 단순하게
+  function pickMedia(onFiles){
+    const old = document.getElementById('mpick'); if (old) old.remove();
+    const d = document.createElement('div'); d.id = 'mpick';
+    d.innerHTML = `<style>#mpick{position:fixed;inset:0;z-index:300;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center}
+  #mpick .sh{width:100%;max-width:480px;background:#fff;color:#141A2A;border-radius:22px 22px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-family:inherit}
+  #mpick .sh button{border:0;background:#F1F4F9;border-radius:18px;padding:18px 6px;font:inherit;font-size:14px;font-weight:700;color:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+  #mpick .sh button i{font-style:normal;font-size:30px}
+  #mpick .sh .x{grid-column:1/-1;background:none;padding:12px;color:#6B7385;font-weight:600}</style>
+  <div class="sh"><button data-pk="cam"><i>📷</i>사진 찍기</button><button data-pk="vid"><i>🎬</i>동영상 찍기</button><button data-pk="alb"><i>🖼️</i>앨범</button><button class="x" data-pk="x">취소</button></div>`;
+    d.addEventListener('click', e => {
+      const b = e.target.closest('[data-pk]'); if (!b && e.target !== d) return;
+      const k = b ? b.dataset.pk : 'x'; d.remove(); if (k === 'x') return;
+      const i = document.createElement('input'); i.type = 'file'; i.style.display = 'none';
+      if (k === 'cam') { i.accept = 'image/*'; i.setAttribute('capture', 'environment'); }
+      else if (k === 'vid') { i.accept = 'video/*'; i.setAttribute('capture', 'environment'); }
+      else { i.accept = 'image/*,video/*'; i.multiple = true; }
+      i.onchange = () => { const fs = [...(i.files || [])]; i.remove(); if (fs.length) onFiles(fs); };
+      document.body.appendChild(i); i.click();
+    });
+    document.body.appendChild(d);
+  }
+  
   async function sendPhoto(f){
     const vid = /^video\//.test(f.type || '') || /\.(mov|mp4|m4v|webm|3gp)$/i.test(f.name || '');
     if (vid && f.size > 50 * 1024 * 1024) return alert('동영상은 50MB까지 올릴 수 있어요.\n(약 30초~1분) 길면 잘라서 보내주세요.');
@@ -273,7 +296,7 @@
     if (b.dataset.list) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }
     if (b.dataset.room) return openRoom(+b.dataset.room);
     if (b.dataset.send) return send();
-    if (b.dataset.photo) return document.getElementById('epc-file').click();
+    if (b.dataset.photo) return pickMedia(async fs => { for (const f of fs) await sendPhoto(f); });
     if (b.dataset.epccancel) { editing = null; return drawRoom(true); }
   }
   function close(){
