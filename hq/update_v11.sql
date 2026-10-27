@@ -66,7 +66,7 @@ begin
   d := to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
   salt := encode(extensions.gen_random_bytes(16), 'hex');
   sig := encode(extensions.hmac(d || salt, k.api_secret, 'sha256'), 'hex');
-  select jsonb_build_object('messages', jsonb_agg(jsonb_build_object(
+  select jsonb_build_object('allowDuplicates', true, 'messages', jsonb_agg(jsonb_build_object(
            'to', private.digits(m->>'to'),
            'kakaoOptions', jsonb_build_object('pfId', c->>'pf', 'templateId', m->>'tpl', 'variables', m->'vars', 'disableSms', true))))
     into body from jsonb_array_elements(p_msgs) m where private.digits(m->>'to') is not null;
