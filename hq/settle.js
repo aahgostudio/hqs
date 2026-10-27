@@ -45,7 +45,7 @@ function draw(){
     ${C.miss.length ? `<div class="banner warn" style="margin-bottom:8px">지급액 미입력: ${C.miss.map(m => esc(m.s.name) + '(' + esc(m.j.title||'') + ')').join(', ')} — 일정판 › 현장 › 마감에서 금액을 넣어주세요</div>` : ''}
     <div class="ptitle">현장 · 수금</div>
     <div class="tbl"><table><thead><tr><th>현장</th><th class="num">매출</th><th class="num">예약금</th><th class="num">잔금</th><th>수금</th></tr></thead><tbody>
-      ${C.sites.map(x => `<tr><td>${x.j.start_time ? x.j.start_time.slice(0,5) + ' ' : ''}${esc(x.j.title||'')}</td><td class="num">${won(x.rev)}</td><td class="num">${won(x.dep)}</td><td class="num">${won(x.bal)}</td><td>${x.got ? `<span class="pill p-ok">✓ ${esc(x.who)}</span>` : `<span class="pill p-warn">대기 · ${esc(x.who)}</span>`}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">이날 현장이 없어요</td></tr>'}
+      ${C.sites.map(x => `<tr><td>${x.j.start_time ? x.j.start_time.slice(0,5) + ' ' : ''}${esc(x.j.title||'')}</td><td class="num">${won(x.rev)}</td><td class="num">${won(x.dep)}</td><td class="num">${won(x.bal)}</td><td>${!x.bal ? '<span class="note">-</span>' : x.got ? `<span class="pill p-ok">✓ ${esc(x.who)}</span>` : `<span class="pill p-warn">대기 · ${esc(x.who)}</span>`}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">이날 현장이 없어요</td></tr>'}
     </tbody></table></div>
     <div class="ptitle">직원 지급</div>
     <div class="tbl"><table><thead><tr><th>직원</th><th class="num">지급액</th><th>방식</th><th class="num">공제</th><th class="num">보낼 돈</th><th>계좌</th><th></th></tr></thead><tbody>
