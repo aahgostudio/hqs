@@ -318,7 +318,7 @@ function mineView(){
     const ded = pt === 'freelance33' ? Math.floor(tot*0.033/10)*10 : pt === 'daily' ? items.reduce((a,x)=>a+Math.floor(Math.max(0,x.amount-150000)*0.06*0.45*1.1/10)*10,0) : 0;
     const ptl = {freelance33:'3.3% 공제', daily:'일용직', salary:'급여', contract:'도급', none:'공제 없음'}[pt] || '';
     payBox = `<div class="pay"><div class="tot"><span>${month.getMonth()+1}월 정산 (마감된 현장)</span><b>${won(tot)}</b></div>
-      ${!Array.isArray(payData) && tot ? `<div class="row2" style="margin-top:4px"><span>${ptl}${ded?' · 공제 '+won(ded):''}</span><b>${pt==="salary"?"급여로 지급":"받을 돈 "+won(tot-ded)}</b></div>` : ''}
+      ${!Array.isArray(payData) && tot ? `<div class="row2" style="margin-top:4px;gap:10px;flex-wrap:wrap"><span>${ptl}${ded?' · 공제 '+won(ded):''}</span><b>${pt==="salary"?"급여로 지급":"받을 돈 "+won(tot-ded)}</b></div>` : ''}
       ${items.length?`<ul>${items.map(x=>`<li><span>${md(x.date)} ${esc(x.title)}${x.extra?` <small style="color:var(--sub)">(추가 ${won(x.extra)})</small>`:''}</span><span>${won(x.amount)}${x.paid?' · 지급완료':''}</span></li>`).join('')}</ul>`:''}
       <p class="foot" style="text-align:left;margin-top:8px">세금 공제 방식은 대표님과 정한 대로 표시돼요.</p></div>`;
   }
