@@ -227,7 +227,8 @@ tr.boss td{background:#F5F7FF}
 .ch-row small{display:block;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ch-row .r{display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:11px;color:var(--sub)}
 .ch-bd{font-style:normal;min-width:18px;height:18px;border-radius:9px;background:#E5484D;color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;padding:0 5px}
-.ch-tag{font-size:10.5px;background:var(--soft);color:var(--sub);border-radius:6px;padding:1px 6px;font-weight:600}
+.ch-row small.ch-tag,.ch-tag{display:inline-block;vertical-align:2px;margin-left:5px;font-size:9.5px;line-height:1.5;background:none;border:1px solid var(--line);color:var(--sub);border-radius:5px;padding:0 4px;font-weight:600}
+.ch-row.on small.ch-tag{border-color:#475569;color:#94A3B8}
 .ch-closed{margin-top:14px;width:100%;border:1px dashed var(--line);background:none;border-radius:10px;padding:9px;color:var(--sub);font-size:12.5px;cursor:pointer}
 .ch-due{background:#FEF3C7;border:1px solid #FCD34D;border-radius:10px;padding:8px 10px;font-size:12.5px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ch-due span{margin-left:auto;display:flex;gap:4px}
