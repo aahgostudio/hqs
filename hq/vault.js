@@ -37,4 +37,10 @@ H.ACT.vSave = async el => {
   const {error} = await sb.rpc('vault_set', {p_staff: el.dataset.s, p_data: o}); if (error) throw error;
   H.toast('저장했어요 · 암호화 보관'); await draw(el.dataset.s);
 };
+// 돈 화면용: 직원별 지급 계좌 (가려서 표시 + 복사)
+H.loadAccts = async ids => { H.S.accts = H.S.accts || {}; if (!H.S.owner || H.S.needV8) return;
+  await Promise.all(ids.map(async id => { const {data} = await sb.rpc('vault_get', {p_staff: id}); H.S.accts[id] = data || {}; })); };
+H.acctHtml = sid => { const a = (H.S.accts||{})[sid]; if (!a || !a.acct) return H.S.owner && !H.S.needV8 ? `<div class="note acct">계좌 미입력</div>` : '';
+  return `<div class="note acct">${esc(a.bank||'')} •••• ${esc(String(a.acct).slice(-4))} <button type="button" class="link" data-a="acctCopy" data-s="${sid}">복사</button></div>`; };
+H.ACT.acctCopy = el => { const a = (H.S.accts||{})[el.dataset.s] || {}; H.copy([a.bank, a.acct, a.holder].filter(Boolean).join(' '), '계좌를 복사했어요 · 은행 앱에 붙여넣으세요'); };
 })(window.HQ);

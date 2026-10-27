@@ -273,3 +273,4 @@ tr.boss td{background:#F5F7FF}
 .vgrid span{display:block;font-size:11.5px;color:var(--sub)}.vgrid b{font-size:14px;font-variant-numeric:tabular-nums;word-break:break-all}
 .vgrid .link{border:0;background:none;color:var(--ink);font-size:11.5px;text-decoration:underline;cursor:pointer;margin-left:6px}
 .vact{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
+.acct{font-weight:400;white-space:nowrap;margin-top:2px}.acct .link{border:0;background:none;color:var(--ink);text-decoration:underline;cursor:pointer;font-size:11.5px;padding:0}
