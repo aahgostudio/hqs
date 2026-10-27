@@ -64,7 +64,7 @@
 .epc-h .sp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .epc-list{flex:1;overflow:auto;padding:6px 0 30px}
 .epc-sec{font-size:12px;color:var(--epc-mute);font-weight:700;padding:14px 18px 6px}
-.epc-kid{padding-left:46px!important;position:relative}.epc-kid::before{content:'';position:absolute;left:30px;top:-2px;width:10px;height:28px;border-left:2px solid #CBD5E1;border-bottom:2px solid #CBD5E1;border-bottom-left-radius:8px}
+.epc-kid{padding-left:46px!important;position:relative}.epc-kid::before{content:'';position:absolute;left:30px;top:-2px;width:10px;height:28px;border-left:1.5px dashed #CBD5E1;border-bottom:1.5px dashed #CBD5E1;border-bottom-left-radius:6px}
 .epc-row{display:flex;align-items:center;gap:12px;width:100%;border:0;background:var(--epc-card);padding:12px 16px;border-bottom:1px solid var(--epc-line);text-align:left;color:inherit;font:inherit;cursor:pointer}
 .epc-ic{width:44px;height:44px;border-radius:14px;background:var(--epc-bg);display:grid;place-items:center;font-size:21px;flex:none}
 .epc-row .t{flex:1;min-width:0}.epc-row b{display:block;font-size:15px}

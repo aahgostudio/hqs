@@ -315,7 +315,7 @@ tr.boss td{background:#F5F7FF}
 #sheet .filled{background:#FEF9C3}
 body[data-tab=chat] .fab{display:none!important}
 .ch-row[draggable]{cursor:grab}.ch-row.drag{opacity:.4}.ch-row.over{box-shadow:inset 0 2px 0 var(--navy)}
-.ch-kid{margin-left:26px;width:calc(100% - 26px);position:relative}.ch-kid::before{content:'';position:absolute;left:-14px;top:-4px;width:11px;height:26px;border-left:2px solid #CBD5E1;border-bottom:2px solid #CBD5E1;border-bottom-left-radius:8px}
+.ch-kid{margin-left:26px;width:calc(100% - 26px);position:relative}.ch-kid::before{content:'';position:absolute;left:-14px;top:-4px;width:11px;height:26px;border-left:1.5px dashed #CBD5E1;border-bottom:1.5px dashed #CBD5E1;border-bottom-left-radius:6px}
 .ch-kid .ch-ic{width:32px;height:32px;font-size:16px}
 .ch-fold{font-style:normal;font-size:11px;color:var(--sub);padding:1px 5px;border-radius:6px;cursor:pointer}.ch-fold:hover{background:var(--soft)}.ch-row.on .ch-fold{color:#CBD5E1}
 .ch-row.over-dn{box-shadow:inset 0 -2px 0 var(--navy)}.ch-row.into{background:#EEF3FF;box-shadow:inset 3px 0 0 var(--navy)}
