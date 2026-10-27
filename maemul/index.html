@@ -161,6 +161,7 @@ button.kpi:hover{border-color:var(--accent-2)}
 .bossbar{display:flex;gap:8px;align-items:center;border-radius:12px;padding:9px 13px;font-size:13.5px;margin:0 0 14px;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA}.bossbar.busy{background:#FEF2F2;color:#991B1B;border-color:#FECACA}
 .schedbtn{display:inline-flex;align-items:center;gap:6px}
 .statusrow{display:flex;justify-content:flex-end;margin:0 0 -8px}
+.hqback{display:flex;margin:0 0 10px}.hqback a{font-size:13px;font-weight:700;text-decoration:none;color:var(--ink);background:var(--card,#fff);border:1px solid var(--line);border-radius:999px;padding:7px 14px}
 .greet{flex:1 1 320px;min-width:0}.hline{display:flex;align-items:center;justify-content:space-between;gap:12px}@media (min-width:900px){.hline{justify-content:flex-start;gap:16px}}.hline h1{min-width:0;word-break:keep-all}.hline h1 .nm{display:block}.hl{display:flex;align-items:center;gap:12px;min-width:0}.cheer{word-break:keep-all}
 .cheer{margin:6px 0 0;font-size:14px;color:var(--ink-2)}
 .evp{margin:0 0 16px}.evp .panel-h{margin-bottom:8px}.evp h2 small{font-size:12px;font-weight:400;color:var(--ink-3);margin-left:6px}
@@ -479,6 +480,7 @@ function render(){
       <div class="who">${EPProfile.av(S.data.me.name,34,{me:S.data.me.role!=='대표'})}<div><b>${esc(S.data.me.name)} ${esc(S.data.me.role)}</b><small>리츠부동산</small></div></div>
     </aside>
     <main><div class="glow" aria-hidden="true"></div><div class="wrap">
+      ${S.data.me.role==='대표'&&!S.demo?`<div class="hqback"><a href="../hq/">← 본사 홈 (HQ)</a></div>`:''}
       ${S.view==='home'?'':`<div class="statusrow">${EPStatus.pill()}</div>`}
       ${S.demo?`<div class="demo">${ic('alert')}지금 보이는 매물은 화면 미리보기용 예시예요. 실제 프로그램에서는 각자 시트의 매물이 나옵니다.</div>`:''}
       ${S.view==='home'?viewHome(all,live,mine,myLive,stale):S.view==='find'?viewFind(live):viewMine(mine)}
