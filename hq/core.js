@@ -215,8 +215,8 @@ H.ACT.bossSheet = () => { if (!H.S.owner) return H.toast('대표 상태는 대�
   const u = b.until ? new Date(b.until) : null;
   const loc = u ? new Date(u.getTime() - u.getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
   H.open(`<form data-f="boss"><h3>대표 상태</h3>
-    <p class="note" style="margin:-6px 0 12px">직원 일정판·매물노트 맨 위에 보여요. 끝나는 시간이 지나면 자동으로 '근무중'으로 돌아가요.</p>
-    <div class="chips" style="margin-bottom:12px">${states.map(s=>`<label><input type="radio" name="state" value="${s}" ${b.state===s?'checked':''}><span>${s}</span></label>`).join('')}</div>
+    <p class="note" style="margin:-6px 0 12px">직원 화면 오른쪽 위에 보여요. 평소엔 '자동 (캘린더)' — 일정 보고 현장·내근·회의를 알아서 표시해요. 여기서 고르면 끝나는 시간까지 이게 먼저 보여요.</p>
+    <div class="chips" style="margin-bottom:12px">${states.map(s=>`<label><input type="radio" name="state" value="${s}" ${b.state===s?'checked':''}><span>${s==='근무중'?'자동 (캘린더)':s}</span></label>`).join('')}</div>
     <div class="fg"><div class="field full"><label>한 줄 메모 (직원에게 보임)</label><input name="memo" value="${H.esc(b.memo||'')}" placeholder="예) 급한 건 전화 · 신봉진 실장에게"></div>
     <div class="field"><label>언제까지</label><input type="datetime-local" name="until" value="${loc}"></div>
     <div class="field"><label>&nbsp;</label><div class="chips">${[['1h','1시간'],['3h','3시간'],['eod','오늘 끝까지']].map(([k,l])=>`<label><input type="radio" name="quick" value="${k}"><span>${l}</span></label>`).join('')}</div></div></div>
