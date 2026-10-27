@@ -26,7 +26,7 @@ H.parseOrder = (raw) => {
   let area = '';
   if (o.address) { const a = o.address.replace(/^(부산광역시|부산시|부산)\s*/,''); const g = a.match(/(\S+[구군])\s+(\S+?[동읍면리가])(?=\s|\d|$)/); area = g ? `${g[1]} ${g[2]}` : a.split(' ').slice(0,2).join(' '); }
   o.title = [area, typ, kind, py ? py + '평' : ''].filter(Boolean).join(' ');
-  if (py) o.headcount = +py <= 20 ? 2 : +py <= 34 ? 3 : 4;
+  if (py) o.headcount = +py <= 20 ? 2 : +py <= 32 ? 3 : 4;
   // 구조 → 팀 공개 메모
   const rooms = after(t, ['방 ?개수']), bath = after(t, ['화장실 ?개수']), ver = after(t, ['베란다 ?개수']);
   const pub = [rooms && rooms.replace(/\s+/g,''), bath && '화장실 ' + bath.replace(/\s+/g,''), ver && '베란다 ' + ver.replace(/\s+/g,'')].filter(Boolean);
