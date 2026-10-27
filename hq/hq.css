@@ -187,3 +187,22 @@ tr.boss td{background:#F5F7FF}
 .hav img{width:100%;height:100%;object-fit:cover;display:block}.hav.cl{background:#EEF2FF;color:var(--clean)}
 .tm-ic.res{overflow:visible}.tm-ic.res .hav{width:100%!important;height:100%!important}
 .v3bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* 정기 반복 */
+.rep{grid-column:1/-1;border:1.5px solid #C7D2FE;background:#F8FAFF;border-radius:14px;padding:12px;display:grid;gap:9px}
+.rep h4{margin:0;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rep.off .rw-week,.rep.off .rw-month,.rep.off .rw-end,.rep.off .rprev{display:none}
+.rep:not([data-mode="week"]) .rw-week,.rep:not([data-mode="month"]) .rw-month{display:none}
+.rep[data-mode="once"] .rw-end,.rep[data-mode="once"] .rprev{display:none}
+.rseg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.rseg.two{grid-template-columns:1fr 1fr}
+.rseg label,.rdow label,.rpill label{cursor:pointer}.rseg input,.rdow input,.rpill input{position:absolute;opacity:0;pointer-events:none}
+.rseg span{display:block;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 4px;text-align:center;font-size:13px;font-weight:600}
+.rseg input:checked+span{background:var(--navy,#1E3A8A);color:#fff;border-color:transparent}
+.rdow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.rdow span{display:block;border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 0;text-align:center;font-size:13px;font-weight:700}.rdow span.sun{color:#DC2626}
+.rdow input:checked+span{background:var(--clean);color:#fff;border-color:transparent}
+.rpill{display:flex;gap:6px;flex-wrap:wrap}.rpill span{display:block;border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:12.5px;font-weight:600}
+.rpill input:checked+span{background:#E0E7FF;color:#3730A3;border-color:#C7D2FE}
+.rl{font-size:12px;color:var(--sub);margin:2px 0 4px}
+.rprev{font-size:12.5px;background:#fff;border:1px dashed #C7D2FE;border-radius:10px;padding:9px 10px;line-height:1.7}.rprev b{color:var(--clean)}.rprev .o{color:#B45309}
+.ropt{display:grid;gap:3px;text-align:left;border:1.5px solid var(--line);border-radius:14px;padding:13px 14px;background:#fff;font:inherit;cursor:pointer}
+.ropt b{font-size:15px}.ropt small{font-size:12.5px;color:var(--sub)}.ropt.bad{border-color:#FCA5A5;background:#FFF7F7}.ropt.bad b{color:#B91C1C}

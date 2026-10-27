@@ -2,12 +2,18 @@
 --  어닝플레이스 HQ 업데이트 v3 (2026-10-27)
 --  ① 직원 프로필 사진 (본인이 개인 화면에서 올림 → HQ·매물노트에 보임)
 --  ② 명단에서 완전히 숨기기 (hidden) + 문나원 퇴사 처리
+--  ③ 정기 일정 반복 (series_id · series_rule)
 --  Supabase → SQL Editor → 붙여넣고 Run → '업데이트 완료 (v3)'
 -- ============================================================
 
 alter table public.staff add column if not exists avatar_path text;
 alter table public.staff add column if not exists avatar_key  text;
 alter table public.staff add column if not exists hidden      boolean not null default false;
+
+-- 정기 반복 일정 묶음
+alter table public.jobs add column if not exists series_id   text;
+alter table public.jobs add column if not exists series_rule jsonb;
+create index if not exists jobs_series_idx on public.jobs (series_id, job_date) where series_id is not null;
 
 -- 프로필 사진 저장소 (공개, 추측 불가 경로, 2MB)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

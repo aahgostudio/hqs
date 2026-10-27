@@ -55,7 +55,7 @@ function jobEv(j){
     em = p.photo <= 0 && !H.photosOf(j.id).length ? '<em>사진 없음</em>' : p.done ? '<em>홍보✓</em>' : `<em>${p.cnt}/${p.total}</em>`;
   } else if (j.status === 'open' && ap < j.headcount) em = `<em>${ap}/${j.headcount}</em>`;
   const pre = j.status==='quote' ? '견적 ' : (ap >= j.headcount && j.status !== 'done' ? '완 ' : '');
-  return `<div class="ev ${cls}" title="${esc(j.title)}">${em}${pre}${j.start_time?j.start_time.slice(0,5)+' ':''}${esc(j.title)}</div>`;
+  return `<div class="ev ${cls}" title="${esc(j.title)}">${em}${pre}${j.start_time?j.start_time.slice(0,5)+' ':''}${j.series_id?'🔁':''}${esc(j.title)}</div>`;
 }
 function dayItems(s){
   const S = H.S, f = st().f, out = [];
@@ -104,7 +104,7 @@ function jobCard(j){
   const money = (j.total_amount||j.balance_amount) ? `<span>계약 ${won(j.total_amount)} · 잔금 ${won(j.balance_amount)}${H.extrasSum(j)?' · 추가 '+won(H.extrasSum(j)):''}${j.collector_id?` (${esc(H.P(j.collector_id).name)} ${j.collected_at?'✓ 수금':'수금 대기'})`:''}</span>` : '';
   const showPromo = j.job_date <= ymd(H.today()) && j.status !== 'cancelled' && j.status !== 'quote';
   return `<div class="card" style="--tc:${tc}">
-    <div class="t"><span style="font-variant-numeric:tabular-nums">${j.start_time?j.start_time.slice(0,5):'시간 미정'}</span>${esc(j.title)} ${(j.teams||[]).map(c=>`<span class="tag" style="background:${H.T(c).color}">${c}</span>`).join('')}${j.contract_mode?`<span class="tag" style="background:var(--prt)">도급 ${j.contract_mode}</span>`:''}${pill}</div>
+    <div class="t"><span style="font-variant-numeric:tabular-nums">${j.start_time?j.start_time.slice(0,5):'시간 미정'}</span>${j.series_id?'<span title="정기 반복">🔁 </span>':''}${esc(j.title)} ${(j.teams||[]).map(c=>`<span class="tag" style="background:${H.T(c).color}">${c}</span>`).join('')}${j.contract_mode?`<span class="tag" style="background:var(--prt)">도급 ${j.contract_mode}</span>`:''}${pill}</div>
     <div class="m"><span>${j.headcount}명</span>${j.kind?`<span>${esc(j.kind)}</span>`:''}${j.order_channel?`<span>오더: ${esc(j.order_channel)}</span>`:''}${j.address?`<span>🔒 ${esc(j.address)}</span>`:''}${money}</div>
     ${j.admin_memo?`<div class="m">메모: ${esc(j.admin_memo)}</div>`:''}
     <div class="people">${people}${live}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}</div>
@@ -193,6 +193,94 @@ H.ACT.unassign = async el => { const sid = el.dataset.s; if (!confirm(`${H.P(sid
   await sb.from('jobs').update({status:'open'}).eq('id', +el.dataset.j).eq('status','full'); H.refresh(); };
 
 /* 현장 올리기 · 수정 */
+
+/* ---------- 정기 반복 ---------- */
+const REP_END = [['1m','1개월',1],['3m','3개월',3],['6m','6개월',6],['1y','1년',12],['date','날짜 지정',0]];
+const isReg = k => /정기/.test(k||'');
+function repHtml(j){
+  const on = isReg(j.kind), dw = parse(j.job_date).getDay();
+  return `<div class="rep ${on?'':'off'}" id="rep">
+    <h4>🔁 정기 일정으로 반복할까요?</h4>
+    <div class="rseg">${[['once','한 번만'],['week','매주 같은 요일'],['month','매월 같은 날짜']].map(([v,l])=>`<label><input type="radio" name="rep" value="${v}" ${(on?'week':'once')===v?'checked':''} data-c="repPrev"><span>${l}</span></label>`).join('')}</div>
+    <div class="rw-week"><div class="rl">요일 (여러 개 가능)</div><div class="rdow">${DOW.map((d,i)=>`<label><input type="checkbox" name="rep_dow" value="${i}" ${i===dw?'checked':''} data-c="repPrev"><span class="${i===0?'sun':''}">${d}</span></label>`).join('')}</div>
+      <div class="rl">간격</div><div class="rpill">${[['1','매주'],['2','2주마다']].map(([v,l],k)=>`<label><input type="radio" name="rep_every" value="${v}" ${k?'':'checked'} data-c="repPrev"><span>${l}</span></label>`).join('')}</div></div>
+    <div class="rw-month"><div class="rl">매월</div><div class="rpill" id="rep-mm"></div></div>
+    <div class="rw-end"><div class="rl">언제까지</div><div class="rpill">${REP_END.map(([v,l],k)=>`<label><input type="radio" name="rep_end" value="${v}" ${v==='3m'?'checked':''} data-c="repPrev"><span>${l}</span></label>`).join('')}</div>
+      <input type="date" name="rep_until" class="in" style="margin-top:6px;display:none" data-c="repPrev"></div>
+    <div class="rprev" id="rep-prev"></div></div>`;
+}
+function repScopeHtml(j){
+  if (!j.series_id) return '';
+  return `<div class="rep" style="grid-column:1/-1"><h4>🔁 정기 일정이에요 <span class="note" style="font-weight:400">${esc(repRuleTxt(j.series_rule))}</span></h4>
+    <div class="rseg two">${[['one','이 날만 바꾸기'],['after',`${md(j.job_date)} 이후 전부 바꾸기`]].map(([v,l],k)=>`<label><input type="radio" name="scope" value="${v}" ${k?'':'checked'}><span>${l}</span></label>`).join('')}</div>
+    <div class="note">'이후 전부'는 시간·이름·인원·메모·금액만 같이 바뀌어요 (날짜·상태·배정은 그대로)</div>
+    <button type="button" class="btn sm ghost" data-a="repExtend" data-j="${j.id}" style="justify-self:start">＋ 3개월 연장</button></div>`;
+}
+function repRuleTxt(r){ if (!r) return '';
+  if (r.mode === 'week') return `${r.every==2?'2주마다':'매주'} ${(r.dows||[]).map(i=>DOW[i]).join('·')}`;
+  if (r.mode === 'month') return r.mtype === 'lastdow' ? `매월 마지막 ${DOW[r.dow]}요일` : `매월 ${r.mday}일`;
+  return ''; }
+function repRead(f){
+  const g = n => f.querySelector(`[name="${n}"]:checked`); const mode = (g('rep')||{}).value || 'once';
+  const first = f.job_date.value; if (!first) return null; const d0 = parse(first);
+  const endK = (g('rep_end')||{}).value || '3m'; let end;
+  if (endK === 'date') { end = f.rep_until.value ? parse(f.rep_until.value) : null; }
+  else { const m = REP_END.find(x=>x[0]===endK)[2]; end = new Date(d0); end.setMonth(end.getMonth()+m); end.setDate(end.getDate()-1); }
+  const rule = {mode};
+  if (mode === 'week') { rule.dows = [...f.querySelectorAll('[name="rep_dow"]:checked')].map(x=>+x.value); rule.every = +((g('rep_every')||{}).value||1); }
+  if (mode === 'month') { const mt = (g('rep_mtype')||{}).value || 'date'; rule.mtype = mt; rule.mday = d0.getDate(); rule.dow = d0.getDay(); }
+  return {mode, rule, first, end, endK};
+}
+// 규칙대로 날짜 만들기 (from 포함, end까지, 최대 120건)
+function repDates(rule, from, end, anchor){
+  const out = []; if (!end) return out; const a = parse(anchor || ymd(from));
+  if (rule.mode === 'week') {
+    if (!rule.dows || !rule.dows.length) return out;
+    const wk0 = H.addDays(a, -a.getDay());
+    for (let d = new Date(from); d <= end && out.length < 120; d = H.addDays(d, 1)) {
+      if (!rule.dows.includes(d.getDay())) continue;
+      const wk = Math.round((H.addDays(d, -d.getDay()) - wk0) / (7*864e5));
+      if (rule.every == 2 && wk % 2) continue; out.push(ymd(d)); }
+  } else if (rule.mode === 'month') {
+    for (let k = 0; k < 120; k++) {
+      const y = from.getFullYear(), m = from.getMonth() + k; const last = new Date(y, m + 1, 0);
+      let d;
+      if (rule.mtype === 'lastdow') { d = new Date(last); while (d.getDay() !== rule.dow) d.setDate(d.getDate()-1); }
+      else d = new Date(y, m, Math.min(rule.mday, last.getDate()));
+      if (d > end) break; if (d >= from) out.push(ymd(d)); }
+  }
+  return out;
+}
+H.CHANGE.repKind = el => { const f = el.form, r = f.querySelector('#rep'); if (!r) return;
+  if (isReg(el.value)) { r.classList.remove('off'); const w = f.querySelector('[name="rep"][value="week"]'), o = f.querySelector('[name="rep"]:checked'); if (w && (!o || o.value === 'once')) w.checked = true; }
+  H.CHANGE.repPrev(el); };
+H.CHANGE.repPrev = el => { const f = el.form, r = f.querySelector('#rep'); if (!r) return;
+  const x = repRead(f); if (!x) return; const d0 = parse(x.first);
+  r.dataset.mode = x.mode; if (x.mode !== 'once') r.classList.remove('off');
+  f.rep_until.style.display = x.endK === 'date' ? '' : 'none';
+  const mm = r.querySelector('#rep-mm'), cur = (f.querySelector('[name="rep_mtype"]:checked')||{}).value || 'date';
+  mm.innerHTML = [['date',`매월 ${d0.getDate()}일`],['lastdow',`매월 마지막 ${DOW[d0.getDay()]}요일`]].map(([v,l])=>`<label><input type="radio" name="rep_mtype" value="${v}" ${cur===v?'checked':''} data-c="repPrev"><span>${l}</span></label>`).join('');
+  const btn = f.querySelector('.sacts [type=submit]'), pv = r.querySelector('#rep-prev');
+  if (x.mode === 'once') { pv.innerHTML = ''; if (btn) btn.textContent = '올리기'; return; }
+  const ds = repDates(x.rule, d0, x.end, x.first);
+  const odd = x.mode === 'month' && x.rule.mtype !== 'lastdow' ? ds.filter(d => +d.slice(8) !== x.rule.mday) : [];
+  const t = f.start_time.value ? ' '+f.start_time.value : '';
+  pv.innerHTML = ds.length ? `📅 <b>${esc(repRuleTxt(x.rule))}${t} · 총 ${ds.length}건</b><br>${ds.slice(0,6).map(d=>odd.includes(d)?`<b class="o">${md(d)}</b>`:md(d)).join(' · ')}${ds.length>6?' … '+md(ds[ds.length-1]):''}
+    ${odd.length?`<br><span class="o">${x.rule.mday}일이 없는 달은 말일로 잡혀요</span>`:''}<br><span class="note">끝나기 2주 전에 HQ 홈에서 '연장할까요?' 알려드려요</span>` : '<span class="o">요일·기간을 확인해 주세요 (0건)</span>';
+  if (btn) btn.textContent = ds.length ? `${ds.length}건 올리기` : '올리기';
+};
+const SERIES_COPY = ['start_time','title','kind','headcount','teams','target_staff','public_note','address','private_note','order_channel','collector_id','total_amount','deposit_amount','balance_amount','admin_memo','contract_mode','live_title'];
+H.ACT.repExtend = async el => { const j = J(el.dataset.j); if (!j || !j.series_id) return;
+  const {data:last} = await sb.from('jobs').select('*').eq('series_id', j.series_id).order('job_date', {ascending:false}).limit(1).single();
+  const from = H.addDays(parse(last.job_date), 1), end = new Date(from); end.setMonth(end.getMonth()+3);
+  const ds = repDates(j.series_rule||{}, from, end, (j.series_rule||{}).anchor || last.job_date);
+  if (!ds.length) return H.toast('늘릴 날짜가 없어요');
+  if (!confirm(`${md(ds[0])} ~ ${md(ds[ds.length-1])} · ${ds.length}건 더 올릴까요?`)) return;
+  await H.q(sb.from('jobs').insert(ds.map(d => repRow(last, d))));
+  H.close(); H.toast(`${ds.length}건 연장했어요`); H.refresh(); };
+function repRow(src, d){ const r = {job_date:d, status:'open', series_id:src.series_id, series_rule:src.series_rule}; SERIES_COPY.forEach(k => r[k] = src[k] ?? null);
+  if (H.autoLive()) { r.live_code = H.rnd(8); r.live_close_days = +((H.setting('live')||{}).close_days) || 7; } return r; }
+
 H.jobSheet = jobSheet;
 function jobSheet(j, def){
   const S = H.S;
@@ -202,11 +290,12 @@ function jobSheet(j, def){
   const lock = I('lock').replace('class="i"','class="i" style="width:14px;height:14px"');
   H.open(`<form data-f="job"><h3>${j.id?'현장 수정':j.status==='quote'?'오더 접수':'청소 현장 올리기'}</h3><div class="fg">
     <div class="field full"><label>볼 수 있는 팀 (여러 개 가능)</label><div class="chips">${S.teams.filter(t=>t.code!=='HQS').map(t=>`<label><input type="checkbox" name="teams" value="${t.code}" ${(j.teams||[]).includes(t.code)?'checked':''}><span>${t.code} · ${esc(t.name)}</span></label>`).join('')}</div></div>
-    <div class="field"><label>날짜</label><input type="date" name="job_date" value="${j.job_date}" required></div>
-    <div class="field"><label>시간</label><input type="time" name="start_time" value="${(j.start_time||'').slice(0,5)}"></div>
+    <div class="field"><label>날짜${j.id?'':' (첫 날)'}</label><input type="date" name="job_date" value="${j.job_date}" required data-c="repPrev"></div>
+    <div class="field"><label>시간</label><input type="time" name="start_time" value="${(j.start_time||'').slice(0,5)}" data-c="repPrev"></div>
     <div class="field full"><label>지역 · 현장 이름 <small>(팀 전체 공개)</small></label><input name="title" value="${esc(j.title||'')}" placeholder="예) 수영구 광안동 아파트 이사청소 24평" required></div>
-    <div class="field"><label>종류</label><input name="kind" value="${esc(j.kind||'')}" list="kinds" placeholder="이사청소"><datalist id="kinds">${['이사청소','입주청소','퇴실청소','상가','사무실','정기','에어컨','철거','시설관리','폐기물','특수'].map(k=>`<option value="${k}">`).join('')}</datalist></div>
+    <div class="field"><label>종류</label><input name="kind" value="${esc(j.kind||'')}" list="kinds" placeholder="이사청소" data-c="repKind"><datalist id="kinds">${['이사청소','입주청소','퇴실청소','상가','사무실','정기','에어컨','철거','시설관리','폐기물','특수'].map(k=>`<option value="${k}">`).join('')}</datalist></div>
     <div class="field"><label>필요 인원</label><input type="number" name="headcount" min="1" max="50" value="${j.headcount}"></div>
+${j.id ? repScopeHtml(j) : repHtml(j)}
     <div class="field full"><label>팀 공개 메모 <small>(장비·주차 등)</small></label><input name="public_note" value="${esc(j.public_note||'')}"></div>
     <div class="sec">${lock} 확정자에게만</div>
     <div class="field full"><label>상세 주소</label><input name="address" value="${esc(j.address||'')}" placeholder="부산 수영구 광안동 ○○아파트 103동 2302호"></div>
@@ -224,12 +313,28 @@ function jobSheet(j, def){
     <div class="field full"><label>대표 메모</label><input name="admin_memo" value="${esc(j.admin_memo||'')}"></div>
   </div>${H.sacts(j.id?'저장':'올리기', j.id?`<button type="button" class="btn danger" data-a="jobDel" data-j="${j.id}" style="flex:0 0 auto">삭제</button>`:'')}
   <input type="hidden" name="id" value="${j.id||''}"></form>`);
+  const rf = document.querySelector('#sheet form [name="rep"]'); if (rf) H.CHANGE.repPrev(rf);
 }
 H.ACT.jobNew = el => { H.close(); setTimeout(()=>jobSheet(null, {job_date: el.dataset.d || st().sel}), 10); };
 H.ACT.quoteNew = () => { H.close(); setTimeout(()=>jobSheet(null, {status:'quote', headcount:2}), 10); };
 H.ACT.jobEdit = el => jobSheet(J(el.dataset.j));
-H.ACT.jobDel = async el => { if (!confirm('이 현장을 완전히 지울까요? (취소 표시만 하려면 상태를 [취소]로 저장하세요)')) return;
+H.ACT.jobDel = async el => { const j = J(el.dataset.j);
+  if (j && j.series_id) {
+    const {data:after} = await sb.from('jobs').select('id,job_date').eq('series_id', j.series_id).gte('job_date', j.job_date).order('job_date');
+    const {count:past} = await sb.from('jobs').select('id', {count:'exact', head:true}).eq('series_id', j.series_id).lt('job_date', j.job_date);
+    const list = after || [];
+    return H.open(`<h3>일정 지우기</h3><p class="note" style="margin:-4px 0 12px">${esc(j.title)} <span class="tag" style="background:#6366F1">🔁 ${esc(repRuleTxt(j.series_rule))}</span><br>지금 고른 날: <b>${md(j.job_date)}</b></p>
+      <div style="display:grid;gap:8px">
+        <button class="ropt" data-a="repDel" data-j="${j.id}" data-scope="one"><b>이 날만 지우기</b><small>${md(j.job_date)} 하나만 빠지고 나머지 정기 일정은 그대로</small></button>
+        <button class="ropt bad" data-a="repDel" data-j="${j.id}" data-scope="after"><b>🗑 ${md(j.job_date)}부터 이후 전부 지우기 · ${list.length}건</b><small>${list.slice(0,4).map(x=>md(x.job_date)).join(' · ')}${list.length>4?' … '+md(list[list.length-1].job_date):''}${past?`<br>지난 일정 ${past}건과 정산 기록은 그대로 남아요`:''}</small></button>
+      </div><div class="sacts"><button type="button" class="btn ghost" data-a="close">취소</button></div>`);
+  }
+  if (!confirm('이 현장을 완전히 지울까요? (취소 표시만 하려면 상태를 [취소]로 저장하세요)')) return;
   await H.q(sb.from('jobs').delete().eq('id', +el.dataset.j)); H.close(); H.toast('지웠어요'); H.refresh(); };
+H.ACT.repDel = async el => { const j = J(el.dataset.j);
+  if (el.dataset.scope === 'one') await H.q(sb.from('jobs').delete().eq('id', j.id));
+  else await H.q(sb.from('jobs').delete().eq('series_id', j.series_id).gte('job_date', j.job_date));
+  H.close(); H.toast(el.dataset.scope === 'one' ? '이 날만 지웠어요' : `${md(j.job_date)} 이후 정기 일정을 지웠어요`); H.refresh(); };
 H.autoLive = () => { const c = H.setting('live'); return !c || c.auto_issue !== false; };
 H.FORM.job = async v => {
   const tms = v.getAll('teams'); if (!tms.length) return H.toast('팀을 하나 이상 골라주세요');
@@ -239,6 +344,23 @@ H.FORM.job = async v => {
     balance_amount:H.nnum(v.get('balance_amount')), status:v.get('status'), admin_memo:H.nn(v.get('admin_memo')), contract_mode:H.nn(v.get('contract_mode')), live_title:H.nn(v.get('live_title')) };
   const id = v.get('id'); const old = id ? J(id) : null;
   if (['open','full'].includes(row.status) && H.autoLive() && !(old && old.live_code)) { row.live_code = H.rnd(8); row.live_close_days = +((H.setting('live')||{}).close_days) || 7; }
+  const f = document.querySelector('#sheet form');
+  const rx = !id && f ? repRead(f) : null;
+  if (rx && rx.mode !== 'once') {
+    const ds = repDates(rx.rule, parse(rx.first), rx.end, rx.first); if (!ds.length) return H.toast('반복 날짜가 0건이에요 · 요일·기간 확인');
+    const sid = H.rnd(10), rule = Object.assign({anchor: rx.first}, rx.rule);
+    const rows = ds.map(d => { const x = Object.assign({}, row, {job_date:d, series_id:sid, series_rule:rule});
+      if (x.live_code) x.live_code = H.rnd(8); return x; });
+    const ins = await sb.from('jobs').insert(rows).select();
+    if (ins.error) { if (/series/.test(ins.error.message||'')) return H.toast('HQ 업데이트(v3)를 먼저 실행해 주세요 · 홈 맨 위'); throw ins.error; }
+    H.close(); H.copy(`[${H.C.BRAND}] 정기 일정이 올라왔어요\n${row.title} · ${repRuleTxt(rule)} ${row.start_time?row.start_time.slice(0,5):''}\n${md(ds[0])}부터 ${ds.length}회 · 일정판에서 신청해주세요`, `${ds.length}건 올렸어요 · 카톡 알림 문구 복사됨`);
+    return H.refresh();
+  }
+  if (id && old && old.series_id && v.get('scope') === 'after') {
+    const common = {}; SERIES_COPY.forEach(k => { if (k in row) common[k] = row[k]; });
+    const u = await sb.from('jobs').update(common).eq('series_id', old.series_id).gte('job_date', old.job_date);
+    if (u.error) throw u.error;
+  }
   const r = id ? await sb.from('jobs').update(row).eq('id', +id).select().single() : await sb.from('jobs').insert(row).select().single();
   if (r.error) throw r.error; H.close();
   if (!id && row.status !== 'quote') H.copy(jobMsg(r.data), '올렸어요 · 카톡 알림 문구가 복사됐어요'); else H.toast('저장했어요');

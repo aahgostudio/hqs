@@ -30,6 +30,8 @@ H.view('home', {label:'홈',
     const unpaidCollect = jobs.filter(j=>j.job_date<=today && j.collector_id && j.balance_amount && !j.collected_at);
     const puOld = (S.puWait||[]).filter(p => (Date.now() - new Date(p.pu_date)) / 864e5 > 7);
     const newRep = (S.reports||[]).filter(r=>!r.checked_at).length;
+    const serLast = {}; S.jobs.forEach(j => { if (j.series_id && (!serLast[j.series_id] || j.job_date > serLast[j.series_id])) serLast[j.series_id] = j.job_date; });
+    const repEnding = Object.values(serLast).filter(d => d >= today && d <= H.ymd(H.addDays(T,14)));
 
     const alerts = [
       short.length && ['warn', `인원 미달 ${short.length}건 (7일 안)`, 'sched'],
@@ -41,7 +43,8 @@ H.view('home', {label:'홈',
       noPhoto.length && ['wait', `사진 못 받은 현장 ${noPhoto.length}곳 (14일)`, 'promo'],
       needRcpt && ['warn', `현금영수증 발행 필요 ${needRcpt}건 (이번 달)`, S.owner?'money':'ops/money'],
       puOld.length && ['warn', `외주 세금계산서 요청 7일 넘음 ${puOld.length}건`, 'ops/buy'],
-      unpaidCollect.length && ['wait', `현장 잔금 미수 ${unpaidCollect.length}건`, 'ops/money']
+      unpaidCollect.length && ['wait', `현장 잔금 미수 ${unpaidCollect.length}건`, 'ops/money'],
+      repEnding.length && ['wait', `정기 일정 2주 안에 끝남 ${repEnding.length}곳 (연장하기)`, 'sched']
     ].filter(Boolean);
 
     // 부동산
@@ -93,7 +96,7 @@ H.view('home', {label:'홈',
       .sort((a,b)=>(a.t||'').localeCompare(b.t||''));
 
     return `
-    ${S.needV3 && S.isOwner ? `<section class="box"><div class="banner warn v3bar"><b>업데이트 1개 (v3)</b> 프로필 사진 · 문나원 퇴사 정리 — SQL 한 번만 실행해 주세요<span style="margin-left:auto;display:flex;gap:6px"><button class="btn sm" data-a="copyV3">SQL 복사</button><a class="btn sm ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></span></div></section>` : ''}
+    ${S.needV3 && S.isOwner ? `<section class="box"><div class="banner warn v3bar"><b>업데이트 1개 (v3)</b> 프로필 사진 · 정기 반복 일정 · 문나원 퇴사 정리 — SQL 한 번만 실행해 주세요<span style="margin-left:auto;display:flex;gap:6px"><button class="btn sm" data-a="copyV3">SQL 복사</button><a class="btn sm ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></span></div></section>` : ''}
     ${H.teamStrip ? H.teamStrip() : ''}
     ${alerts.length?`<section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">누르면 해당 화면으로 가요</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${alerts.map(([c,t,go])=>`<a class="banner ${c==='warn'?'warn':'info'}" href="#${go}" style="text-decoration:none;padding:8px 12px">${esc(t)} →</a>`).join('')}</div></section>`:''}
