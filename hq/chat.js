@@ -102,15 +102,25 @@ function paint(keep){
   const L = document.getElementById('chList'), R = document.getElementById('chRoom'); if (!L || !R) return;
   L.innerHTML = listHtml(); bindDnd(L);
   const box0 = document.getElementById('chMsgs'), atB = !box0 || box0.scrollHeight - box0.scrollTop - box0.clientHeight < 80, top = box0 ? box0.scrollTop : 0;
-  const t0 = document.getElementById('chT'), v = t0 ? t0.value : '';
-  R.innerHTML = roomHtml();
+  // 입력칸은 그대로 두고 나머지만 다시 그림 (폰에서 글 쓰는 중에 키보드가 닫히지 않게)
+  const oldIn = R.querySelector('.ch-in'), same = oldIn && R.dataset.room === String(C.cur);
+  const tmp = document.createElement('div'); tmp.innerHTML = roomHtml();
+  const newIn = tmp.querySelector('.ch-in');
+  if (same && newIn && oldIn.querySelector('#chT') && newIn.querySelector('#chT')) newIn.replaceWith(oldIn);
+  R.replaceChildren(...tmp.childNodes); R.dataset.room = String(C.cur);
   const box = document.getElementById('chMsgs'); if (box) box.scrollTop = keep && !atB ? top : box.scrollHeight;
   const t = document.getElementById('chT');
-  if (t) { t.value = v; t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); H.ACT.chSend(); } }; }
+  if (t && !t._bound) { t._bound = true;
+    // PC: Enter 전송 · Shift+Enter 줄바꿈 / 폰: Enter는 줄바꿈, [보내기] 버튼으로만 전송
+    t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); H.ACT.chSend(); } };
+    t.oninput = () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; };
+    if (!matchMedia('(pointer:fine)').matches) t.placeholder = (OWN() ? '대표' : '관리자') + '로 보내기'; }
   const q = L.querySelector('[data-chq]'); if (q) q.oninput = () => { C.q = q.value; const pos = q.selectionStart; L.innerHTML = listHtml(); const q2 = L.querySelector('[data-chq]'); q2.focus(); q2.setSelectionRange(pos,pos); q2.oninput = q.oninput; };
   const f = R.querySelector('[data-chfile]'); if (f) f.onchange = e => { const x = e.target.files[0]; if (x) sendPhoto(x); };
   const tg = document.getElementById('chOnTg'); if (tg) tg.checked = !!(C.home && C.home.on);
 }
+
+document.addEventListener('touchstart', e => { const b = e.target.closest('[data-a="chSend"]'); if (b && document.activeElement && document.activeElement.id === 'chT') { e.preventDefault(); H.ACT.chSend(); } }, {passive:false});   // 폰: [보내기] 눌러도 키보드 유지
 
 async function openRoom(id){
   const rr = C.home && C.home.rooms.find(x => x.id === id); if (!OWN() && rr && !(rr.mgr && !rr.closed && rr.live)) { C.cur = null; C.room = null; return paint(); }
@@ -164,7 +174,7 @@ H.ACT.chPurge = async el => { const r = C.home.rooms.find(x => x.id === +el.data
 H.ACT.chClosed = () => { C.showClosed = !C.showClosed; paint(true); };
 H.ACT.chSend = async () => {
   const t = document.getElementById('chT'); const v = (t && t.value || '').trim(); if (!v || !C.cur) return;
-  t.value = ''; try { await rpc('chat_admin_send', {p_room: C.cur, p_body: v, p_photo: null}); await tick(); } catch(e){ t.value = v; H.fail(e); }
+  t.value = ''; t.style.height = ''; t.focus(); try { await rpc('chat_admin_send', {p_room: C.cur, p_body: v, p_photo: null}); await tick(); } catch(e){ t.value = v; H.fail(e); }
 };
 H.ACT.chOn = async el => {
   const on = el.checked;

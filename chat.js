@@ -160,18 +160,26 @@
         <div class="epc-line">${body}<span class="epc-meta">${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}<span>${tm(m.at)}</span></span></div></div></div>`;
     });
     const n = (room.room.members || []).length + 1;
+    const oldIn = w.querySelector('.epc-in'), edKey = editing ? String(editing.id) : '';
+    const keepIn = oldIn && w.dataset.room === String(room.room.id) && w.dataset.ed === edKey;   // 글 쓰는 중엔 입력칸 유지 (키보드 안 닫히게)
     w.innerHTML = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
       <div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
       ${editing ? `<div class="epc-edit"><span>✏️ 메시지 수정 중</span><button data-epccancel="1">취소</button></div>` : ''}
       <div class="epc-in"><button class="epc-ph" data-photo="1" aria-label="사진">📷</button><input type="file" accept="image/*" hidden id="epc-file">
-        <textarea id="epc-t" rows="1" placeholder="메시지 입력" enterkeyhint="send"></textarea><button class="epc-send" data-send="1" aria-label="보내기">↑</button></div>`;
+        <textarea id="epc-t" rows="1" placeholder="메시지 입력" enterkeyhint="enter"></textarea><button class="epc-send" data-send="1" aria-label="보내기">↑</button></div>`;
+    if (keepIn) w.querySelector('.epc-in').replaceWith(oldIn);
+    w.dataset.room = String(room.room.id); w.dataset.ed = edKey;
     const box = w.querySelector('.epc-msgs');
     box.scrollTop = keepScroll && !atBottom ? prevTop : box.scrollHeight;
     const t = w.querySelector('#epc-t');
+    if (keepIn) { bindBox(box); return; }
     if (editing) { t.value = editing.body || ''; t.focus(); }
     t.addEventListener('input', () => { t.style.height = 'auto'; t.style.height = Math.min(120, t.scrollHeight) + 'px'; });
     t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); send(); } });
     w.querySelector('#epc-file').onchange = e => { const f = e.target.files[0]; if (f) sendPhoto(f); e.target.value = ''; };
+    bindBox(box);
+  }
+  function bindBox(box){
     let pressT; box.addEventListener('pointerdown', e => { const b = e.target.closest('[data-own]'); if (!b) return; pressT = setTimeout(() => menu(+b.dataset.own), 450); });
     ['pointerup','pointerleave','pointercancel'].forEach(ev => box.addEventListener(ev, () => clearTimeout(pressT)));
     box.addEventListener('contextmenu', e => { const b = e.target.closest('[data-own]'); if (b) { e.preventDefault(); menu(+b.dataset.own); } });
@@ -273,7 +281,9 @@
   }
 
   window.EPChat = {
-    init(o){ opt = Object.assign(opt, o || {}); css(); if (!opt.token && !opt.demo) return;
+    init(o){ opt = Object.assign(opt, o || {}); css();
+      document.addEventListener('mousedown', e => { if (e.target.closest('.epc-send')) e.preventDefault(); });   // [↑] 눌러도 키보드 유지
+      document.addEventListener('touchstart', e => { const b = e.target.closest('.epc-send'); if (b && document.activeElement && document.activeElement.id === 'epc-t') { e.preventDefault(); b.click(); } }, {passive:false}); if (!opt.token && !opt.demo) return;
       loadHome().then(() => { const q = new URLSearchParams(location.search).get('chat'); if (q && home && home.on) open(/^\d+$/.test(q) ? +q : null); });
       clearInterval(homeT); homeT = setInterval(() => { if (!document.hidden && view !== 'room') loadHome(); }, 25000);
       document.addEventListener('visibilitychange', () => { if (!document.hidden) { view === 'room' ? refreshRoom() : loadHome(); } });
