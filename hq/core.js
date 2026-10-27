@@ -46,7 +46,9 @@ H.GROUPS = [
   {key:'AGO', label:'아고스튜디오', teams:['AGO']}
 ];
 H.ST = {active:'근무', leave:'휴직', left:'퇴사'};
-H.stPill = s => s === 'leave' ? '<span class="pill p-leave">휴직</span>' : s === 'left' ? '<span class="pill p-mute">퇴사</span>' : '<span class="pill p-ok">근무</span>';
+H.ST_PRT = {active:'근무', leave:'휴업', left:'계약종료'};   // 도급(파트너)은 휴업·계약종료로 표기
+H.STL = s => (s && s.team === 'PRT') ? H.ST_PRT : H.ST;
+H.stPill = (s, team) => { const L = team === 'PRT' ? H.ST_PRT : H.ST; return s === 'leave' ? `<span class="pill p-leave">${L.leave}</span>` : s === 'left' ? `<span class="pill p-mute">${L.left}</span>` : '<span class="pill p-ok">근무</span>'; };
 H.PT = {none:'공제 없음', freelance33:'3.3%', daily:'일용직', salary:'급여', contract:'도급'};
 H.PROOF = ['세금계산서','현금영수증','카드','플랫폼','없음'];
 H.HOW = ['계좌이체','카드','현금','플랫폼'];

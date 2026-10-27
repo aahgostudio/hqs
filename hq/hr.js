@@ -43,7 +43,7 @@ H.ACT.stCard = async el => {
   H.open(`<form class="hr" data-f="stHr"><input type="hidden" name="id" value="${s.id}">
     <div class="hr-top">${H.av(s, 64, s.team==='RES'?'':'cl')}<div style="min-width:0"><h3 style="margin:0">${esc(s.name)} <span class="note" style="font-size:14px">${esc(s.role||'')}</span></h3>
       <div class="hr-tags"><span class="tag" style="background:${H.T(s.team).color}">${s.team}</span><span>${esc(H.T(s.team).name)}</span><span class="pill ${s.status==='active'?'p-info':'p-mute'}">${H.ST[s.status]}</span>${hr.level?`<span class="pill p-mute">Lv. ${esc(hr.level)}</span>`:''}</div>
-      <div class="note">${s.joined_on?`입사 ${s.joined_on} · ${days}일째`:'입사일 미입력'}${leftOn?` · ${leftOn} 퇴사`:''} · 마지막 접속 ${s.last_seen_at?H.ago(s.last_seen_at):'-'}</div></div></div>
+      <div class="note">${s.joined_on?`입사 ${s.joined_on} · ${days}일째`:'입사일 미입력'}${leftOn?` · ${leftOn} ${H.STL(s).left}`:''} · 마지막 접속 ${s.last_seen_at?H.ago(s.last_seen_at):'-'}</div></div></div>
     <div class="hr-acts">${s.phone?`<a class="btn sm ghost" href="tel:${tel(s.phone)}">📞 ${esc(s.phone)}</a><a class="btn sm ghost" href="sms:${tel(s.phone)}">💬 문자</a>`:''}
       ${own?`<button type="button" class="btn sm ghost" data-a="hrChat" data-s="${s.id}">🗨 1:1 대화</button>`:''}
       ${s.status!=='left'?`<button type="button" class="btn sm ghost" data-a="stLink" data-s="${s.id}">🔗 링크 복사</button>`:''}

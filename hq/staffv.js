@@ -26,11 +26,11 @@ H.view('staff', {label:'직원',
     const S = H.S; const mStaff = (S.mm && S.mm.admin && S.mm.admin.staff) || [];
     const rate = id => { const r = (S.payRules||[]).find(p=>p.staff_id===id); return r && r.share_rate != null ? r.share_rate : ''; };
     const b = S.boss || {state:'근무중'};
-    const leftOn = s => { const d = leftMap()[s.id]; return d ? ` <span class="note">${d.slice(5).replace('-','/')} 퇴사</span>` : ''; };
+    const leftOn = s => { const d = leftMap()[s.id]; return d ? ` <span class="note">${d.slice(5).replace('-','/')} ${H.STL(s).left}</span>` : ''; };
     const row = s => { const m = mStaff.find(x=>x.name===s.name); const mis = s.team==='RES' && m && M2S[m.status||'재직'] !== s.status;
-      return `<tr><td><span data-a="stCard" data-s="${s.id}" style="cursor:pointer">${H.av(s, 26, s.team==='RES'?'':'cl')}</span> <button class="st-name" data-a="stCard" data-s="${s.id}" title="인사카드 열기"><b>${esc(s.name)}</b></button> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?' <span class="pill p-leave">휴직</span>':''}${s.status==='left'?leftOn(s):''}</td>
+      return `<tr><td><span data-a="stCard" data-s="${s.id}" style="cursor:pointer">${H.av(s, 26, s.team==='RES'?'':'cl')}</span> <button class="st-name" data-a="stCard" data-s="${s.id}" title="인사카드 열기"><b>${esc(s.name)}</b></button> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?` <span class="pill p-leave">${H.STL(s).leave}</span>`:''}${s.status==='left'?leftOn(s):''}</td>
         <td><span class="tag" style="background:${H.T(s.team).color}">${s.team}</span></td>
-        <td><select class="in sm" style="width:auto" data-c="stStatus" data-s="${s.id}">${Object.entries(H.ST).map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select>
+        <td><select class="in sm" style="width:auto" data-c="stStatus" data-s="${s.id}">${Object.entries(H.STL(s)).map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select>
           ${mis?`<div class="note" style="color:var(--warn)">매물노트는 '${esc(m.status)}' <button class="btn sm ghost" style="padding:0 6px" data-a="stSync" data-s="${s.id}">맞추기</button></div>`:''}</td>
         <td class="note">${H.PT[s.pay_type]||''}${S.owner&&s.team==='RES'?` · 배분 ${rate(s.id)!==''?rate(s.id)+'%':'미정'}`:''}</td>
         <td class="note">${esc(s.phone||'')}</td>
@@ -45,7 +45,7 @@ H.view('staff', {label:'직원',
       <div class="tbl"><table><thead><tr><th>이름</th><th>팀</th><th>상태</th><th>지급 방식</th><th>연락처</th><th>마지막 접속</th><th></th></tr></thead><tbody>
       <tr class="boss"><td><b>권성환</b> <span class="note">대표</span></td><td><span class="tag" style="background:var(--navy)">HQ</span></td><td>${H.bossChip()}</td><td colspan="4" class="note">대표 상태는 직원 화면 맨 위에 보여요</td></tr>
       ${groups}</tbody></table></div>
-      <p class="note">휴직은 링크가 그대로 열려요. 퇴사로 바꾸면 일정판 링크가 바로 막혀요${S.owner?' · 부동산 직원은 매물노트 상태도 같이 바뀌어요':''}. 개인 링크는 카톡 1:1로만 보내 주세요. 퇴사자는 ${HIDE_DAYS}일 뒤 목록에서 숨겨져요.${hidden.length?` <button class="btn sm ghost" data-a="stOldLeft">${S.showOldLeft?'지난 퇴사자 숨기기':`지난 퇴사자 ${hidden.length}명 보기`}</button>`:''}</p></section>`;
+      <p class="note">휴직(도급은 휴업)은 링크가 그대로 열려요. 퇴사(도급은 계약종료)로 바꾸면 일정판 링크가 바로 막혀요${S.owner?' · 부동산 직원은 매물노트 상태도 같이 바뀌어요':''}. 개인 링크는 카톡 1:1로만 보내 주세요. 퇴사자는 ${HIDE_DAYS}일 뒤 목록에서 숨겨져요.${hidden.length?` <button class="btn sm ghost" data-a="stOldLeft">${S.showOldLeft?'지난 퇴사자 숨기기':`지난 퇴사자 ${hidden.length}명 보기`}</button>`:''}</p></section>`;
   }
 });
 H.CHANGE.stStatus = async el => { const s = H.S.staff.find(x=>x.id===el.dataset.s); const v = el.value;
@@ -73,7 +73,7 @@ function staffSheet(s){
     <div class="field"><label>연락처</label><input name="phone" value="${esc(s.phone||'')}"></div>
     <div class="field full"><label>파트너 지역 · 분야 (도급)</label><input name="partner_area" value="${esc(s.partner_area||'')}"></div>
     <div class="field"><label>지급 방식</label><select name="pay_type">${Object.entries(H.PT).map(([v,l])=>`<option value="${v}" ${s.pay_type===v?'selected':''}>${l}</option>`).join('')}</select><div class="hint">세금 방식은 세무사 확인 후 정해 주세요</div></div>
-    <div class="field"><label>상태</label><select name="status">${[['active','근무'],['leave','휴직 (링크 유지)'],['left','퇴사 (링크 막힘)']].map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="field"><label>상태</label><select name="status">${[['active','근무'],['leave',H.STL(s).leave+' (링크 유지)'],['left',H.STL(s).left+' (링크 막힘)']].map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="field"><label>입사 · 계약일</label><input type="date" name="joined_on" value="${s.joined_on||''}"></div>
     <div class="field"><label>&nbsp;</label><label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink)"><input type="checkbox" name="can_collect" ${s.can_collect?'checked':''} style="width:auto">수금 담당 가능</label></div>
     ${!s.id && S.owner && S.mcode ? `<div class="field full"><label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink)"><input type="checkbox" name="mm" style="width:auto">부동산 직원이면 매물노트 파일·링크도 같이 만들기</label></div>` : ''}

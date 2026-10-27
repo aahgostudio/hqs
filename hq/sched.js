@@ -382,7 +382,7 @@ H.ACT.assign = el => { const j = J(el.dataset.j), S = H.S;
   const cand = S.staff.filter(s => s.status !== 'left' && j.teams.includes(s.team) && !j.assignments.some(a => a.staff_id === s.id && a.status === 'approved')).sort((a,b)=>(ok.has(b.id)-ok.has(a.id))||(no.has(a.id)-no.has(b.id)));
   const others = S.staff.filter(s => s.status !== 'left' && !j.teams.includes(s.team) && s.team !== 'RES');
   H.open(`<form data-f="assign"><h3>직접 배정</h3><p class="note" style="margin:-6px 0 10px">${esc(j.title)} · ${md(j.job_date)} · '가능'으로 표시한 사람이 앞에 와요</p>
-    <div class="chips">${cand.map(s=>`<label><input type="checkbox" name="s" value="${s.id}"><span>${esc(s.name)}${s.status==='leave'?' (휴직)':''}${tag(s)}</span></label>`).join('') || '<span class="note">팀 직원이 없어요</span>'}</div>
+    <div class="chips">${cand.map(s=>`<label><input type="checkbox" name="s" value="${s.id}"><span>${esc(s.name)}${s.status==='leave'?` (${H.STL(s).leave})`:''}${tag(s)}</span></label>`).join('') || '<span class="note">팀 직원이 없어요</span>'}</div>
     ${others.length?`<p class="note" style="margin:12px 0 6px">다른 팀에서 지원</p><div class="chips">${others.map(s=>`<label><input type="checkbox" name="s" value="${s.id}"><span>${s.team} ${esc(s.name)}${tag(s)}</span></label>`).join('')}</div>`:''}
     ${H.sacts('배정')}<input type="hidden" name="id" value="${j.id}"></form>`); };
 H.FORM.assign = async v => { const id = +v.get('id'); const ids = v.getAll('s'); if (!ids.length) return H.close();
