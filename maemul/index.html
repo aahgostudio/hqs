@@ -361,7 +361,7 @@ const DK={월세:'wolse',전세:'jeonse',매매:'maemae',단기:'dangi'};
 const S={view:'home',q:'',sort:'new',mineFilter:'진행',data:null,demo:false,open:null,edit:null,busy:false,toast:''};
 const hasGAS=!new URLSearchParams(location.search).has('demo');
 
-const API='https://script.google.com/macros/s/AKfycbxTXK4vWTm5ARCY-ElhQPtwd6xU-bMbnQPsd4MAl5TuLEKnW3Ie6qiAUpL_OyxCiOxqKQ/exec';
+const API='https://script.google.com/macros/s/AKfycbxZFsXwTIiiq7xd2iFbbAb5vgtS4lRbNuBp0XCrleCQZYAzr_1ja6VnZKhnvh6fkp-h/exec';
 const KEY=(()=>{let k=new URLSearchParams(location.search).get('k')||'';try{if(k)localStorage.setItem('ritz_k',k);else k=localStorage.getItem('ritz_k')||''}catch(e){}return k})();
 async function call(fn,...args){
   if(!hasGAS) return demoCall(fn,...args);
