@@ -15,6 +15,7 @@ H.view('money', {label:'돈', owner:true,
       H.q(sb.from('purchases').select('*').gte('pu_date', f).lte('pu_date', t)),
       H.q(sb.from('staff').select('*').order('created_at'))
     ]);
+    if (H.loadPays) await H.loadPays(f, t).catch(() => {});
     if (H.loadAccts) await H.loadAccts((staff||[]).filter(x => x.status !== 'left' && !x.hidden).map(x => x.id)).catch(() => {});
     Object.assign(H.S, {mJobs: jobs, mDeals: deals, mShares: shares, payRules: rules, mEx: ex, mPu: pu, staffAll: staff, staff: (staff||[]).filter(x => !x.hidden)});
   },
@@ -61,7 +62,7 @@ H.view('money', {label:'돈', owner:true,
         ${[['OPS','직영'],['SPT','지원'],['PRT','도급']].map(([tm,l])=>{ const rows = R.pay.filter(p=>p.s.team===tm); if (!rows.length) return '';
           return `<tr class="grp"><td colspan="7">${l}</td></tr>` + rows.map(p=>`<tr><td><button class="btn sm ghost" data-a="payDetail" data-s="${p.s.id}" style="font-weight:700">${esc(p.s.name)}</button></td>
             <td><select class="in sm" data-c="payType" data-s="${p.s.id}">${Object.entries(H.PT).map(([k,v])=>`<option value="${k}" ${p.s.pay_type===k?'selected':''}>${v}</option>`).join('')}</select></td>
-            <td class="num">${p.n}</td><td class="num">${won(p.gross)}${p.extra?`<div class="note">추가수당 ${won(p.extra)}</div>`:''}</td><td class="num">${p.s.pay_type==='salary'?'<span class="note">급여에서</span>':won(p.ded)}</td><td class="num"><b>${won(p.gross-p.ded)}</b>${H.acctHtml?H.acctHtml(p.s.id):''}</td>
+            <td class="num">${p.n}</td><td class="num">${won(p.gross)}${p.extra?`<div class="note">추가수당 ${won(p.extra)}</div>`:''}</td><td class="num">${p.s.pay_type==='salary'?'<span class="note">급여에서</span>':won(p.ded)}</td><td class="num"><b>${won(p.gross-p.ded)}</b>${H.payHtml?H.payHtml(p.s.id, p.gross-p.ded):''}${H.acctHtml?H.acctHtml(p.s.id):''}</td>
             <td>${p.paid?'<span class="pill p-ok">지급 완료</span>':`<button class="btn sm" data-a="payDone" data-s="${p.s.id}">지급 완료로</button>`}</td></tr>`).join(''); }).join('') || '<tr><td colspan="7" class="empty">이 달 지급액이 들어간 현장이 없어요</td></tr>'}
         ${R.pay.length?`<tr><td colspan="3"><b>합계</b></td><td class="num"><b>${won(R.labor)}</b></td><td class="num">${won(R.pay.reduce((n,p)=>n+p.ded,0))}</td><td class="num"><b>${won(R.labor-R.pay.reduce((n,p)=>n+p.ded,0))}</b></td><td></td></tr>`:''}
         </tbody></table></div>
@@ -73,7 +74,7 @@ H.view('money', {label:'돈', owner:true,
         <td><input class="in sm num" style="width:70px" type="number" min="0" max="100" data-c="shareRate" data-s="${r.s.id}" value="${r.rate??''}" placeholder="%"></td>
         <td class="num">${won(r.base)}</td><td class="num"><b>${won(r.inc)}</b></td>
         <td><select class="in sm" data-c="payType" data-s="${r.s.id}">${['freelance33','salary','none'].map(k=>`<option value="${k}" ${r.s.pay_type===k?'selected':''}>${H.PT[k]}</option>`).join('')}</select></td>
-        <td class="num">${r.s.pay_type==='salary'?'<span class="note">급여에서</span>':won(r.ded)}</td><td class="num"><b>${won(r.inc-r.ded)}</b>${H.acctHtml?H.acctHtml(r.s.id):''}</td>
+        <td class="num">${r.s.pay_type==='salary'?'<span class="note">급여에서</span>':won(r.ded)}</td><td class="num"><b>${won(r.inc-r.ded)}</b>${H.payHtml?H.payHtml(r.s.id, r.inc-r.ded):''}${H.acctHtml?H.acctHtml(r.s.id):''}</td>
         <td>${!r.n?'-':r.paid?'<span class="pill p-ok">지급 완료</span>':`<button class="btn sm" data-a="resPaid" data-s="${r.s.id}">지급 완료로</button>`}</td></tr>`).join('')}
       <tr class="boss"><td><b>대표 몫</b></td><td class="note">나머지</td><td class="num">${won(R.resRev)}</td><td class="num"><b>${won(R.resRev - R.shareTot)}</b></td><td colspan="4" class="note">사업 소득</td></tr>
       </tbody></table></div>

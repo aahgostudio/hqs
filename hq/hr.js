@@ -26,6 +26,7 @@ H.ACT.stCard = async el => {
     H.q(sb.from('availability').select('day, kind').eq('staff_id', s.id).gte('day', ym(new Date()) + '-01')).catch(() => []),
     isRes ? H.q(sb.from('events').select('ev_date, kind, title').eq('staff_id', s.id).order('ev_date', {ascending:false}).limit(200)).catch(() => []) : []
   ]);
+  if (H.S.owner && !H.S.needV9) setTimeout(() => H.hrPay(s.id).catch(H.fail), 0);
   const hr = hrMap()[s.id] || {}, own = H.S.owner, now = new Date(), thisM = ym(now), lastM = ym(new Date(now.getFullYear(), now.getMonth()-1, 1));
   const ok = (asg||[]).filter(a => a.status === 'approved' && a.jobs && a.jobs.status !== 'cancelled').sort((a,b) => String(b.jobs.job_date).localeCompare(a.jobs.job_date));
   const done = ok.filter(a => a.jobs.status === 'done');
@@ -65,11 +66,25 @@ H.ACT.stCard = async el => {
         <div class="hint">주민번호·계좌는 위 🔒 대표 전용 칸에 · 신분증 사진은 올리지 마세요</div></div>
       <div class="field full"><label>인사 메모 <small>(대표·관리자만 보여요)</small></label><textarea name="memo" rows="4" placeholder="면담 내용, 근태, 칭찬·주의 기록 등 — 날짜와 함께 적어두면 나중에 근거가 돼요">${esc(hr.memo||'')}</textarea></div>
     </div>
+    ${own && !H.S.needV9 ? `<div class="ptitle">💸 입금 기록 <span class="note">1:1 대화에 "7 넣었어요"라고 보내면 자동으로 쌓여요</span></div><div id="hrPay" data-s="${s.id}"><div class="spin"></div></div>` : ''}
     ${isRes ? `<div class="ptitle">최근 일정</div><div class="hr-jobs">${(evs||[]).slice(0,12).map(e => `<div><span>${String(e.ev_date).slice(5).replace('-','/')}</span><b>${esc(e.title||'')}</b><span class="note">${esc(e.kind||'')}</span></div>`).join('') || '<p class="note">아직 일정이 없어요</p>'}</div>` : `
     <div class="ptitle">최근 근무 ${ok.length ? `<span class="note">(${ok.length}건 중 최근 12건)</span>` : ''}</div>
     <div class="hr-jobs">${ok.slice(0,12).map(a => `<div><span>${String(a.jobs.job_date).slice(5).replace('-','/')}</span><b>${esc(a.jobs.title||'현장')}</b><span class="note">${a.jobs.status==='done'?'완료':'예정'}</span>${own?`<span class="num">${a.jobs.status==='done'?H.won(pay(a)):''}</span>`:''}</div>`).join('') || '<p class="note">아직 근무 기록이 없어요</p>'}</div>`}
     ${H.sacts('인사카드 저장')}</form>`, true);
 };
+H.hrPay = async sid => {
+  const box = document.getElementById('hrPay'); if (!box) return;
+  const rows = await H.q(sb.from('payouts').select('*').eq('staff_id', sid).order('paid_on', {ascending:false}).order('id', {ascending:false}).limit(60));
+  const live = rows.filter(r => !r.void), m = ym(new Date());
+  const sumM = live.filter(r => r.paid_on.startsWith(m)).reduce((a,r) => a + r.amount, 0), sumAll = live.reduce((a,r) => a + r.amount, 0);
+  box.innerHTML = `<div class="hr-pay-sum"><span>이번 달 <b>${H.won(sumM)}원</b></span><span>최근 60건 합계 ${H.won(sumAll)}원</span><button type="button" class="btn sm ghost" data-a="payAdd" data-s="${sid}">＋ 직접 추가</button></div>
+    <div class="hr-jobs">${rows.slice(0,15).map(r => `<div style="${r.void?'opacity:.45;text-decoration:line-through':''}"><span>${r.paid_on.slice(5).replace('-','/')}</span><b title="${esc(r.body||'')}">${esc(r.body||'직접 입력')}</b><span class="note">${r.source==='chat'?'대화':'직접'}</span><span class="num">${H.won(r.amount)} <button type="button" class="link" data-a="payVoid" data-id="${r.id}" data-s="${sid}" data-v="${r.void?0:1}">${r.void?'되살리기':'취소'}</button></span></div>`).join('') || '<p class="note">아직 입금 기록이 없어요</p>'}</div>`;
+};
+H.ACT.payAdd = async el => { const v = prompt('입금액 (만원 단위면 숫자만, 예: 7 → 7만원 / 75000원도 돼요)'); if (!v) return;
+  let n = +String(v).replace(/[^0-9.]/g,''); if (!n) return; if (n < 1000) n = Math.round(n * 10000);
+  const d = prompt('입금한 날짜', H.ymd(new Date())); if (!d) return;
+  await H.q(sb.from('payouts').insert({staff_id: el.dataset.s, amount: n, paid_on: d, source: 'manual', body: '직접 입력'})); H.toast('입금 기록을 넣었어요'); H.hrPay(el.dataset.s); };
+H.ACT.payVoid = async el => { await H.q(sb.from('payouts').update({void: el.dataset.v === '1'}).eq('id', +el.dataset.id)); H.hrPay(el.dataset.s); };
 H.ACT.hrChat = el => { if (H.chatGo) H.chatGo(el.dataset.s); };
 H.FORM.stHr = async (fd0, f) => {
   const fd = new FormData(f), id = fd.get('id'), m = {...hrMap()};

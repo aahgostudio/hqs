@@ -274,3 +274,5 @@ tr.boss td{background:#F5F7FF}
 .vgrid .link{border:0;background:none;color:var(--ink);font-size:11.5px;text-decoration:underline;cursor:pointer;margin-left:6px}
 .vact{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
 .acct{font-weight:400;white-space:nowrap;margin-top:2px}.acct .link{border:0;background:none;color:var(--ink);text-decoration:underline;cursor:pointer;font-size:11.5px;padding:0}
+.hr-pay-sum{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px;margin-bottom:4px}.hr-pay-sum button{margin-left:auto}
+.hr-jobs .link{border:0;background:none;color:var(--sub);text-decoration:underline;cursor:pointer;font-size:11px;padding:0;margin-left:4px}

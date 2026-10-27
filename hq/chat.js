@@ -53,7 +53,7 @@ function roomHtml(){
         <button class="btn sm ghost" data-a="chClose">${r.closed?'다시 열기':'방 닫기'}</button>` : '<span class="note">관리자로 참여 중</span>'}</div></div>
     <div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
     ${r.closed ? '<div class="ch-in note" style="justify-content:center">닫은 방이에요 · 직원 화면엔 안 보여요</div>' :
-    `<div class="ch-in"><label class="btn ghost sm" style="cursor:pointer">📷<input type="file" accept="image/*" hidden data-chfile="1"></label><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
+    `<div class="ch-in">${OWN() && R.kind==='dm' && !H.S.needV9 ? '<button class="btn ghost sm" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''}<label class="btn ghost sm" style="cursor:pointer">📷<input type="file" accept="image/*" hidden data-chfile="1"></label><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
 }
 
 function paint(keep){
@@ -129,6 +129,9 @@ H.ACT.chOn = async el => {
   await rpc('chat_admin_set', {p_on: on, p_beta: null}); await loadHome(); H.toast(on ? '직원에게 대화를 열었어요' : '직원 화면에서 대화를 닫았어요'); H.render();
 };
 H.ACT.chMgr = async () => { const r = C.home.rooms.find(x => x.id === C.cur); await rpc('chat_admin_room_flag', {p_id: C.cur, p_closed: null, p_keep: null, p_mgr: !r.mgr}); await loadHome(); paint(true); H.toast(r.mgr ? '관리자 화면에서 이 방을 뺐어요' : '관리자도 이 방에 참여해요'); };
+H.ACT.chPay = async () => { const R = C.room.room, nm = (R.members||[])[0] ? (R.members[0].name.length >= 3 ? R.members[0].name.slice(1) : R.members[0].name) : '';
+  const v = prompt(`${nm}님께 입금 알림 (만원 단위 숫자, 예: 7)`); if (!v) return; const n = String(v).trim();
+  await rpc('chat_admin_send', {p_room: C.cur, p_body: `${nm}님 ${n} 넣었어요\n고맙습니다`, p_photo: null}); await tick(); H.toast('입금 알림을 보내고 기록했어요'); };
 H.ACT.chKeep = async () => { const r = C.home.rooms.find(x => x.id === C.cur); await rpc('chat_admin_room_flag', {p_id: C.cur, p_closed: null, p_keep: !r.keep}); await loadHome(); paint(true); H.toast(r.keep ? '보관 고정을 풀었어요' : '보관 고정 · 기간이 지나도 정리하지 않아요'); };
 H.ACT.chClose = async () => { const r = C.home.rooms.find(x => x.id === C.cur);
   if (!r.closed && !confirm(`'${r.title}' 방을 닫을까요?\n직원 목록에서 사라지고, 대화 기록은 보관함에 남아요.`)) return;

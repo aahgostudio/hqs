@@ -40,6 +40,12 @@ H.ACT.vSave = async el => {
 // 돈 화면용: 직원별 지급 계좌 (가려서 표시 + 복사)
 H.loadAccts = async ids => { H.S.accts = H.S.accts || {}; if (!H.S.owner || H.S.needV8) return;
   await Promise.all(ids.map(async id => { const {data} = await sb.rpc('vault_get', {p_staff: id}); H.S.accts[id] = data || {}; })); };
+H.loadPays = async (f, t) => { H.S.pays = {}; if (!H.S.owner || H.S.needV9) return;
+  const rows = await H.q(sb.from('payouts').select('staff_id, amount').eq('void', false).gte('paid_on', f).lte('paid_on', t));
+  rows.forEach(r => H.S.pays[r.staff_id] = (H.S.pays[r.staff_id]||0) + r.amount); };
+H.payHtml = (sid, due) => { if (!H.S.owner || H.S.needV9) return ''; const p = (H.S.pays||{})[sid] || 0; if (!p && !due) return '';
+  const diff = p - (due||0), col = !due ? '' : diff === 0 ? 'color:#15803D' : 'color:#B45309';
+  return `<div class="note acct" style="${col}">입금 확인 ${H.won(p)}${due && diff ? ` (${diff > 0 ? '+' : ''}${H.won(diff)})` : due ? ' ✓' : ''}</div>`; };
 H.acctHtml = sid => { const a = (H.S.accts||{})[sid]; if (!a || !a.acct) return H.S.owner && !H.S.needV8 ? `<div class="note acct">계좌 미입력</div>` : '';
   return `<div class="note acct">${esc(a.bank||'')} •••• ${esc(String(a.acct).slice(-4))} <button type="button" class="link" data-a="acctCopy" data-s="${sid}">복사</button></div>`; };
 H.ACT.acctCopy = el => { const a = (H.S.accts||{})[el.dataset.s] || {}; H.copy([a.bank, a.acct, a.holder].filter(Boolean).join(' '), '계좌를 복사했어요 · 은행 앱에 붙여넣으세요'); };
