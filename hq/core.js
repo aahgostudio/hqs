@@ -179,7 +179,7 @@ H.render = async () => {
 };
 // 데이터가 바뀌었을 때 다시 그리기
 H.ACT.modeSwap = () => { try { if (H.S.owner) localStorage.setItem('hq_preview_mgr','1'); else localStorage.removeItem('hq_preview_mgr'); } catch(e){}
-  location.href = location.pathname + (location.hash || ''); };
+  const u = new URL(location.href); u.searchParams.delete('mode'); history.replaceState(null, '', u.pathname + u.search + u.hash); location.reload(); };
 H.refresh = async () => { H._dirty = Date.now(); await H.loadBossStatus(); await H.render(); };
 
 /* ---------- 시트 ---------- */
