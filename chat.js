@@ -161,7 +161,7 @@
       const prev = msgs[i-1], cont = prev && prev.who === m.who && dayKey(prev.at) === dayKey(m.at) && (new Date(m.at) - new Date(prev.at)) < 180000;
       const u = unreadMap[m.id] || 0;
       const body = m.deleted ? `<div class="epc-b del">삭제된 메시지예요</div>`
-        : `<div class="epc-b" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `${isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
+        : `<div class="epc-b" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
       out += `<div class="epc-m ${m.mine ? 'mine' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
         <div class="epc-col">${!m.mine && !cont ? `<span class="epc-nm">${esc(m.name)}</span>` : ''}
         <div class="epc-line">${body}<span class="epc-meta">${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}<span>${tm(m.at)}</span></span></div></div></div>`;
@@ -186,6 +186,7 @@
     const t = w.querySelector('#epc-t');
     if (keepIn) { bindBox(box); return; }
     // 입력줄: 카카오워크식 · @멘션 · 이모지 (PC는 Enter 전송, 폰은 [↑])
+    K().drop(w, fs => { if (view === 'room' && room) (async () => { for (const f of fs) await sendPhoto(f); })(); });   // PC: 끌어다 놓기 · 붙여넣기
     K().attach(w.querySelector('.kit-bar'), {members: memList, onSend: send,
       onMedia: k => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); }, k === 'album' ? 'alb' : null)});
     if (editing) { t.value = editing.body || ''; K().sync(t); t.focus(); }
@@ -294,7 +295,13 @@
   }
   
   async function sendPhoto(f){
-    const vid = /^video\//.test(f.type || '') || /\.(mov|mp4|m4v|webm|3gp)$/i.test(f.name || '');
+    const kd = K().kind(f); if (!kd) return alert('사진·동영상·문서(PDF·한글·엑셀·워드·PPT·ZIP)만 보낼 수 있어요');
+    if (kd === 'doc') { if (f.size > 50 * 1024 * 1024) return alert('파일은 50MB까지 보낼 수 있어요'); if (opt.demo) return;
+      try { const key = await rpc('staff_avatar_slot', {p_token: opt.token}); const path = `${key}/${room.room.id}/${Date.now()}.${(f.name.split('.').pop() || 'bin').toLowerCase()}`;
+        const r = await fetch(`${URL_}/storage/v1/object/chat/${path}`, {method:'POST', headers:Object.assign({'content-type': f.type || K().docMime(f.name)}, H), body: f}); if (!r.ok) throw 0;
+        await rpc('chat_send', {p_token: opt.token, p_room: room.room.id, p_body: f.name, p_photo: path}); await refreshRoom();
+      } catch(_) { alert('파일을 올리지 못했어요. 잠시 뒤 다시 해주세요.'); } return; }
+    const vid = kd === 'vid';
     if (vid && f.size > 50 * 1024 * 1024) return alert('동영상은 50MB까지 올릴 수 있어요.\n(약 30초~1분) 길면 잘라서 보내주세요.');
     if (!vid && f.size > 15 * 1024 * 1024) return alert('15MB 이하 사진만 올릴 수 있어요');
     if (opt.demo) { msgs.push({id: Date.now(), who:'me', name: home.me.name, mine:true, photo:null, body:'📷 (미리보기: 사진은 저장되지 않아요)', at:new Date().toISOString()}); return drawRoom(); }

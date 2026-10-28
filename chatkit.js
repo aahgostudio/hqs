@@ -50,6 +50,10 @@
 .kit-view .vb{flex:1;min-height:0;display:grid;place-items:center;padding:8px}
 .kit-view img{max-width:100%;max-height:100%;object-fit:contain;-webkit-touch-callout:default}
 .kit-view p{margin:0;text-align:center;font-size:12.5px;opacity:.7;padding:8px 16px calc(14px + env(safe-area-inset-bottom))}
+.kit-file{display:flex;align-items:center;gap:12px;min-width:220px;max-width:300px;text-decoration:none;color:inherit;padding:2px}
+.kit-file i{font-style:normal;flex:none;width:46px;height:46px;border-radius:12px;background:#E8EEF9;color:#2F6FEB;display:grid;place-items:center;font-size:12px;font-weight:900;text-transform:uppercase}
+.kit-file b{display:block;font-size:14px;word-break:break-all;line-height:1.35}.kit-file small{opacity:.65;font-size:12px}
+.kit-drop{position:absolute;inset:0;z-index:50;background:rgba(47,111,235,.12);border:3px dashed #2F6FEB;border-radius:12px;display:grid;place-items:center;font-size:18px;font-weight:800;color:#2F6FEB;pointer-events:none}
 .mine .kit-mn{color:inherit;text-decoration:underline;text-underline-offset:2px}`;
     document.head.appendChild(s);
   }
@@ -178,5 +182,23 @@
   const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const needBadgeOk = () => standalone() && 'Notification' in window && Notification.permission === 'default' && 'setAppBadge' in navigator;
   async function badgeOk(){ try { await Notification.requestPermission(); } catch(_){} }
-  window.EPKit = {badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
+  // 파일 종류: 사진·동영상 말고 문서도 대화로 (PDF·한글·엑셀·워드·PPT·ZIP·TXT)
+  const DOC = /\.(pdf|hwp|hwpx|xlsx?|docx?|pptx?|zip|txt|csv)$/i, VID = /\.(mov|mp4|m4v|webm|3gp)$/i, IMG = /\.(jpe?g|png|webp|heic|heif|gif)$/i;
+  const kind = f => { const n = f.name || '', t = f.type || ''; if (/^video\//.test(t) || VID.test(n)) return 'vid'; if (/^image\//.test(t) || IMG.test(n)) return 'img'; if (DOC.test(n)) return 'doc'; return null; };
+  const isDoc = p => DOC.test(p || '');
+  const docMime = n => ({pdf:'application/pdf', txt:'text/plain', csv:'text/csv', zip:'application/zip'})[(n.split('.').pop() || '').toLowerCase()] || 'application/octet-stream';
+  function docCard(url, name){ const ext = ((name || url).split('.').pop() || 'file').slice(0, 4);
+    return `<a class="kit-file" href="${esc(url)}?download=${encodeURIComponent(name || '')}" target="_blank" rel="noopener"><i>${esc(ext)}</i><span><b>${esc(name || '파일')}</b><small>눌러서 받기</small></span></a>`; }
+  // PC: 사진·파일을 대화방에 끌어다 놓거나 붙여넣기(Ctrl+V) → 바로 보내기
+  function drop(el, onFiles){
+    if (!el || el._kitDrop) return; el._kitDrop = true; let n = 0, ov = null;
+    const show = on => { if (on && !ov) { ov = document.createElement('div'); ov.className = 'kit-drop'; ov.textContent = '여기에 놓으면 바로 보내져요'; if (getComputedStyle(el).position === 'static') el.style.position = 'relative'; el.appendChild(ov); } if (!on && ov) { ov.remove(); ov = null; } };
+    const hasFiles = e => [...((e.dataTransfer && e.dataTransfer.types) || [])].includes('Files');
+    el.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); n++; show(true); });
+    el.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+    el.addEventListener('dragleave', () => { if (--n <= 0) { n = 0; show(false); } });
+    el.addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefault(); n = 0; show(false); const fs = [...e.dataTransfer.files]; if (fs.length) onFiles(fs); });
+    el.addEventListener('paste', e => { const fs = [...((e.clipboardData && e.clipboardData.files) || [])]; if (fs.length) { e.preventDefault(); onFiles(fs); } });
+  }
+  window.EPKit = {kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();

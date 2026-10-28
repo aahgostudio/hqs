@@ -66,7 +66,7 @@ function roomHtml(){
     const hist = (m.history||[]).length ? `<details class="ch-hist"><summary>${m.deleted?'삭제됨':'수정됨'} · 이력 ${(m.history||[]).length}</summary>${m.history.map(h => `<div>${dt(h.at)} ${h.act==='delete'?'삭제 전':'수정 전'}: ${esc(h.body||'')}${h.photo?' [사진]':''}</div>`).join('')}</details>` : '';
     out += `<div class="ch-m ${m.mine?'mine':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine?'':`<span class="ch-nm">${esc(m.name)}</span>`}
-      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?(isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
+      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
       <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}${sec && !m.mine && !m.deleted && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
@@ -136,6 +136,7 @@ function paint(keep){
     box.addEventListener('scroll', () => { box._nearB = box.scrollHeight - box.scrollTop - box.clientHeight < 120; });
     box.addEventListener('load', fix, true); box.addEventListener('loadedmetadata', fix, true); }
   // 입력줄: 카카오워크식 (PC는 Enter 전송 · 폰은 [↑]로 전송) · @멘션 · 이모지
+  K.drop(R, fs => (async () => { for (const f of fs) await sendPhoto(f); })());   // PC: 끌어다 놓기 · 붙여넣기
   K.attach(R.querySelector('.kit-bar'), {members: memList, onSend: () => H.ACT.chSend(),
     onMedia: k => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); }, k === 'album' ? 'alb' : null)});
   const q = L.querySelector('[data-chq]'); if (q) q.oninput = () => { C.q = q.value; const pos = q.selectionStart; L.innerHTML = listHtml(); const q2 = L.querySelector('[data-chq]'); q2.focus(); q2.setSelectionRange(pos,pos); q2.oninput = q.oninput; };
@@ -192,7 +193,13 @@ function pickMedia(onFiles, direct){
 }
 H.ACT.chMedia = () => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); });
 async function sendPhoto(f){
-  const vid = /^video\//.test(f.type || '') || isVid(f.name);
+  const kd = K.kind(f); if (!kd) return H.toast('사진·동영상·문서(PDF·한글·엑셀·워드·PPT·ZIP)만 보낼 수 있어요');
+  if (kd === 'doc') { if (f.size > 50*1024*1024) return H.toast('파일은 50MB까지 보낼 수 있어요');
+    try { const ext = (f.name.split('.').pop() || 'bin').toLowerCase(), path = `boss/${C.cur}/${Date.now()}.${ext}`; H.toast('파일 올리는 중…');
+      const {error} = await H.sb.storage.from('chat').upload(path, f, {contentType: f.type || K.docMime(f.name)}); if (error) throw error;
+      await rpc('chat_admin_send', {p_room: C.cur, p_body: f.name, p_photo: path}); await tick();
+    } catch(e){ H.fail(/mime|type/i.test(e.message || '') ? new Error('문서 보내기는 SQL 업데이트(v16)가 필요해요') : e); } return; }
+  const vid = kd === 'vid';
   if (vid && f.size > 50*1024*1024) return H.toast('동영상은 50MB(약 30초~1분)까지 올릴 수 있어요');
   if (!vid && f.size > 15*1024*1024) return H.toast('15MB 이하 사진만 올릴 수 있어요');
   try { const path = `boss/${C.cur}/${Date.now()}.${extOf(f)}`; if (vid) H.toast('동영상 올리는 중…');
