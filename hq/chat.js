@@ -36,7 +36,7 @@ const short = iso => { const d = new Date(iso), t = new Date(); return d.toDateS
 const OWN = () => !!H.S.owner;
 const rpc = async (fn, args) => { const {data, error} = await H.sb.rpc(fn, args || {}); if (error) throw error; return data; };
 
-async function loadHome(){ C.home = await rpc('chat_admin_home'); H.S.chatUnread = C.home.rooms.reduce((a,r) => a + (r.closed ? 0 : r.unread||0), 0); }
+async function loadHome(){ C.home = await rpc('chat_admin_home'); H.S.chatUnread = C.home.rooms.reduce((a,r) => a + (r.closed ? 0 : r.unread||0), 0); K.badge(H.S.chatUnread); }   // 홈 화면 아이콘 숫자
 
 function listHtml(){
   const rs = (C.home && C.home.rooms) || [], q = C.q.trim();
@@ -49,7 +49,7 @@ function listHtml(){
   const nClosed = rs.filter(r => r.closed).length;
   const due = !OWN() ? [] : rs.filter(r => r.kind === 'dm' && r.left_at && !r.keep && (Date.now() - new Date(r.left_at)) > 365*864e5);
   const dueHtml = due.map(r => `<div class="ch-due">⏳ <b>${esc(r.title)}</b> 퇴사 1년 지남 · 1:1 대화 ${r.count}건<span><button class="btn sm" data-a="chKeepId" data-id="${r.id}">장기 보관</button><button class="btn sm ghost" data-a="chPurge" data-id="${r.id}">정리</button></span></div>`).join('');
-  return `${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
+  return `${K.needBadgeOk() ? '<button class="ch-due" data-a="chBadgeOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>아이콘에 안 읽은 숫자 보이기</b> · 눌러서 [허용] 한 번</button>' : ''}${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
     ${C.showClosed ? `<div class="ch-sec">보관함 (닫은 방) <button class="link" data-a="chClosed">← 돌아가기</button></div>${vis.map(row).join('') || '<p class="note" style="padding:10px">닫은 방이 없어요</p>'}`
       : grp.map(([l, f]) => { const a = tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
         + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')}`;
@@ -286,6 +286,7 @@ H.ACT.chApp = () => { const u = location.origin + '/hq/?app=chat#chat', ios = /i
     <p class="note">직원은 각자 대화 화면 위 <b>[📲 앱으로]</b> 버튼으로 똑같이 만들 수 있어요</p>
     <div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button><button type="button" class="btn ghost" data-a="chAppCopy">주소 복사</button><a class="btn" href="${esc(u)}" style="text-decoration:none">앱 화면 열기</a></div>`); };
 H.ACT.chAppCopy = () => H.copy(location.origin + '/hq/?app=chat#chat', '주소를 복사했어요 · 사파리·크롬에 붙여넣으세요');
+H.ACT.chBadgeOk = async () => { await K.badgeOk(); await loadHome(); paint(true); };
 H.ACT.chOn = async el => {
   const on = el.checked;
   if (on && !confirm('직원 전원 화면에 [대화] 탭이 열려요. 열까요?')) { el.checked = false; return; }

@@ -173,5 +173,10 @@
   }
   document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[data-view]'); if (!a) return; e.preventDefault(); e.stopPropagation(); viewer(a.dataset.view, a.dataset.dl, a.dataset.name); }, true);
 
-  window.EPKit = {viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
+  // 홈 화면 아이콘 배지: 안 읽은 수 (아이폰은 '알림 허용'을 한 번 눌러야 보여요)
+  function badge(n){ try { if (!('setAppBadge' in navigator)) return; n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } catch(_){} }
+  const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const needBadgeOk = () => standalone() && 'Notification' in window && Notification.permission === 'default' && 'setAppBadge' in navigator;
+  async function badgeOk(){ try { await Notification.requestPermission(); } catch(_){} }
+  window.EPKit = {badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();

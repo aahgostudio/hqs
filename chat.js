@@ -147,6 +147,7 @@
         ${g(['dm']).length ? `<div class="epc-sec">1:1</div>${g(['dm']).map(row).join('')}` : ''}
         ${g(['all','team','custom']).length ? `<div class="epc-sec">함께하는 방</div>${gt(['all','team','custom']).map(row).join('')}` : ''}
         ${g(['site']).length ? `<div class="epc-sec">내 현장</div>${g(['site']).map(row).join('')}` : ''}
+        ${K().needBadgeOk() ? '<button class="epc-row" data-badgeok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>아이콘에 안 읽은 숫자 보이기</b><p>눌러서 [허용]을 한 번만 눌러주세요</p></span></button>' : ''}
         <p class="epc-note">🔒 내가 속한 방만 보여요.${g(['site']).length ? ' 현장방은 작업 완료 보고 7일 뒤 목록에서 빠져요.' : ''}<br>대화와 사진은 업무 기록으로 보관돼요.</p>
       </div>`;
   }
@@ -228,7 +229,7 @@
     else { try { home = await rpc('chat_home', {p_token: opt.token}); } catch(_) { home = home || {on:false}; }
       if (home && home.on && ICONS === null) { try { ICONS = await rpc('chat_icons', {}) || {}; } catch(_) { ICONS = {}; } } }
     const unread = home && home.on ? home.rooms.reduce((a, r) => a + (r.unread || 0), 0) : 0;
-    opt.onState({on: !!(home && home.on), unread});
+    opt.onState({on: !!(home && home.on), unread}); K().badge(unread);   // 홈 화면 아이콘 숫자
     if (view === 'list') drawList();
   }
   async function openRoom(id){
@@ -311,6 +312,7 @@
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.close) return close();
     if (b.dataset.appadd) return appGuide();
+    if (b.dataset.badgeok) return K().badgeOk().then(() => { drawList(); loadHome(); });
     if (b.dataset.list) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }
     if (b.dataset.room) return openRoom(+b.dataset.room);
     if (b.dataset.send) return send();
