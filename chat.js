@@ -174,7 +174,9 @@
     if (keepIn) {   // 입력칸은 그대로(움직이면 키보드 닫힘) · 위쪽 줄과 메시지만 바꿈
       const tmp = document.createElement('div'); tmp.innerHTML = html;
       w.querySelector('.epc-h').replaceWith(tmp.querySelector('.epc-h'));
-      w.querySelector('.epc-msgs').innerHTML = tmp.querySelector('.epc-msgs').innerHTML;
+      { const oM = w.querySelector('.epc-msgs'), nM = tmp.querySelector('.epc-msgs');   // 바뀐 줄만 교체 (사진 다시 불러오며 튀지 않게)
+        if (oM.innerHTML !== nM.innerHTML) { const pool = new Map(); [...oM.children].forEach(el => { const k = el.outerHTML; (pool.get(k) || pool.set(k, []).get(k)).push(el); });
+          oM.replaceChildren(...[...nM.children].map(el => { const a = pool.get(el.outerHTML); return a && a.length ? a.shift() : el; })); } }
     } else w.innerHTML = html;
     w.dataset.room = String(room.room.id); w.dataset.ed = edKey;
     const box = w.querySelector('.epc-msgs');

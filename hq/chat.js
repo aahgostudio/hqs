@@ -106,6 +106,15 @@ function bindDnd(L){
     paint(true); });
 }
 
+// 메시지 목록을 통째로 다시 그리지 않고 바뀐 줄만 교체 → 4초마다 사진이 다시 불러와지며 화면이 튀던 문제
+function morph(oM, nM){
+  if (oM.innerHTML === nM.innerHTML) return;
+  const pool = new Map(); [...oM.children].forEach(el => { const k = el.outerHTML; (pool.get(k) || pool.set(k, []).get(k)).push(el); });
+  const next = [...nM.children].map(el => { const a = pool.get(el.outerHTML); return a && a.length ? a.shift() : el; });
+  const atB = oM.scrollHeight - oM.scrollTop - oM.clientHeight < 80, fromB = oM.scrollHeight - oM.scrollTop;
+  oM.replaceChildren(...next);
+  if (atB) oM.scrollTop = oM.scrollHeight; else oM.scrollTop = oM.scrollHeight - fromB;
+}
 function paint(keep){
   const L = document.getElementById('chList'), R = document.getElementById('chRoom'); if (!L || !R) return;
   L.innerHTML = listHtml(); bindDnd(L);
@@ -118,7 +127,7 @@ function paint(keep){
   const oRh = R.querySelector('.ch-rh'), nRh = tmp.querySelector('.ch-rh'), oM = R.querySelector('#chMsgs'), nM = tmp.querySelector('#chMsgs');
   if (same && newIn && oldIn.querySelector('#chT') && newIn.querySelector('#chT') && oRh && nRh && oM && nM) {
     // 입력칸은 건드리지 않고(움직이기만 해도 키보드가 닫힘) 위쪽 줄과 메시지만 바꿈
-    if (oRh.classList.contains('open')) nRh.classList.add('open'); oRh.replaceWith(nRh); oM.innerHTML = nM.innerHTML;
+    if (oRh.classList.contains('open')) nRh.classList.add('open'); oRh.replaceWith(nRh); morph(oM, nM);
   } else { R.replaceChildren(...tmp.childNodes); }
   R.dataset.room = String(C.cur);
   const box = document.getElementById('chMsgs'); if (box) box.scrollTop = keep && !atB ? top : box.scrollHeight;
