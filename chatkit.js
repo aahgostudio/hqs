@@ -138,5 +138,16 @@
     const f = () => { R.setProperty('--kit-vvh', vv.height + 'px'); R.setProperty('--kit-vvt', vv.offsetTop + 'px'); };
     vv.addEventListener('resize', f); vv.addEventListener('scroll', f); f(); })();
 
+  // 새 버전 자동 반영: 서버 ver.txt가 이 화면 버전과 다르면 한 번 새로 불러옴 (글 쓰는 중이면 기다림)
+  (function(){ if (!window.EP_VER) return; const base = new URL('../ver.txt', document.currentScript ? document.currentScript.src : location.href).href;
+    const check = async () => { try {
+      const v = (await (await fetch(base + '?t=' + Date.now(), {cache: 'no-store'})).text()).trim();
+      if (!v || v === window.EP_VER) return;
+      const a = document.activeElement; if (a && /^(TEXTAREA|INPUT)$/.test(a.tagName) && a.value) return;
+      const key = 'ep_upd_' + v; if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1');
+      const u = new URL(location.href); u.searchParams.set('_v', v); location.replace(u.href);
+    } catch(_){} };
+    setTimeout(check, 1500); setInterval(check, 5 * 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); }); })();
+
   window.EPKit = {bar, attach, sync, text, day, READ, firstUnread, jump};
 })();
