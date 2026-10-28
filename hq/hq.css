@@ -342,3 +342,4 @@ body[data-tab=chat] .fab{display:none!important}
 /* 대화 입력줄·날짜 선 (chatkit.js) 색 맞춤 */
 .ch-room{--kit-card:var(--card);--kit-line:var(--line);--kit-mute:var(--sub);--kit-ink:var(--ink);--kit-soft:var(--soft);--kit-acc:#2F6FEB}
 .ch-msgs{background:#EEF1F5}
+.ch-sec{border:0;background:none;padding:2px 0 0;font-size:13px;cursor:pointer;opacity:.55}.ch-sec:hover{opacity:1}

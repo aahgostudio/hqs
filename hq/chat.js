@@ -58,7 +58,7 @@ function listHtml(){
 function roomHtml(){
   if (!C.room) return `<div class="ch-empty"><div style="font-size:40px">💬</div><b>왼쪽에서 방을 고르세요</b><p class="note">대화·사진은 3년 보관 · 직원이 수정·삭제해도 원문이 여기 남아요</p></div>`;
   const r = C.home.rooms.find(x => x.id === C.cur) || {}, R = C.room.room;
-  let last = '', out = ''; const names = memNames();
+  let last = '', out = ''; const names = memNames(); const sec = OWN() && C.room.room.kind === 'dm';   // 1:1 방: 계좌·통장 옮기기 버튼
   C.msgs.forEach(m => {
     if (new Date(m.at).toDateString() !== last) { last = new Date(m.at).toDateString(); out += K.day(day(m.at)); }
     if (C.mark != null && m.id === C.mark) out += K.READ;
@@ -67,7 +67,7 @@ function roomHtml(){
     out += `<div class="ch-m ${m.mine?'mine':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine?'':`<span class="ch-nm">${esc(m.name)}</span>`}
       <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?(isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
-      <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}</span></div>${hist}</div></div>`;
+      <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}${sec && !m.mine && !m.deleted && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
   return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div></div>
@@ -245,6 +245,36 @@ function toBottom(){ const go = () => { const b = document.getElementById('chMsg
     if (atB) toBottom(); };
   vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
 })();
+// 🔒 계좌·통장 → 인사카드 대표 전용 칸 (암호화) + 대화에서 완전히 지우기
+H.ACT.chSecure = async el => {
+  const m = C.msgs.find(x => x.id === +el.dataset.id); if (!m) return;
+  const rr = C.home.rooms.find(x => x.id === C.cur) || {}, sid = rr.staff_id; if (!sid) return H.toast('1:1 방에서만 할 수 있어요');
+  const {data} = await H.sb.rpc('vault_get', {p_staff: sid}); const d = data || {};
+  const nm = (H.P && H.P(sid) && H.P(sid).name) || rr.title;
+  H.open(`<form data-f="chSecure"><h3>🔒 ${esc(nm)}님 계좌 → 인사카드</h3>
+    <input type="hidden" name="mid" value="${m.id}"><input type="hidden" name="sid" value="${sid}">
+    <div class="note" style="margin:-4px 0 10px">대표님만 보는 칸에 암호화해서 보관해요</div>
+    <div style="background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:12px;text-align:center">${m.photo ? `<img src="${esc(pub(m.photo))}" alt="" style="max-width:100%;max-height:34vh;border-radius:8px">` : ''}${m.body ? `<div style="white-space:pre-wrap;text-align:left;margin-top:6px">${esc(m.body)}</div>` : ''}</div>
+    <div class="fg"><div class="field"><label>은행</label><input name="bank" value="${esc(d.bank||'')}" placeholder="예: 카카오뱅크" autocomplete="off"></div>
+      <div class="field"><label>계좌번호</label><input name="acct" value="${esc(d.acct||'')}" inputmode="numeric" autocomplete="off"></div>
+      <div class="field"><label>예금주</label><input name="holder" value="${esc(d.holder||nm||'')}" autocomplete="off"></div></div>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin:12px 0 4px;font-size:14px"><input type="checkbox" name="purge" checked style="margin-top:3px"><span><b>대화에서 완전히 지우기</b><br><span class="note">이 메시지와 사진을 원문까지 지워요 · 되돌릴 수 없어요</span></span></label>
+    ${H.sacts('저장')}</form>`);
+};
+H.FORM.chSecure = async (fd0, f) => {
+  const fd = new FormData(f), sid = fd.get('sid'), mid = +fd.get('mid');
+  const {data} = await H.sb.rpc('vault_get', {p_staff: sid}); const o = Object.assign({}, data || {});   // 주민번호·주소 등 기존 칸은 그대로
+  ['bank','acct','holder'].forEach(k => { const v = String(fd.get(k) || '').trim(); if (v) o[k] = v; });
+  const r1 = await H.sb.rpc('vault_set', {p_staff: sid, p_data: o}); if (r1.error) throw r1.error;
+  if (fd.get('purge')) {
+    const r2 = await H.sb.rpc('chat_admin_purge_msg', {p_id: mid});
+    if (r2.error) { H.close(); return H.toast(/chat_admin_purge_msg|function/.test(r2.error.message || '') ? '계좌는 저장했어요 · 대화에서 지우려면 SQL 업데이트(v15)가 필요해요' : '계좌는 저장했어요 · 지우지는 못했어요'); }
+    const paths = r2.data || []; if (paths.length) await H.sb.storage.from('chat').remove(paths);
+    C.msgs = C.msgs.filter(x => x.id !== mid);
+  }
+  if (H.S.accts) delete H.S.accts[sid];
+  H.close(); paint(true); H.toast(fd.get('purge') ? '인사카드에 저장하고 대화에서 지웠어요' : '인사카드에 저장했어요');
+};
 H.ACT.chOn = async el => {
   const on = el.checked;
   if (on && !confirm('직원 전원 화면에 [대화] 탭이 열려요. 열까요?')) { el.checked = false; return; }
