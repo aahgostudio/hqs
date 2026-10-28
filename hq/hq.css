@@ -262,7 +262,7 @@ tr.boss td{background:#F5F7FF}
  .ch-wrap.inroom .ch-list{display:none}
  body.chroom .top,body.chroom .ch-top{display:none}
  body.chroom main.wrap{padding:0;max-width:none}
- .ch-wrap.inroom .ch-room{border-radius:0;height:100dvh;margin:0;border:0}
+ .ch-wrap.inroom .ch-room{border-radius:0;height:var(--vvh,100dvh);margin:0;border:0}
  .ch-back,.ch-more{display:block}
  .ch-rh{flex-wrap:nowrap;align-items:center;padding:10px 8px}
  .ch-rh .ch-mem{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

@@ -136,7 +136,7 @@ async function openRoom(id){
 async function tick(){
   if (H.cur() !== 'chat' || document.hidden) return;
   try {
-    if (C.cur) { const last = C.msgs.length ? C.msgs[C.msgs.length-1].id : 0;
+    if (C.cur) { const real = C.msgs.filter(m => typeof m.id === 'number'), last = real.length ? real[real.length-1].id : 0;
       const d = await rpc('chat_admin_load', {p_room: C.cur, p_after: last, p_before: null, p_limit: 300});
       Object.assign(C.unread, d.unread || {}); if (d.msgs.length) C.msgs = C.msgs.concat(d.msgs); }
     await loadHome(); paint(true);
@@ -207,8 +207,24 @@ H.ACT.chPurge = async el => { const r = C.home.rooms.find(x => x.id === +el.data
 H.ACT.chClosed = () => { C.showClosed = !C.showClosed; paint(true); };
 H.ACT.chSend = async () => {
   const t = document.getElementById('chT'); const v = (t && t.value || '').trim(); if (!v || !C.cur) return;
-  t.value = ''; t.style.height = ''; t.focus(); try { await rpc('chat_admin_send', {p_room: C.cur, p_body: v, p_photo: null}); await tick(); } catch(e){ t.value = v; H.fail(e); }
+  t.value = ''; t.style.height = ''; t.focus();
+  // 보내자마자 내 말풍선을 맨 아래에 먼저 보여주고 최신 대화로 내림 (서버 응답 기다리지 않음)
+  const tmpId = 'tmp' + Date.now(); C.msgs.push({id: tmpId, mine: true, name: '', body: v, at: new Date().toISOString()}); paint(); toBottom();
+  try { await rpc('chat_admin_send', {p_room: C.cur, p_body: v, p_photo: null});
+    C.msgs = C.msgs.filter(m => m.id !== tmpId); await tick(); toBottom();
+  } catch(e){ C.msgs = C.msgs.filter(m => m.id !== tmpId); paint(); t.value = v; H.fail(e); }
 };
+// 맨 아래(최신 대화)로 — 그림 그린 직후·키보드 올라온 뒤 한 번 더
+function toBottom(){ const go = () => { const b = document.getElementById('chMsgs'); if (b) b.scrollTop = b.scrollHeight; }; go(); requestAnimationFrame(go); setTimeout(go, 250); }
+// 아이폰: 키보드가 올라오면 방 높이를 보이는 화면에 맞춤 → 위쪽 대화가 가려지지 않고 입력칸 바로 위에 최신 대화
+(function fitKeyboard(){
+  const vv = window.visualViewport; if (!vv) return;
+  const fit = () => { if (!document.body.classList.contains('chroom')) { document.documentElement.style.removeProperty('--vvh'); return; }
+    const b = document.getElementById('chMsgs'), atB = !b || b.scrollHeight - b.scrollTop - b.clientHeight < 80;
+    document.documentElement.style.setProperty('--vvh', vv.height + 'px'); window.scrollTo(0, 0);
+    if (atB) toBottom(); };
+  vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
+})();
 H.ACT.chOn = async el => {
   const on = el.checked;
   if (on && !confirm('직원 전원 화면에 [대화] 탭이 열려요. 열까요?')) { el.checked = false; return; }
