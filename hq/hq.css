@@ -338,3 +338,6 @@ body[data-tab=chat] .fab{display:none!important}
 .ch-ic.mgr{position:relative}.ch-ic.mgr::after{content:'';position:absolute;right:0;bottom:0;width:5px;height:5px;border-radius:50%;background:#94A3B8;border:1.5px solid #fff}
 .ch-b video{display:block;max-width:280px;max-height:360px;border-radius:10px;background:#000}
 .ch-in .ch-plus{width:44px;padding:0;border-radius:50%;font-size:24px;font-weight:300;line-height:1;display:grid;place-items:center;flex:none}
+/* 대화 입력줄·날짜 선 (chatkit.js) 색 맞춤 */
+.ch-room{--kit-card:var(--card);--kit-line:var(--line);--kit-mute:var(--sub);--kit-ink:var(--ink);--kit-soft:var(--soft);--kit-acc:#2F6FEB}
+.ch-msgs{background:#EEF1F5}

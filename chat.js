@@ -58,6 +58,7 @@
     s.textContent = `
 .epc{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;background:var(--epc-bg);color:var(--epc-ink);font-family:inherit;transform:translateX(100%);transition:transform .22s ease}
 .epc.on{transform:none}
+.epc{bottom:auto;top:var(--kit-vvt,0px);height:var(--kit-vvh,100%);--kit-card:var(--epc-card);--kit-line:var(--epc-line);--kit-mute:var(--epc-mute);--kit-ink:var(--epc-ink);--kit-soft:var(--epc-bg);--kit-acc:#2F6FEB}
 .epc{--epc-bg:#F4F6FB;--epc-card:#fff;--epc-ink:#141A2A;--epc-mute:#6B7385;--epc-line:#E3E7F0;--epc-me:var(--epc-acc);--epc-me-ink:#fff;--epc-other:#fff}
 @media (prefers-color-scheme:dark){.epc{--epc-bg:#0E1220;--epc-card:#171C2C;--epc-ink:#EEF1F8;--epc-mute:#98A0B3;--epc-line:#262D40;--epc-other:#1E2436}}
 .epc-h{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 14px 12px;background:var(--epc-acc);color:#fff}
@@ -151,25 +152,25 @@
   function drawRoom(keepScroll){
     const w = shell(); if (!room) return;
     const box0 = w.querySelector('.epc-msgs'), atBottom = !box0 || box0.scrollHeight - box0.scrollTop - box0.clientHeight < 80, prevTop = box0 ? box0.scrollTop : 0;
-    let last = '', out = '';
+    let last = '', out = ''; const names = memList().map(x => x.name).concat(home && home.me ? [home.me.name] : []), me = home && home.me ? home.me.name : '';
     msgs.forEach((m, i) => {
-      if (dayKey(m.at) !== last) { last = dayKey(m.at); out += `<div class="epc-day">${dayLabel(m.at)}</div>`; }
+      if (dayKey(m.at) !== last) { last = dayKey(m.at); out += K().day(dayLabel(m.at)); }
+      if (mark != null && m.id === mark) out += K().READ;
       const prev = msgs[i-1], cont = prev && prev.who === m.who && dayKey(prev.at) === dayKey(m.at) && (new Date(m.at) - new Date(prev.at)) < 180000;
       const u = unreadMap[m.id] || 0;
       const body = m.deleted ? `<div class="epc-b del">삭제된 메시지예요</div>`
-        : `<div class="epc-b" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `${isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener"><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body ? '<div style="margin-top:8px">' + esc(m.body) + '</div>' : ''}` : esc(m.body)}</div>`;
+        : `<div class="epc-b" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `${isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener"><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
       out += `<div class="epc-m ${m.mine ? 'mine' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
         <div class="epc-col">${!m.mine && !cont ? `<span class="epc-nm">${esc(m.name)}</span>` : ''}
         <div class="epc-line">${body}<span class="epc-meta">${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}<span>${tm(m.at)}</span></span></div></div></div>`;
     });
     const n = (room.room.members || []).length + 1;
-    const oldIn = w.querySelector('.epc-in'), edKey = editing ? String(editing.id) : '';
+    const oldIn = w.querySelector('.kit-bar'), edKey = editing ? String(editing.id) : '';
     const keepIn = oldIn && w.dataset.room === String(room.room.id) && w.dataset.ed === edKey;   // 글 쓰는 중엔 입력칸 유지 (키보드 안 닫히게)
     const html = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
       <div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
       ${editing ? `<div class="epc-edit"><span>✏️ 메시지 수정 중</span><button data-epccancel="1">취소</button></div>` : ''}
-      <div class="epc-in"><button class="epc-ph" data-photo="1" aria-label="사진·동영상">＋</button>
-        <textarea id="epc-t" rows="1" placeholder="메시지 입력" enterkeyhint="enter"></textarea><button class="epc-send" data-send="1" aria-label="보내기">↑</button></div>`;
+      ${K().bar({id:'epc-t'})}`;
     if (keepIn) {   // 입력칸은 그대로(움직이면 키보드 닫힘) · 위쪽 줄과 메시지만 바꿈
       const tmp = document.createElement('div'); tmp.innerHTML = html;
       w.querySelector('.epc-h').replaceWith(tmp.querySelector('.epc-h'));
@@ -180,10 +181,18 @@
     box.scrollTop = keepScroll && !atBottom ? prevTop : box.scrollHeight;
     const t = w.querySelector('#epc-t');
     if (keepIn) { bindBox(box); return; }
-    if (editing) { t.value = editing.body || ''; t.focus(); }
-    t.addEventListener('input', () => { t.style.height = 'auto'; t.style.height = Math.min(120, t.scrollHeight) + 'px'; });
-    t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); send(); } });
+    // 입력줄: 카카오워크식 · @멘션 · 이모지 (PC는 Enter 전송, 폰은 [↑])
+    K().attach(w.querySelector('.kit-bar'), {members: memList, onSend: send,
+      onMedia: k => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); }, k === 'album' ? 'alb' : null)});
+    if (editing) { t.value = editing.body || ''; K().sync(t); t.focus(); }
     bindBox(box);
+  }
+  const K = () => window.EPKit;
+  let mark = null;   // '여기까지 읽으셨습니다' 위치 (방에 있는 동안)
+  // 멘션 목록: 방 인원(나 빼고) + 대표
+  function memList(){
+    const meN = home && home.me ? home.me.name : '', ms = ((room && room.room.members) || []).filter(x => x.name !== meN && x.role !== '대표');
+    return [{name:'대표', sub:'대표 / 어닝플레이스', av:'대표', dark:true}, ...ms.map(x => ({name: x.name, sub: [x.role, x.team_name].filter(Boolean).join(' / ')}))];
   }
   function bindBox(box){
     if (box._bound) return; box._bound = true;
@@ -217,11 +226,11 @@
     if (view === 'list') drawList();
   }
   async function openRoom(id){
-    view = 'room'; editing = null;
+    view = 'room'; editing = null; const rw = home && home.rooms ? home.rooms.find(x => x.id == id) : null, was = rw ? rw.unread || 0 : 0;
     if (opt.demo) { const d = (opt.demoTeam === 'RES' ? DEMO_RES : DEMO).room[id] || {room:{id, kind:'dm', title:(home.rooms.find(r=>r.id==id)||{}).title || '대화', members:[]}, msgs:[], unread:{}};
-      room = d; msgs = d.msgs.slice(); unreadMap = Object.assign({}, d.unread); const r = home.rooms.find(x => x.id == id); if (r) r.unread = 0; drawRoom(); return; }
+      room = d; msgs = d.msgs.slice(); unreadMap = Object.assign({}, d.unread); mark = K().firstUnread(msgs, was); const r = home.rooms.find(x => x.id == id); if (r) r.unread = 0; drawRoom(); K().jump(shell().querySelector('.epc-msgs')); return; }
     try { const d = await rpc('chat_load', {p_token: opt.token, p_room: id, p_after: 0, p_before: null});
-      room = d; msgs = d.msgs; unreadMap = d.unread || {}; drawRoom(); poll(); loadHome(); }
+      room = d; msgs = d.msgs; unreadMap = d.unread || {}; mark = K().firstUnread(msgs, was); drawRoom(); K().jump(shell().querySelector('.epc-msgs')); poll(); loadHome(); }
     catch(_) { view = 'list'; await loadHome(); drawList(); }
   }
   async function refreshRoom(){
@@ -242,18 +251,18 @@
     try {
       if (editing) { const m = editing;
         if (!opt.demo) await rpc('chat_edit', {p_token: opt.token, p_id: m.id, p_body: v, p_delete: false});
-        m.body = v; m.edited = true; editing = null; drawRoom(true);
+        m.body = v; m.edited = true; editing = null; t.value = ''; K().sync(t); drawRoom(true);
       } else {
-        t.value = '';
+        t.value = ''; K().sync(t); mark = null;
         if (opt.demo) { msgs.push({id: Date.now(), who:'me', name: home.me.name, mine:true, body:v, at:new Date().toISOString()}); unreadMap[msgs[msgs.length-1].id] = (room.room.members||[]).length; drawRoom(); }
         else { await rpc('chat_send', {p_token: opt.token, p_room: room.room.id, p_body: v, p_photo: null}); await refreshRoom(); }
       }
-    } catch(_) { alert('보내지 못했어요. 인터넷 연결을 확인해주세요.'); t.value = v; }
+    } catch(_) { alert('보내지 못했어요. 인터넷 연결을 확인해주세요.'); t.value = v; K().sync(t); }
     busy = false;
   }
 
   // 📷 누르면: 사진 찍기 / 동영상 찍기 / 앨범 — 폰 기본 선택창(카메라 2개+파일)보다 단순하게
-  function pickMedia(onFiles){
+  function pickMedia(onFiles, direct){
     const old = document.getElementById('mpick'); if (old) old.remove();
     const d = document.createElement('div'); d.id = 'mpick';
     d.innerHTML = `<style>#mpick{position:fixed;inset:0;z-index:300;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center}
@@ -274,6 +283,7 @@
       document.body.appendChild(i); i.click();
     });
     document.body.appendChild(d);
+    if (direct) d.querySelector(`[data-pk="${direct}"]`).click();   // [사진] 버튼: 바로 앨범
   }
   
   async function sendPhoto(f){

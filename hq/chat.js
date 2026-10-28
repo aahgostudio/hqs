@@ -25,7 +25,12 @@ const pub = p => `${URL_}/storage/v1/object/public/chat/${p}`;
 const C = {fold: {}, home:null, cur:null, room:null, msgs:[], unread:{}, t:null, q:'', showClosed:false};
 const tm = iso => { const d = new Date(iso); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
 const dt = iso => { const d = new Date(iso); return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${tm(iso)}`; };
-const day = iso => { const d = new Date(iso); return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`; };
+const day = iso => { const d = new Date(iso); return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`; };
+const K = window.EPKit;
+// 멘션 목록·글씨용: 방 인원 (+ 관리자 화면이면 대표)
+const memList = () => { const R = (C.room && C.room.room) || {}; const a = (R.members||[]).map(x => ({name: x.name, sub: [x.role, x.team_name].filter(Boolean).join(' / ')}));
+  if (!OWN()) a.unshift({name:'대표', sub:'대표 / 어닝플레이스', av:'대표', dark:true}); return a; };
+const memNames = () => [...memList().map(x => x.name), '대표'];
 const short = iso => { const d = new Date(iso), t = new Date(); return d.toDateString() === t.toDateString() ? tm(iso) : `${d.getMonth()+1}/${d.getDate()}`; };
 const OWN = () => !!H.S.owner;
 const rpc = async (fn, args) => { const {data, error} = await H.sb.rpc(fn, args || {}); if (error) throw error; return data; };
@@ -52,14 +57,15 @@ function listHtml(){
 function roomHtml(){
   if (!C.room) return `<div class="ch-empty"><div style="font-size:40px">💬</div><b>왼쪽에서 방을 고르세요</b><p class="note">대화·사진은 3년 보관 · 직원이 수정·삭제해도 원문이 여기 남아요</p></div>`;
   const r = C.home.rooms.find(x => x.id === C.cur) || {}, R = C.room.room;
-  let last = '', out = '';
+  let last = '', out = ''; const names = memNames();
   C.msgs.forEach(m => {
-    if (new Date(m.at).toDateString() !== last) { last = new Date(m.at).toDateString(); out += `<div class="ch-day">${day(m.at)}</div>`; }
+    if (new Date(m.at).toDateString() !== last) { last = new Date(m.at).toDateString(); out += K.day(day(m.at)); }
+    if (C.mark != null && m.id === C.mark) out += K.READ;
     const u = C.unread[m.id] || 0;
     const hist = (m.history||[]).length ? `<details class="ch-hist"><summary>${m.deleted?'삭제됨':'수정됨'} · 이력 ${(m.history||[]).length}</summary>${m.history.map(h => `<div>${dt(h.at)} ${h.act==='delete'?'삭제 전':'수정 전'}: ${esc(h.body||'')}${h.photo?' [사진]':''}</div>`).join('')}</details>` : '';
     out += `<div class="ch-m ${m.mine?'mine':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine?'':`<span class="ch-nm">${esc(m.name)}</span>`}
-      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?(isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener"><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body?`<div>${esc(m.body)}</div>`:''}</div>
+      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?(isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener"><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
       <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
@@ -71,7 +77,8 @@ function roomHtml(){
         <button class="btn sm ghost" data-a="chClose">${r.closed?'다시 열기':'방 닫기'}</button>` : '<span class="note">관리자로 참여 중</span>'}</div></div>
     <div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
     ${r.closed ? '<div class="ch-in note" style="justify-content:center">닫은 방이에요 · 직원 화면엔 안 보여요</div>' :
-    `<div class="ch-in">${OWN() && R.kind==='dm' && !H.S.needV9 ? '<button class="btn ghost sm" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''}<button class="btn ghost sm ch-plus" data-a="chMedia" title="사진·동영상">＋</button><textarea id="chT" rows="1" placeholder="${OWN()?'대표':'관리자'}로 보내기 · Enter 전송, Shift+Enter 줄바꿈"></textarea><button class="btn" data-a="chSend">보내기</button></div>`}`;
+    K.bar({id:'chT', ph:`메시지를 입력해보세요.${matchMedia('(pointer:fine)').matches ? ' (Enter 전송 · Shift+Enter 줄바꿈)' : ''}`,
+      extra: OWN() && R.kind==='dm' && !H.S.needV9 ? '<button type="button" class="kit-x" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''})}`;
 }
 
 // 방 순서: PC에서 끌어다 놓기 (같은 묶음 안에서만)
@@ -104,9 +111,9 @@ function paint(keep){
   const W = L.parentElement; if (W) W.classList.toggle('inroom', !!C.cur); document.body.classList.toggle('chroom', !!C.cur);   // 폰: 방 열면 목록 숨기고 방만 꽉 차게
   const box0 = document.getElementById('chMsgs'), atB = !box0 || box0.scrollHeight - box0.scrollTop - box0.clientHeight < 80, top = box0 ? box0.scrollTop : 0;
   // 입력칸은 그대로 두고 나머지만 다시 그림 (폰에서 글 쓰는 중에 키보드가 닫히지 않게)
-  const oldIn = R.querySelector('.ch-in'), same = oldIn && R.dataset.room === String(C.cur);
+  const oldIn = R.querySelector('.kit-bar'), same = oldIn && R.dataset.room === String(C.cur);
   const tmp = document.createElement('div'); tmp.innerHTML = roomHtml();
-  const newIn = tmp.querySelector('.ch-in');
+  const newIn = tmp.querySelector('.kit-bar');
   const oRh = R.querySelector('.ch-rh'), nRh = tmp.querySelector('.ch-rh'), oM = R.querySelector('#chMsgs'), nM = tmp.querySelector('#chMsgs');
   if (same && newIn && oldIn.querySelector('#chT') && newIn.querySelector('#chT') && oRh && nRh && oM && nM) {
     // 입력칸은 건드리지 않고(움직이기만 해도 키보드가 닫힘) 위쪽 줄과 메시지만 바꿈
@@ -114,24 +121,22 @@ function paint(keep){
   } else { R.replaceChildren(...tmp.childNodes); }
   R.dataset.room = String(C.cur);
   const box = document.getElementById('chMsgs'); if (box) box.scrollTop = keep && !atB ? top : box.scrollHeight;
-  const t = document.getElementById('chT');
-  if (t && !t._bound) { t._bound = true;
-    // PC: Enter 전송 · Shift+Enter 줄바꿈 / 폰: Enter는 줄바꿈, [보내기] 버튼으로만 전송
-    t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches) { e.preventDefault(); H.ACT.chSend(); } };
-    t.oninput = () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; };
-    if (!matchMedia('(pointer:fine)').matches) t.placeholder = (OWN() ? '대표' : '관리자') + '로 보내기'; }
+  // 입력줄: 카카오워크식 (PC는 Enter 전송 · 폰은 [↑]로 전송) · @멘션 · 이모지
+  K.attach(R.querySelector('.kit-bar'), {members: memList, onSend: () => H.ACT.chSend(),
+    onMedia: k => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); }, k === 'album' ? 'alb' : null)});
   const q = L.querySelector('[data-chq]'); if (q) q.oninput = () => { C.q = q.value; const pos = q.selectionStart; L.innerHTML = listHtml(); const q2 = L.querySelector('[data-chq]'); q2.focus(); q2.setSelectionRange(pos,pos); q2.oninput = q.oninput; };
   const tg = document.getElementById('chOnTg'); if (tg) tg.checked = !!(C.home && C.home.on);
 }
 
-document.addEventListener('touchstart', e => { const b = e.target.closest('[data-a="chSend"]'); if (b && document.activeElement && document.activeElement.id === 'chT') { e.preventDefault(); H.ACT.chSend(); } }, {passive:false});   // 폰: [보내기] 눌러도 키보드 유지
 
 async function openRoom(id){
   const rr = C.home && C.home.rooms.find(x => x.id === id); if (!OWN() && rr && !(rr.mgr && !rr.closed && rr.live)) { C.cur = null; C.room = null; return paint(); }
+  const was = rr ? rr.unread || 0 : 0;
   C.cur = id; C.room = await rpc('chat_admin_load', {p_room: id, p_after: 0, p_before: null, p_limit: 300});
   C.msgs = C.room.msgs; C.unread = C.room.unread || {};
+  C.mark = K.firstUnread(C.msgs, was);   // '여기까지 읽으셨습니다' — 이 방에 있는 동안 유지
   const r = C.home.rooms.find(x => x.id === id); if (r) r.unread = 0;
-  paint(); poll();
+  paint(); K.jump(document.getElementById('chMsgs')); poll();
 }
 async function tick(){
   if (H.cur() !== 'chat' || document.hidden) return;
@@ -148,7 +153,7 @@ const isVid = p => /\.(mov|mp4|m4v|webm|3gp)$/i.test(p || '');
 const extOf = f => { const n = ((f.name || '').split('.').pop() || '').toLowerCase(); if (/^(jpe?g|png|webp|heic|heif|mov|mp4|m4v|webm|3gp)$/.test(n)) return n.replace('jpeg','jpg'); const t = (f.type || '').split('/')[1] || 'jpg'; return t === 'quicktime' ? 'mov' : t.replace('jpeg','jpg'); };
 
 // 📷 누르면: 사진 찍기 / 동영상 찍기 / 앨범 — 폰 기본 선택창(카메라 2개+파일)보다 단순하게
-function pickMedia(onFiles){
+function pickMedia(onFiles, direct){
   const old = document.getElementById('mpick'); if (old) old.remove();
   const d = document.createElement('div'); d.id = 'mpick';
   d.innerHTML = `<style>#mpick{position:fixed;inset:0;z-index:300;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center}
@@ -168,6 +173,7 @@ function pickMedia(onFiles){
     i.onchange = () => { const fs = [...(i.files || [])]; i.remove(); if (fs.length) onFiles(fs); };
     document.body.appendChild(i); i.click();
   });
+  if (direct) { const b = d.querySelector(`[data-pk="${direct}"]`); document.body.appendChild(d); return b.click(); }   // [사진] 버튼: 바로 앨범
   document.body.appendChild(d);
 }
 H.ACT.chMedia = () => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); });
@@ -207,12 +213,12 @@ H.ACT.chPurge = async el => { const r = C.home.rooms.find(x => x.id === +el.data
 H.ACT.chClosed = () => { C.showClosed = !C.showClosed; paint(true); };
 H.ACT.chSend = async () => {
   const t = document.getElementById('chT'); const v = (t && t.value || '').trim(); if (!v || !C.cur) return;
-  t.value = ''; t.style.height = ''; t.focus();
+  t.value = ''; K.sync(t); t.focus(); C.mark = null;
   // 보내자마자 내 말풍선을 맨 아래에 먼저 보여주고 최신 대화로 내림 (서버 응답 기다리지 않음)
   const tmpId = 'tmp' + Date.now(); C.msgs.push({id: tmpId, mine: true, name: '', body: v, at: new Date().toISOString()}); paint(); toBottom();
   try { await rpc('chat_admin_send', {p_room: C.cur, p_body: v, p_photo: null});
     C.msgs = C.msgs.filter(m => m.id !== tmpId); await tick(); toBottom();
-  } catch(e){ C.msgs = C.msgs.filter(m => m.id !== tmpId); paint(); t.value = v; H.fail(e); }
+  } catch(e){ C.msgs = C.msgs.filter(m => m.id !== tmpId); paint(); t.value = v; K.sync(t); H.fail(e); }
 };
 // 맨 아래(최신 대화)로 — 그림 그린 직후·키보드 올라온 뒤 한 번 더
 function toBottom(){ const go = () => { const b = document.getElementById('chMsgs'); if (b) b.scrollTop = b.scrollHeight; }; go(); requestAnimationFrame(go); setTimeout(go, 250); }
