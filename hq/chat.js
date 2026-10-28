@@ -27,6 +27,7 @@ const tm = iso => { const d = new Date(iso); return `${String(d.getHours()).padS
 const dt = iso => { const d = new Date(iso); return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${tm(iso)}`; };
 const day = iso => { const d = new Date(iso); return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`; };
 const K = window.EPKit;
+try { localStorage.setItem('ep_k', 'hq'); } catch(_){}   // 카톡 채널 [대화하기](/go) → 이 폰은 HQ 대화로 바로 열기
 // 멘션 목록·글씨용: 방 인원 (+ 관리자 화면이면 대표)
 const memList = () => { const R = (C.room && C.room.room) || {}; const a = (R.members||[]).map(x => ({name: x.name, sub: [x.role, x.team_name].filter(Boolean).join(' / ')}));
   if (!OWN()) a.unshift({name:'대표', sub:'대표 / 어닝플레이스', av:'대표', dark:true}); return a; };
