@@ -62,15 +62,15 @@ function roomHtml(){
   if (!C.room) return `<div class="ch-empty"><div style="font-size:40px">💬</div><b>왼쪽에서 방을 고르세요</b><p class="note">대화·사진은 3년 보관 · 직원이 수정·삭제해도 원문이 여기 남아요</p></div>`;
   const r = C.home.rooms.find(x => x.id === C.cur) || {}, R = C.room.room;
   let last = '', out = ''; const names = memNames(); const sec = OWN() && C.room.room.kind === 'dm';   // 1:1 방: 계좌·통장 옮기기 버튼
-  C.msgs.forEach(m => {
+  K.group(C.msgs, m => m.mine ? '\u0000me' : m.name).forEach(m => {   // 연달아 보낸 사진은 한 묶음
     if (new Date(m.at).toDateString() !== last) { last = new Date(m.at).toDateString(); out += K.day(day(m.at)); }
-    if (C.mark != null && m.id === C.mark) out += K.READ;
-    const u = C.unread[m.id] || 0;
+    if (C.mark != null && (m.ids || [m.id]).includes(C.mark)) out += K.READ;
+    const u = Math.max(...(m.ids || [m.id]).map(id => C.unread[id] || 0));
     const hist = (m.history||[]).length ? `<details class="ch-hist"><summary>${m.deleted?'삭제됨':'수정됨'} · 이력 ${(m.history||[]).length}</summary>${m.history.map(h => `<div>${dt(h.at)} ${h.act==='delete'?'삭제 전':'수정 전'}: ${esc(h.body||'')}${h.photo?' [사진]':''}</div>`).join('')}</details>` : '';
     out += `<div class="ch-m ${m.mine?'mine':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine?'':`<span class="ch-nm">${esc(m.name)}</span>`}
-      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
-      <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}${sec && !m.mine && !m.deleted && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
+      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}"${m.photos?' style="padding:3px"':''}>${m.photos?K.grid(m.photos, pub, {sec: sec && !m.mine}):m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
+      <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
   return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div></div>

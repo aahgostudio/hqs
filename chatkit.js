@@ -54,6 +54,15 @@
 .kit-file i{font-style:normal;flex:none;width:46px;height:46px;border-radius:12px;background:#E8EEF9;color:#2F6FEB;display:grid;place-items:center;font-size:12px;font-weight:900;text-transform:uppercase}
 .kit-file b{display:block;font-size:14px;word-break:break-all;line-height:1.35}.kit-file small{opacity:.65;font-size:12px}
 .kit-drop{position:absolute;inset:0;z-index:50;background:rgba(47,111,235,.12);border:3px dashed #2F6FEB;border-radius:12px;display:grid;place-items:center;font-size:18px;font-weight:800;color:#2F6FEB;pointer-events:none}
+.kit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:3px;width:min(250px,62vw);border-radius:12px;overflow:hidden}
+.kit-grid.g3{grid-template-columns:repeat(3,1fr);width:min(270px,66vw)}
+.kit-grid a{position:relative;display:block;aspect-ratio:1;background:#DDE2EA}
+.kit-grid img{width:100%;height:100%;object-fit:cover;display:block;margin:0!important;max-width:none!important;max-height:none!important;border-radius:0!important}
+.kit-grid .one{grid-column:1/-1;aspect-ratio:auto}.kit-grid .one img{height:auto;max-height:280px!important}
+.kit-grid .more{position:absolute;inset:0;background:rgba(0,0,0,.45);color:#fff;font-weight:800;font-size:20px;display:grid;place-items:center}
+.kit-grid .sec{position:absolute;right:3px;bottom:3px;border:0;background:rgba(255,255,255,.85);border-radius:8px;font-size:13px;padding:2px 4px;cursor:pointer}
+.kit-view .nav{position:absolute;top:50%;transform:translateY(-50%);border:0;background:rgba(255,255,255,.16);color:#fff;width:46px;height:46px;border-radius:50%;font-size:24px;cursor:pointer}
+.kit-view .cnt{position:absolute;left:0;right:0;top:calc(18px + env(safe-area-inset-top));text-align:center;font-size:14px;font-weight:700;opacity:.85;pointer-events:none}
 .mine .kit-mn{color:inherit;text-decoration:underline;text-underline-offset:2px}`;
     document.head.appendChild(s);
   }
@@ -160,11 +169,18 @@
     setTimeout(check, 1500); setInterval(check, 5 * 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); }); })();
 
   // 사진 크게 보기 + [저장] — 대화 사진·매물 사진 공용 (<a data-view="큰 사진 주소" data-dl="원본 받기 주소">)
-  function viewer(src, dl, name){
+  function viewer(src, dl, name, list, at){
     css(); const d = document.createElement('div'); d.className = 'kit-view';
+    list = list && list.length > 1 ? list : null; let i = at || 0;
     d.innerHTML = `<div class="vh"><button type="button" data-v="x">✕ 닫기</button><button type="button" data-v="save">⬇ 저장</button></div><div class="vb"><img src="${esc(src)}" alt="사진"></div><p>저장이 안 되면 사진을 꾹 눌러서 '사진에 저장'을 눌러주세요</p>`;
+    const go = k => { i = (i + k + list.length) % list.length; const it = list[i]; src = it.view; dl = it.dl; name = it.name; d.querySelector('.vb img').src = src; d.querySelector('.cnt').textContent = (i + 1) + ' / ' + list.length; };
+    if (list) { d.insertAdjacentHTML('beforeend', `<div class="cnt">${i + 1} / ${list.length}</div><button type="button" class="nav" data-v="p" style="left:10px">‹</button><button type="button" class="nav" data-v="n" style="right:10px">›</button>`);
+      let sx = 0; d.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, {passive: true});
+      d.addEventListener('touchend', e => { const dx = (e.changedTouches[0] || {}).clientX - sx; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); });
+      const kh = e => { if (!document.body.contains(d)) return document.removeEventListener('keydown', kh); if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); if (e.key === 'Escape') d.remove(); }; document.addEventListener('keydown', kh); }
     d.addEventListener('click', async e => { const b = e.target.closest('[data-v]'); if (!b) { if (e.target === d || e.target.classList.contains('vb')) d.remove(); return; }
       if (b.dataset.v === 'x') return d.remove();
+      if (b.dataset.v === 'p') return go(-1); if (b.dataset.v === 'n') return go(1);
       b.textContent = '저장 중…'; await save(src, dl, name); b.textContent = '⬇ 저장'; });
     document.body.appendChild(d);
   }
@@ -175,7 +191,9 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     } catch(_) { window.open(dl || src, '_blank'); }
   }
-  document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[data-view]'); if (!a) return; e.preventDefault(); e.stopPropagation(); viewer(a.dataset.view, a.dataset.dl, a.dataset.name); }, true);
+  document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[data-view]'); if (!a) return; if (e.target.closest('.sec')) { e.preventDefault(); return; }   // 🔒 버튼은 대표 화면이 처리 e.preventDefault(); e.stopPropagation();
+    const g = a.closest('.kit-grid'), all = g ? [...g.querySelectorAll('a[data-view]')] : [a];
+    viewer(a.dataset.view, a.dataset.dl, a.dataset.name, all.map(x => ({view: x.dataset.view, dl: x.dataset.dl, name: x.dataset.name})), all.indexOf(a)); }, true);
 
   // 홈 화면 아이콘 배지: 안 읽은 수 (아이폰은 '알림 허용'을 한 번 눌러야 보여요)
   function badge(n){ try { if (!('setAppBadge' in navigator)) return; n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } catch(_){} }
@@ -200,5 +218,19 @@
     el.addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefault(); n = 0; show(false); const fs = [...e.dataTransfer.files]; if (fs.length) onFiles(fs); });
     el.addEventListener('paste', e => { const fs = [...((e.clipboardData && e.clipboardData.files) || [])]; if (fs.length) { e.preventDefault(); onFiles(fs); } });
   }
-  window.EPKit = {kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
+  // 사진 여러 장 묶음: 같은 사람이 1분 안에 연달아 보낸 사진(글 없는 것)을 한 말풍선으로
+  const isPic = m => m && m.photo && !m.deleted && !m.body && !DOC.test(m.photo) && !VID.test(m.photo);
+  function group(msgs, who){
+    const out = [];
+    msgs.forEach(m => { const g = out[out.length - 1];
+      if (isPic(m) && g && (g.photos || isPic(g)) && who(g) === who(m) && new Date(m.at).toDateString() === new Date(g.at).toDateString() && new Date(m.at) - new Date(g.at) < 60000) {
+        if (!g.photos) { const first = Object.assign({}, g); out[out.length - 1] = Object.assign({}, g, {photos: [first], ids: [g.id]}); }
+        const G = out[out.length - 1]; G.photos.push(m); G.ids.push(m.id); G.at = m.at; G.id = m.id; G.edited = false;
+      } else out.push(m); });
+    return out;
+  }
+  function grid(ps, pub, o){ o = o || {}; const n = ps.length, show = ps.slice(0, 9);
+    return `<div class="kit-grid${n >= 5 ? ' g3' : ''}">${show.map((m, i) => { const u = pub(m.photo);
+      return `<a href="${esc(u)}" target="_blank" rel="noopener" data-view="${esc(u)}" data-dl="${esc(u)}?download=" ${o.own ? `data-own="${m.id}"` : ''} class="${n === 1 ? 'one' : ''}"><img src="${esc(u)}" alt="사진" loading="lazy">${i === 8 && n > 9 ? `<span class="more">+${n - 9}</span>` : ''}${o.sec ? `<button type="button" class="sec" data-a="chSecure" data-id="${m.id}" title="인사카드로 옮기기">🔒</button>` : ''}</a>`; }).join('')}</div>`; }
+  window.EPKit = {group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();

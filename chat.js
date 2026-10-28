@@ -155,12 +155,13 @@
     const w = shell(); if (!room) return;
     const box0 = w.querySelector('.epc-msgs'), atBottom = !box0 || box0.scrollHeight - box0.scrollTop - box0.clientHeight < 80, prevTop = box0 ? box0.scrollTop : 0;
     let last = '', out = ''; const names = memList().map(x => x.name).concat(home && home.me ? [home.me.name] : []), me = home && home.me ? home.me.name : '';
-    msgs.forEach((m, i) => {
+    const GM = K().group(msgs, m => m.who);   // 연달아 보낸 사진은 한 묶음
+    GM.forEach((m, i) => {
       if (dayKey(m.at) !== last) { last = dayKey(m.at); out += K().day(dayLabel(m.at)); }
-      if (mark != null && m.id === mark) out += K().READ;
-      const prev = msgs[i-1], cont = prev && prev.who === m.who && dayKey(prev.at) === dayKey(m.at) && (new Date(m.at) - new Date(prev.at)) < 180000;
-      const u = unreadMap[m.id] || 0;
-      const body = m.deleted ? `<div class="epc-b del">삭제된 메시지예요</div>`
+      if (mark != null && (m.ids || [m.id]).includes(mark)) out += K().READ;
+      const prev = GM[i-1], cont = prev && prev.who === m.who && dayKey(prev.at) === dayKey(m.at) && (new Date(m.at) - new Date(prev.at)) < 180000;
+      const u = Math.max(...(m.ids || [m.id]).map(id => unreadMap[id] || 0));
+      const body = m.photos ? `<div class="epc-b" style="padding:3px">${K().grid(m.photos, pub, {own: m.mine})}</div>` : m.deleted ? `<div class="epc-b del">삭제된 메시지예요</div>`
         : `<div class="epc-b" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
       out += `<div class="epc-m ${m.mine ? 'mine' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
         <div class="epc-col">${!m.mine && !cont ? `<span class="epc-nm">${esc(m.name)}</span>` : ''}
