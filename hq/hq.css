@@ -343,3 +343,10 @@ body[data-tab=chat] .fab{display:none!important}
 .ch-room{--kit-card:var(--card);--kit-line:var(--line);--kit-mute:var(--sub);--kit-ink:var(--ink);--kit-soft:var(--soft);--kit-acc:#2F6FEB}
 .ch-msgs{background:#EEF1F5}
 .ch-sec{border:0;background:none;padding:2px 0 0;font-size:13px;cursor:pointer;opacity:.55}.ch-sec:hover{opacity:1}
+/* 어닝톡 앱 모드 (?app=chat): 위 메뉴 숨기고 대화만 */
+html.chatapp header.top,html.chatapp .ch-top{display:none}
+html.chatapp main.wrap{padding:0;max-width:none}
+html.chatapp .ch-wrap{height:100dvh;min-height:0;gap:0}
+html.chatapp .ch-wrap>.box{border-radius:0;margin:0}
+@media (max-width:860px){html.chatapp .ch-wrap:not(.inroom) .ch-list{min-height:100dvh;padding-top:calc(10px + env(safe-area-inset-top))}}
+html.chatapp .fab{display:none}

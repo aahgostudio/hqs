@@ -15,6 +15,7 @@
   const extOf = f => { const n = ((f.name || '').split('.').pop() || '').toLowerCase(); if (/^(jpe?g|png|webp|heic|heif|mov|mp4|m4v|webm|3gp)$/.test(n)) return n.replace('jpeg','jpg'); const t = (f.type || '').split('/')[1] || 'jpg'; return t === 'quicktime' ? 'mov' : t.replace('jpeg','jpg'); };
   const ICON = {dm:'👔', all:'📣', team:'👥', site:'📍', custom:'💬'};
   let ICONS = null;   // 대표가 고른 방 아이콘 {방번호: 이모지}
+  const APP = new URLSearchParams(location.search).get('app') === 'chat';   // 홈 화면 '어닝톡' 앱 모드: 대화만
   let opt = {token:'', demo:false, accent:'#16347A', onState:()=>{}};
   let home = null, room = null, msgs = [], unreadMap = {}, view = null, pollT = null, homeT = null, busy = false, editing = null;
 
@@ -141,7 +142,7 @@
     const P = (ICONS && ICONS._parent) || {};
     const gt = k => { const a = g(k), ids = new Set(a.map(r => r.id)), out = [];   // 하위 방은 윗방 바로 밑에
       a.forEach(r => { const p = P[r.id]; if (p && ids.has(+p) && !P[p]) return; out.push(r); a.filter(x => +P[x.id] === r.id).forEach(x => out.push(Object.assign({}, x, {_kid: true}))); }); return out; };
-    w.innerHTML = `<div class="epc-h"><button class="epc-back" data-close="1" aria-label="닫기">←</button><span class="sp"><b>대화</b>${total ? `<small>안 읽음 ${total}</small>` : ''}</span></div>
+    w.innerHTML = `<div class="epc-h">${APP ? '' : '<button class="epc-back" data-close="1" aria-label="닫기">←</button>'}<span class="sp"><b>${APP ? '어닝톡' : '대화'}</b>${total ? `<small>안 읽음 ${total}</small>` : ''}</span>${APP ? '' : '<button class="epc-back" data-appadd="1" aria-label="홈 화면에 대화 앱 추가" style="width:auto;padding:0 10px;font-size:13px;font-weight:700">📲 앱으로</button>'}</div>
       <div class="epc-list">
         ${g(['dm']).length ? `<div class="epc-sec">1:1</div>${g(['dm']).map(row).join('')}` : ''}
         ${g(['all','team','custom']).length ? `<div class="epc-sec">함께하는 방</div>${gt(['all','team','custom']).map(row).join('')}` : ''}
@@ -309,13 +310,30 @@
   function onClick(e){
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.close) return close();
+    if (b.dataset.appadd) return appGuide();
     if (b.dataset.list) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }
     if (b.dataset.room) return openRoom(+b.dataset.room);
     if (b.dataset.send) return send();
     if (b.dataset.photo) return pickMedia(async fs => { for (const f of fs) await sendPhoto(f); });
     if (b.dataset.epccancel) { editing = null; return drawRoom(true); }
   }
+  // 📲 대화만 따로 쓰는 앱(홈 화면 아이콘) 만드는 법
+  function appGuide(){
+    const u = new URL(location.href); u.searchParams.set('chat', 'list'); u.searchParams.set('app', 'chat'); u.searchParams.delete('_v');
+    const ios = /iPhone|iPad/i.test(navigator.userAgent), kakao = /KAKAOTALK/i.test(navigator.userAgent);
+    const d = document.createElement('div'); d.className = 'epc-menu';
+    d.innerHTML = `<div><h3 style="margin:6px 14px 4px;font-size:17px">📲 어닝톡 앱 만들기</h3>
+      <p>대화만 따로 홈 화면 아이콘으로 열 수 있어요.</p>
+      ${kakao ? `<p><b>① 카톡 안에서는 안 돼요.</b> 오른쪽 아래 <b>⋯</b> → <b>'다른 브라우저로 열기'</b>를 먼저 눌러주세요.</p>` : ''}
+      <p><b>${kakao ? '②' : '①'} 아래 [앱 화면 열기]</b>를 누르고</p>
+      <p><b>${kakao ? '③' : '②'} ${ios ? '사파리 아래 공유 버튼(⬆) → [홈 화면에 추가]' : '오른쪽 위 ⋮ 메뉴 → [홈 화면에 추가]'}</b></p>
+      <p class="muted">처음 한 번만 하면 돼요. 아이콘 이름은 '어닝톡'이에요.</p>
+      <button data-a="go" style="background:var(--epc-acc);color:#fff;text-align:center;font-weight:700;margin-top:6px">앱 화면 열기</button><button data-a="x" style="text-align:center">닫기</button></div>`;
+    shell().appendChild(d);   // 대화 화면 색(변수) 그대로 쓰게 안쪽에
+    d.onclick = e => { e.stopPropagation(); const a = e.target.closest('[data-a]'); if (e.target === d || (a && a.dataset.a === 'x')) return d.remove(); if (a && a.dataset.a === 'go') location.href = u.href; };
+  }
   function close(){
+    if (APP) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }   // 앱 모드: 닫기 = 목록
     const w = document.getElementById('epc'); if (!w) return; view = null; clearInterval(pollT); room = null;
     w.classList.remove('on'); setTimeout(() => w.remove(), 230);
     try { if (new URLSearchParams(location.search).has('chat')) { const u = new URL(location.href); u.searchParams.delete('chat'); history.replaceState(null, '', u); } } catch(_){}
@@ -331,9 +349,12 @@
 
   window.EPChat = {
     init(o){ opt = Object.assign(opt, o || {}); css();
+      if (APP) { document.title = '어닝톡'; document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="manifest"],meta[name="apple-mobile-web-app-title"]').forEach(e => e.remove()); const h = document.head, add = (t, a) => { const e = document.createElement(t); Object.entries(a).forEach(([k, v]) => e.setAttribute(k, v)); h.appendChild(e); };
+        add('meta', {name:'apple-mobile-web-app-capable', content:'yes'}); add('meta', {name:'mobile-web-app-capable', content:'yes'}); add('meta', {name:'apple-mobile-web-app-title', content:'어닝톡'});
+        add('link', {rel:'apple-touch-icon', href:'../talk-180.png'}); document.querySelectorAll('link[rel~="icon"]').forEach(l => l.href = '../talk-192.png'); }
       document.addEventListener('mousedown', e => { if (e.target.closest('.epc-send')) e.preventDefault(); });   // [↑] 눌러도 키보드 유지
       document.addEventListener('touchstart', e => { const b = e.target.closest('.epc-send'); if (b && document.activeElement && document.activeElement.id === 'epc-t') { e.preventDefault(); b.click(); } }, {passive:false}); if (!opt.token && !opt.demo) return;
-      loadHome().then(() => { const q = new URLSearchParams(location.search).get('chat'); if (q && home && home.on) open(/^\d+$/.test(q) ? +q : null); });
+      loadHome().then(() => { const q = new URLSearchParams(location.search).get('chat') || (APP ? 'list' : null); if (q && home && home.on) open(/^\d+$/.test(q) ? +q : null); });
       clearInterval(homeT); homeT = setInterval(() => { if (!document.hidden && view !== 'room') loadHome(); }, 25000);
       document.addEventListener('visibilitychange', () => { if (!document.hidden) { view === 'room' ? refreshRoom() : loadHome(); } });
     },

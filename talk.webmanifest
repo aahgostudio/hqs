@@ -1,0 +1,2 @@
+{"name":"어닝톡","short_name":"어닝톡","start_url":"/hq/?app=chat#chat","scope":"/","display":"standalone","background_color":"#EEF1F5","theme_color":"#16347A",
+ "icons":[{"src":"/talk-192.png","sizes":"192x192","type":"image/png"},{"src":"/talk-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}

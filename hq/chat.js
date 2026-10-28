@@ -209,7 +209,7 @@ H.view('chat', {label:'대화',
     if (!H.S.owner) return `<section class="box ch-top"><div><h2 style="margin:0">대화</h2><small class="note">관리자 참여 방 · 대화와 사진은 업무 기록으로 보관돼요</small></div></section>
       <div class="ch-wrap"><aside class="box ch-list" id="chList"></aside><section class="box ch-room" id="chRoom"></section></div>`;
     return `<section class="box ch-top"><div><h2 style="margin:0">대화</h2><small class="note">직원은 자기 방만 봐요 · 방 개설·인원·닫기는 대표만 · 대화와 사진은 3년 보관</small></div>
-      <label class="ch-sw"><input type="checkbox" id="chOnTg" ${on?'checked':''} data-a="chOn"><span></span><b>${on?'직원에게 열림':'직원에게 닫힘 (준비 중)'}</b></label></section>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn sm ghost" data-a="chApp">📲 어닝톡 앱</button><label class="ch-sw"><input type="checkbox" id="chOnTg" ${on?'checked':''} data-a="chOn"><span></span><b>${on?'직원에게 열림':'직원에게 닫힘 (준비 중)'}</b></label></div></section>
       <div class="ch-wrap"><aside class="box ch-list" id="chList"></aside><section class="box ch-room" id="chRoom"></section></div>`;
   },
   after(){
@@ -275,6 +275,17 @@ H.FORM.chSecure = async (fd0, f) => {
   if (H.S.accts) delete H.S.accts[sid];
   H.close(); paint(true); H.toast(fd.get('purge') ? '인사카드에 저장하고 대화에서 지웠어요' : '인사카드에 저장했어요');
 };
+// 📲 대화만 따로: 홈 화면 '어닝톡' 앱
+H.ACT.chApp = () => { const u = location.origin + '/hq/?app=chat#chat', ios = /iPhone|iPad/i.test(navigator.userAgent);
+  H.open(`<h3>📲 어닝톡 앱 만들기</h3><p class="note" style="margin:-4px 0 12px">HQ 전체 말고 <b>대화만</b> 홈 화면 아이콘으로 열려요</p>
+    <ol style="margin:0 0 12px;padding-left:20px;line-height:1.8;font-size:14px">
+      <li><b>사파리</b>(아이폰) 또는 <b>크롬</b>(갤럭시)에서 아래 주소를 여세요 · 카톡 안에서는 안 돼요</li>
+      <li>${ios ? '아래 공유 버튼(⬆) → <b>홈 화면에 추가</b>' : '⋮ 메뉴 → <b>홈 화면에 추가</b> (아이폰은 공유 ⬆ → 홈 화면에 추가)'}</li>
+      <li>아이콘을 처음 열 때 <b>로그인 한 번</b> (앱은 브라우저와 로그인을 따로 기억해요)</li></ol>
+    <div class="field"><input class="inp" value="${esc(u)}" readonly onclick="this.select()"></div>
+    <p class="note">직원은 각자 대화 화면 위 <b>[📲 앱으로]</b> 버튼으로 똑같이 만들 수 있어요</p>
+    <div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button><button type="button" class="btn ghost" data-a="chAppCopy">주소 복사</button><a class="btn" href="${esc(u)}" style="text-decoration:none">앱 화면 열기</a></div>`); };
+H.ACT.chAppCopy = () => H.copy(location.origin + '/hq/?app=chat#chat', '주소를 복사했어요 · 사파리·크롬에 붙여넣으세요');
 H.ACT.chOn = async el => {
   const on = el.checked;
   if (on && !confirm('직원 전원 화면에 [대화] 탭이 열려요. 열까요?')) { el.checked = false; return; }

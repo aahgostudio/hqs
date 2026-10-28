@@ -7,9 +7,19 @@
 <meta name="theme-color" content="#16347A">
 <title>HQ · 어닝플레이스</title>
 <link rel="icon" href="../logo.svg">
+<script>/* ?app=chat → 대화만 따로 쓰는 '어닝톡' 앱 모드 (홈 화면에 추가용) */
+(function(){ if (new URLSearchParams(location.search).get('app') !== 'chat') return;
+  document.documentElement.classList.add('chatapp'); document.title = '어닝톡';
+  var h = document.head, add = function(t, a){ var e = document.createElement(t); for (var k in a) e.setAttribute(k, a[k]); h.appendChild(e); };
+  add('meta', {name:'apple-mobile-web-app-capable', content:'yes'}); add('meta', {name:'mobile-web-app-capable', content:'yes'});
+  add('meta', {name:'apple-mobile-web-app-title', content:'어닝톡'}); add('meta', {name:'apple-mobile-web-app-status-bar-style', content:'default'});
+  add('link', {rel:'apple-touch-icon', href:'../talk-180.png'}); add('link', {rel:'manifest', href:'../talk.webmanifest'});
+  if (!/^#chat/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search + '#chat');
+  window.addEventListener('hashchange', function(){ if (!/^#chat/.test(location.hash)) location.hash = 'chat'; });   // 앱 모드에선 대화 화면만
+})();</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="../style.css?v=1028za">
-<link rel="stylesheet" href="hq.css?v=1028zi">
+<link rel="stylesheet" href="hq.css?v=1028zj">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -30,9 +40,9 @@
 <script src="core.js?v=1028za"></script>
 <script src="home.js?v=1028za"></script>
 <script src="team.js?v=1028za"></script>
-<script>window.EP_VER='1028zi'</script>
-<script src="../chatkit.js?v=1028zi"></script>
-<script src="chat.js?v=1028zi"></script>
+<script>window.EP_VER='1028zj'</script>
+<script src="../chatkit.js?v=1028zj"></script>
+<script src="chat.js?v=1028zj"></script>
 <script src="sched.js?v=1028zg"></script>
 <script src="ops.js?v=1028zg"></script>
 <script src="promo.js?v=1028za"></script>
