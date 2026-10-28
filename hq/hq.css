@@ -247,6 +247,7 @@ tr.boss td{background:#F5F7FF}
 .ch-m.mine .ch-b{background:#111827;color:#fff;border-color:#111827;border-radius:14px 4px 14px 14px}
 .ch-b.del{border-style:dashed;text-decoration:line-through;opacity:.7}
 .ch-b img{display:block;max-width:240px;max-height:260px;border-radius:9px;margin-bottom:4px}
+.ch-b video{display:block;width:auto;max-width:min(220px,60vw);max-height:300px;border-radius:10px;background:#000;margin-bottom:4px}
 .ch-meta{font-size:10.5px;color:var(--sub);display:flex;flex-direction:column;white-space:nowrap}.ch-m.mine .ch-meta{align-items:flex-end}
 .ch-meta i{font-style:normal;color:#D9A400;font-weight:800}
 .ch-hist{font-size:11px;color:#B45309}.ch-hist summary{cursor:pointer}.ch-hist div{margin-top:2px}

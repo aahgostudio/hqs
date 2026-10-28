@@ -121,6 +121,10 @@ function paint(keep){
   } else { R.replaceChildren(...tmp.childNodes); }
   R.dataset.room = String(C.cur);
   const box = document.getElementById('chMsgs'); if (box) box.scrollTop = keep && !atB ? top : box.scrollHeight;
+  // 사진·동영상은 늦게 불러와져서 높이가 바뀜 → 맨 아래 보고 있었으면 다시 맨 아래로
+  if (box && !box._media) { box._media = true; const fix = () => { if (box._nearB !== false) box.scrollTop = box.scrollHeight; };
+    box.addEventListener('scroll', () => { box._nearB = box.scrollHeight - box.scrollTop - box.clientHeight < 120; });
+    box.addEventListener('load', fix, true); box.addEventListener('loadedmetadata', fix, true); }
   // 입력줄: 카카오워크식 (PC는 Enter 전송 · 폰은 [↑]로 전송) · @멘션 · 이모지
   K.attach(R.querySelector('.kit-bar'), {members: memList, onSend: () => H.ACT.chSend(),
     onMedia: k => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); }, k === 'album' ? 'alb' : null)});

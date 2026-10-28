@@ -196,6 +196,9 @@
   }
   function bindBox(box){
     if (box._bound) return; box._bound = true;
+    // 사진·동영상이 늦게 불러와지면 높이가 바뀜 → 맨 아래 보고 있었으면 다시 맨 아래로
+    box.addEventListener('scroll', () => { box._nearB = box.scrollHeight - box.scrollTop - box.clientHeight < 120; });
+    const fix = () => { if (box._nearB !== false) box.scrollTop = box.scrollHeight; }; box.addEventListener('load', fix, true); box.addEventListener('loadedmetadata', fix, true);
     let pressT; box.addEventListener('pointerdown', e => { const b = e.target.closest('[data-own]'); if (!b) return; pressT = setTimeout(() => menu(+b.dataset.own), 450); });
     ['pointerup','pointerleave','pointercancel'].forEach(ev => box.addEventListener(ev, () => clearTimeout(pressT)));
     box.addEventListener('contextmenu', e => { const b = e.target.closest('[data-own]'); if (b) { e.preventDefault(); menu(+b.dataset.own); } });
