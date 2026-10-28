@@ -38,12 +38,15 @@ const rpc = async (fn, args) => { const {data, error} = await H.sb.rpc(fn, args 
 
 async function loadHome(){ C.home = await rpc('chat_admin_home'); H.S.chatUnread = C.home.rooms.reduce((a,r) => a + (r.closed ? 0 : r.unread||0), 0); K.badge(H.S.chatUnread); }   // 홈 화면 아이콘 숫자
 
+// 1:1 방은 최신 대화가 맨 위로 (대화 없는 방은 아래, 원래 순서대로)
+const recent = arr => arr.map((r, i) => [r, i]).sort((x, y) => { const a = x[0].last ? x[0].last.at : '', b = y[0].last ? y[0].last.at : '';
+  return a === b ? x[1] - y[1] : (a < b ? 1 : -1); }).map(x => x[0]);
 function listHtml(){
   const rs = (C.home && C.home.rooms) || [], q = C.q.trim();
   const vis = rs.filter(r => (OWN() || (r.mgr && !r.closed && r.live)) && (C.showClosed ? r.closed : !r.closed) && (r.kind !== 'site' || r.live || r.count || C.showClosed) && (!q || r.title.includes(q)));
   const grp = [['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['현장', r => r.kind === 'site'], ['1:1', r => r.kind === 'dm']];
   const dnd = OWN() && !C.showClosed;
-  const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}${r._kid?' ch-kid':''}" data-kid="${r._kid?1:0}" data-kids="${r._kids||0}" data-a="chOpen" data-id="${r.id}" ${dnd?`draggable="true" data-sec="${['all','team','custom'].includes(r.kind)?'g':r.kind}"`:''}><span class="ch-ic${OWN()&&r.mgr&&!H.S.needV6?' mgr':''}" ${OWN()&&r.mgr&&!H.S.needV6?'title="관리자(HQS)도 참여하는 방"':''}>${icOf(r)}</span>
+  const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}${r._kid?' ch-kid':''}" data-kid="${r._kid?1:0}" data-kids="${r._kids||0}" data-a="chOpen" data-id="${r.id}" ${dnd&&r.kind!=='dm'?`draggable="true" data-sec="${['all','team','custom'].includes(r.kind)?'g':r.kind}"`:''}><span class="ch-ic${OWN()&&r.mgr&&!H.S.needV6?' mgr':''}" ${OWN()&&r.mgr&&!H.S.needV6?'title="관리자(HQS)도 참여하는 방"':''}>${icOf(r)}</span>
     <span class="t"><b>${esc(r.title)}${r.keep?' 📌':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
     <span class="r">${r.last?short(r.last.at):''}${r.unread?`<i class="ch-bd">${r.unread}</i>`:''}${r._kids?`<i class="ch-fold" data-fold="${r.id}" title="하위 방 접기/펴기">${C.fold[r.id]?'▸':'▾'} ${r._kids}</i>`:''}</span></button>`;
   const nClosed = rs.filter(r => r.closed).length;
@@ -51,7 +54,7 @@ function listHtml(){
   const dueHtml = due.map(r => `<div class="ch-due">⏳ <b>${esc(r.title)}</b> 퇴사 1년 지남 · 1:1 대화 ${r.count}건<span><button class="btn sm" data-a="chKeepId" data-id="${r.id}">장기 보관</button><button class="btn sm ghost" data-a="chPurge" data-id="${r.id}">정리</button></span></div>`).join('');
   return `${K.needBadgeOk() ? '<button class="ch-due" data-a="chBadgeOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>아이콘에 안 읽은 숫자 보이기</b> · 눌러서 [허용] 한 번</button>' : ''}${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
     ${C.showClosed ? `<div class="ch-sec">보관함 (닫은 방) <button class="link" data-a="chClosed">← 돌아가기</button></div>${vis.map(row).join('') || '<p class="note" style="padding:10px">닫은 방이 없어요</p>'}`
-      : grp.map(([l, f]) => { const a = tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
+      : grp.map(([l, f]) => { const a = l === '1:1' ? recent(vis.filter(f)) : tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
         + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')}`;
 }
 
