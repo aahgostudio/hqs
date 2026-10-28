@@ -66,7 +66,7 @@ function roomHtml(){
     const hist = (m.history||[]).length ? `<details class="ch-hist"><summary>${m.deleted?'삭제됨':'수정됨'} · 이력 ${(m.history||[]).length}</summary>${m.history.map(h => `<div>${dt(h.at)} ${h.act==='delete'?'삭제 전':'수정 전'}: ${esc(h.body||'')}${h.photo?' [사진]':''}</div>`).join('')}</details>` : '';
     out += `<div class="ch-m ${m.mine?'mine':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine?'':`<span class="ch-nm">${esc(m.name)}</span>`}
-      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?(isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener"><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
+      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}">${m.photo?(isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
       <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');

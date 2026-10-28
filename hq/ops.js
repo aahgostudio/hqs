@@ -176,7 +176,7 @@ function dealSheet(d){
   H.open(`<form data-f="deal"><h3>${d.id?'계약 수정':'계약 추가'}</h3><div class="fg">
     <div class="field"><label>계약일</label><input type="date" name="deal_date" value="${d.deal_date||ymd(H.today())}" required></div>
     <div class="field"><label>종류</label><select name="deal_kind" data-c="dealKind">${Object.keys(SIDES).map(k=>`<option ${kind===k?'selected':''}>${k}</option>`).join('')}</select></div>
-    <div class="field"><label>매물번호</label><input name="maemul_id" value="${esc(d.maemul_id||'')}" placeholder="조-0005"></div>
+    <div class="field"><label>매물번호</label><input name="maemul_id" value="${esc(d.maemul_id||'')}" placeholder="2610-원001"></div>
     <div class="field"><label>이름 (동네·종류)</label><input name="title" value="${esc(d.title||'')}" placeholder="광안동 원룸" required></div>
     <div class="field full"><label>담당 (공동중개면 여러 명)</label><div class="chips">${res.map(s=>`<label><input type="checkbox" name="agents" value="${s.id}" ${(d.agents||[]).includes(s.id)?'checked':''}><span>${esc(s.name)}</span></label>`).join('')}<label><input type="checkbox" name="agents" value="boss" ${d.id&&!(d.agents||[]).length?'checked':''}><span>대표</span></label></div></div>
     <div class="sec">받는 쪽마다 중개보수</div><div class="full" id="sdbox">${sides.map(row).join('')}</div>

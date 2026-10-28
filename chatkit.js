@@ -44,6 +44,12 @@
 .kit-read{align-self:center;display:flex;align-items:center;gap:7px;background:rgba(84,90,104,.82);color:#fff;font-size:12.5px;border-radius:20px;padding:7px 16px;margin:12px 0}
 .kit-mn{color:var(--kit-acc,#2F6FEB);font-weight:700}
 .kit-mn.me{background:color-mix(in srgb,var(--kit-acc,#2F6FEB) 14%,transparent);border-radius:4px;padding:0 2px}
+.kit-view{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.92);display:flex;flex-direction:column;color:#fff}
+.kit-view .vh{display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 12px 10px}
+.kit-view .vh button{border:0;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:15px;font-weight:700;border-radius:20px;padding:9px 16px;cursor:pointer}
+.kit-view .vb{flex:1;min-height:0;display:grid;place-items:center;padding:8px}
+.kit-view img{max-width:100%;max-height:100%;object-fit:contain;-webkit-touch-callout:default}
+.kit-view p{margin:0;text-align:center;font-size:12.5px;opacity:.7;padding:8px 16px calc(14px + env(safe-area-inset-bottom))}
 .mine .kit-mn{color:inherit;text-decoration:underline;text-underline-offset:2px}`;
     document.head.appendChild(s);
   }
@@ -149,5 +155,23 @@
     } catch(_){} };
     setTimeout(check, 1500); setInterval(check, 5 * 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); }); })();
 
-  window.EPKit = {bar, attach, sync, text, day, READ, firstUnread, jump};
+  // 사진 크게 보기 + [저장] — 대화 사진·매물 사진 공용 (<a data-view="큰 사진 주소" data-dl="원본 받기 주소">)
+  function viewer(src, dl, name){
+    css(); const d = document.createElement('div'); d.className = 'kit-view';
+    d.innerHTML = `<div class="vh"><button type="button" data-v="x">✕ 닫기</button><button type="button" data-v="save">⬇ 저장</button></div><div class="vb"><img src="${esc(src)}" alt="사진"></div><p>저장이 안 되면 사진을 꾹 눌러서 '사진에 저장'을 눌러주세요</p>`;
+    d.addEventListener('click', async e => { const b = e.target.closest('[data-v]'); if (!b) { if (e.target === d || e.target.classList.contains('vb')) d.remove(); return; }
+      if (b.dataset.v === 'x') return d.remove();
+      b.textContent = '저장 중…'; await save(src, dl, name); b.textContent = '⬇ 저장'; });
+    document.body.appendChild(d);
+  }
+  async function save(src, dl, name){
+    name = name || ('사진_' + new Date().toISOString().slice(0, 10) + '.jpg');
+    try { const r = await fetch(src); if (!r.ok) throw 0; const b = await r.blob(); const f = new File([b], name, {type: b.type || 'image/jpeg'});
+      if (navigator.canShare && navigator.canShare({files: [f]})) { try { await navigator.share({files: [f]}); } catch(_){} return; }   // 아이폰: 공유창 → '이미지 저장'
+      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    } catch(_) { window.open(dl || src, '_blank'); }
+  }
+  document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[data-view]'); if (!a) return; e.preventDefault(); e.stopPropagation(); viewer(a.dataset.view, a.dataset.dl, a.dataset.name); }, true);
+
+  window.EPKit = {viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();

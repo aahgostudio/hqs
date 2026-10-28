@@ -288,9 +288,9 @@ setTimeout(function(){var r=document.getElementById('root');if(r&&r.querySelecto
 <script src="../status.js"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1028zf'</script>
-<script src="../chatkit.js?v=1028zf"></script>
-<script src="../chat.js?v=1028zd"></script>
+<script>window.EP_VER='1028zg'</script>
+<script src="../chatkit.js?v=1028zg"></script>
+<script src="../chat.js?v=1028zg"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -453,7 +453,7 @@ function evPanel(){
   return `<section class="panel evp"><div class="panel-h"><h2>다가오는 내 일정<small>2주 · ${evs.length}건${todayN?` · 오늘 ${todayN}건`:''}</small></h2><a class="link" href="${href}" style="text-decoration:none">${ic('cal')}일정판</a></div>
   ${evs.length?evs.slice(0,3).map(e=>`<a class="evrow" href="${href}"><div class="d ${e.date===tk?'today':''}"><b>${lab(e.date)}</b><small>${esc(e.time||'시간 미정')}</small></div><span class="evk k-${esc(['계약','잔금','안내'].includes(e.kind)?e.kind:'기타')}">${esc(e.kind)}</span><div class="t">${e.maemul?`<span class="mm num">${esc(e.maemul)}</span>`:''}${esc(e.title)}</div></a>`).join('')
    :`<div class="muted" style="font-size:13.5px">앞으로 2주 동안 잡힌 일정이 없어요.</div>`}
-  <div class="more"><span class="muted">${evs.length>3?`외 ${evs.length-3}건 더 있어요`:''}</span><a href="${href}">＋ 계약·잔금·안내 넣기</a></div></section>`;
+  <div class="more"><span class="muted">${evs.length>3?`외 ${evs.length-3}건 더 있어요`:''}</span><a href="${S.demo||href.indexOf('../clean/')<0?href:href+'&new=1'}">＋ 계약·잔금·안내 넣기</a></div></section>`;
 }
 setTimeout(loadEvents, 700); setInterval(()=>{ if(document.visibilityState==='visible') loadEvents(); }, 300000);
 setTimeout(loadBoss, 600);
@@ -655,7 +655,7 @@ function viewDetail(id){
       ${row('매매가',num(r.sale)!=null?`<span class="num">${won(num(r.sale))}</span>만원`:'')}${row('보증금·전세금',num(r.deposit)!=null?`<span class="num">${won(num(r.deposit))}</span>만원`:'')}
       ${row('월세',num(r.rent)!=null?`<span class="num">${fmt(num(r.rent))}</span>만원`:'')}
       ${row('특징',esc(r.feature),1)}${row('공유 메모',esc(r.memo),1)}
-      ${(()=>{const p=photoInfo(r.photo);return row('사진',p.ids.length?`<div class="ph-grid">${p.ids.map(id=>`<a class="ph" href="https:\/\/drive.google.com\/file\/d\/${esc(id)}\/view" target="_blank" rel="noopener"><img src="${thumb(id)}" alt="" loading="lazy"></a>`).join('')}</div>`:p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener">사진 폴더 열기</a>`:'',1)})()}
+      ${(()=>{const p=photoInfo(r.photo);return row('사진',p.ids.length?`<div class="ph-grid">${p.ids.map(id=>`<a class="ph" href="https:\/\/drive.google.com\/file\/d\/${esc(id)}\/view" target="_blank" rel="noopener" data-view="https:\/\/lh3.googleusercontent.com\/d\/${esc(id)}=w2000" data-dl="https:\/\/drive.usercontent.google.com\/download?id=${esc(id)}&export=download" data-name="${esc(r.id)}_사진.jpg"><img src="${thumb(id)}" alt="" loading="lazy"></a>`).join('')}</div>`:p.url?`<a href="${esc(p.url)}" target="_blank" rel="noopener">사진 폴더 열기</a>`:'',1)})()}
       ${row('등록일',short(r.regDate))}${row('최근 확인',short(r.checked))}
     </dl>
     ${me?`<div class="lockbox"><h3>${ic('lock')}나만 보는 정보</h3><dl class="dl" style="margin:0">

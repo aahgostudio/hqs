@@ -169,9 +169,9 @@ body{background:var(--bg)}
 <script src="../status.js"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1028zf'</script>
-<script src="../chatkit.js?v=1028zf"></script>
-<script src="../chat.js?v=1028zd"></script>
+<script>window.EP_VER='1028zg'</script>
+<script src="../chatkit.js?v=1028zg"></script>
+<script src="../chat.js?v=1028zg"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -407,7 +407,7 @@ function evForm(){
   return `<div class="bar"><h3>${e.id?'내 일정 수정':'내 일정 추가'}</h3><button class="btn ghost sm" data-tab="board">닫기</button></div>
    <form class="form" id="evForm">
     <div class="field"><label>종류</label><div class="segs">${kinds.map(k=>`<button type="button" data-evk="${k}" aria-pressed="${e.kind===k}">${k}</button>`).join('')}</div></div>
-    ${isRES()?`<div class="field"><label>매물번호 (선택)</label><input name="maemul" value="${esc(e.maemul||'')}" placeholder="조-0005"></div>`:''}
+    ${isRES()?`<div class="field"><label>매물번호 (선택)</label><input name="maemul" value="${esc(e.maemul||'')}" placeholder="2610-원001"></div>`:''}
     <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>날짜</label><input type="date" name="date" value="${e.date}" required></div><div class="field" style="flex:1"><label>시간</label><input type="time" name="time" value="${e.time||''}"></div></div>
     <div class="field"><label>캘린더에 보일 말</label><input name="title" value="${esc(e.title||'')}" placeholder="${isRES()?'광안동 원룸 계약':isAGO()?'스튜디오 라이브 촬영':'병원'}" required maxlength="80"><div class="hint">손님 이름·연락처는 넣지 말아 주세요 (매물번호·동네까지만)</div></div>
     <div class="field"><label>메모 (나만 보기)</label><input name="memo" value="${esc(e.memo||'')}" maxlength="500"></div>
@@ -591,7 +591,9 @@ document.addEventListener('submit', async e => {
     EPChat.init({token:TOKEN, demo:DEMO && qs.has('chat'), accent:(getComputedStyle(document.documentElement).getPropertyValue('--navy')||'#16347A').trim(),
       onState:st => { const k = st.on + '/' + st.unread; if (k !== last) { last = k; tabbar(); } }}); }
   EPStatus.init({manual:()=>D&&D.boss, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }, demo:DEMO});
-  try { await load(); if (EVT()) scope = 'mine'; render(); if (tab==='mine'){ try{ payData = await rpc('staff_pay',{p_token:TOKEN,p_month:ymd(month)}); }catch(_){ payData=[]; } render(); } }
+  try { await load(); if (EVT()) scope = 'mine';
+    if (qs.has('new') && EVT()) { evEdit = {date: ymd(today), kind: isRES() ? '계약' : '미팅', show_boss: true, gcal: false}; tab = 'ev'; }   // 매물노트 [＋ 계약·잔금·안내 넣기] → 바로 입력칸
+    render(); if (tab==='mine'){ try{ payData = await rpc('staff_pay',{p_token:TOKEN,p_month:ymd(month)}); }catch(_){ payData=[]; } render(); } }
   catch(e){ document.getElementById('app').innerHTML = `<div class="err"><img class="logo" src="../logo.svg" alt="" style="width:48px;height:48px"><h2>링크를 확인해주세요</h2><p>${esc(errMsg(e))}</p></div>`; }
   document.addEventListener('visibilitychange', async () => { if (document.visibilityState==='visible' && D && !['paint','ev','shoot'].includes(tab)){ try{ await load(); render(); }catch(_){} } });
 })();
