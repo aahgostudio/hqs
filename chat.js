@@ -147,7 +147,7 @@
         ${g(['dm']).length ? `<div class="epc-sec">1:1</div>${g(['dm']).map(row).join('')}` : ''}
         ${g(['all','team','custom']).length ? `<div class="epc-sec">함께하는 방</div>${gt(['all','team','custom']).map(row).join('')}` : ''}
         ${g(['site']).length ? `<div class="epc-sec">내 현장</div>${g(['site']).map(row).join('')}` : ''}
-        ${K().needBadgeOk() ? '<button class="epc-row" data-badgeok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>아이콘에 안 읽은 숫자 보이기</b><p>눌러서 [허용]을 한 번만 눌러주세요</p></span></button>' : ''}
+        ${pushReady && K().needPush() ? '<button class="epc-row" data-pushok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>알림 받기</b><p>눌러서 [허용] 한 번 · 새 메시지가 바로 와요</p></span></button>' : K().needBadgeOk() ? '<button class="epc-row" data-badgeok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>아이콘에 안 읽은 숫자 보이기</b><p>눌러서 [허용]을 한 번만 눌러주세요</p></span></button>' : ''}
         <p class="epc-note">🔒 내가 속한 방만 보여요.${g(['site']).length ? ' 현장방은 작업 완료 보고 7일 뒤 목록에서 빠져요.' : ''}<br>대화와 사진은 업무 기록으로 보관돼요.</p>
       </div>`;
   }
@@ -321,6 +321,7 @@
     if (b.dataset.close) return close();
     if (b.dataset.appadd) return appGuide();
     if (b.dataset.badgeok) return K().badgeOk().then(() => { drawList(); loadHome(); });
+    if (b.dataset.pushok) return K().pushOn(pushKey, pushSave, true).then(r => { if (r !== 'ok') alert(r === 'denied' ? '알림이 꺼져 있어요. 폰 설정 → 알림 → 어닝톡에서 켜주세요' : '이 폰에서는 알림을 켤 수 없어요. 카톡 알림으로 계속 받아요'); drawList(); loadHome(); });
     if (b.dataset.list) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }
     if (b.dataset.room) return openRoom(+b.dataset.room);
     if (b.dataset.send) return send();
@@ -342,6 +343,9 @@
     shell().appendChild(d);   // 대화 화면 색(변수) 그대로 쓰게 안쪽에
     d.onclick = e => { e.stopPropagation(); const a = e.target.closest('[data-a]'); if (e.target === d || (a && a.dataset.a === 'x')) return d.remove(); if (a && a.dataset.a === 'go') location.href = u.href; };
   }
+  let pushReady = false;   // 서버(v17)에 푸시 키가 있을 때만 [알림 받기] 보여줌
+  const pushKey = () => rpc('push_pub', {}).then(k => { pushReady = !!k; return k; }).catch(() => null);
+  const pushSave = (sub, ua) => rpc('push_subscribe', {p_token: opt.token, p_sub: sub, p_ua: ua});
   function close(){
     if (APP) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }   // 앱 모드: 닫기 = 목록
     const w = document.getElementById('epc'); if (!w) return; view = null; clearInterval(pollT); room = null;
@@ -361,9 +365,10 @@
     init(o){ opt = Object.assign(opt, o || {}); css();
       if (APP) { document.title = '어닝톡'; document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="manifest"],meta[name="apple-mobile-web-app-title"]').forEach(e => e.remove()); const h = document.head, add = (t, a) => { const e = document.createElement(t); Object.entries(a).forEach(([k, v]) => e.setAttribute(k, v)); h.appendChild(e); };
         add('meta', {name:'apple-mobile-web-app-capable', content:'yes'}); add('meta', {name:'mobile-web-app-capable', content:'yes'}); add('meta', {name:'apple-mobile-web-app-title', content:'어닝톡'});
-        add('link', {rel:'apple-touch-icon', href:'../talk-180.png'}); document.querySelectorAll('link[rel~="icon"]').forEach(l => l.href = '../talk-192.png'); }
+        add('link', {rel:'apple-touch-icon', href:'../talk-180.png'}); add('link', {rel:'manifest', href:'../talk-staff.webmanifest'}); document.querySelectorAll('link[rel~="icon"]').forEach(l => l.href = '../talk-192.png'); }
       document.addEventListener('mousedown', e => { if (e.target.closest('.epc-send')) e.preventDefault(); });   // [↑] 눌러도 키보드 유지
       document.addEventListener('touchstart', e => { const b = e.target.closest('.epc-send'); if (b && document.activeElement && document.activeElement.id === 'epc-t') { e.preventDefault(); b.click(); } }, {passive:false}); if (!opt.token && !opt.demo) return;
+      if (opt.token && !opt.demo) { pushKey(); K().pushSync(pushKey, pushSave); }   // 알림 허용해 둔 폰이면 조용히 다시 등록
       loadHome().then(() => { const q = new URLSearchParams(location.search).get('chat') || (APP ? 'list' : null); if (q && home && home.on) open(/^\d+$/.test(q) ? +q : null); });
       clearInterval(homeT); homeT = setInterval(() => { if (!document.hidden && view !== 'room') loadHome(); }, 25000);
       document.addEventListener('visibilitychange', () => { if (!document.hidden) { view === 'room' ? refreshRoom() : loadHome(); } });

@@ -36,7 +36,12 @@ const short = iso => { const d = new Date(iso), t = new Date(); return d.toDateS
 const OWN = () => !!H.S.owner;
 const rpc = async (fn, args) => { const {data, error} = await H.sb.rpc(fn, args || {}); if (error) throw error; return data; };
 
-async function loadHome(){ C.home = await rpc('chat_admin_home'); H.S.chatUnread = C.home.rooms.reduce((a,r) => a + (r.closed ? 0 : r.unread||0), 0); K.badge(H.S.chatUnread); }   // 홈 화면 아이콘 숫자
+const pushKey = () => rpc('push_pub').catch(() => null);
+const pushSave = (sub, ua) => rpc('push_subscribe_boss', {p_sub: sub, p_ua: ua});
+let pushSynced = false;
+async function loadHome(){ if (OWN() && !pushSynced) { pushSynced = true; K.pushSync(pushKey, pushSave); }   // 대표 폰: 알림 허용해 뒀으면 조용히 다시 등록
+  try { C.pushWho = new Set(await rpc('push_who') || []); C.pushReady = true; } catch(_) { C.pushWho = C.pushWho || new Set(); }   // 📲 푸시로 받는 직원
+  C.home = await rpc('chat_admin_home'); H.S.chatUnread = C.home.rooms.reduce((a,r) => a + (r.closed ? 0 : r.unread||0), 0); K.badge(H.S.chatUnread); }   // 홈 화면 아이콘 숫자
 
 // 1:1 방은 최신 대화가 맨 위로 (대화 없는 방은 아래, 원래 순서대로)
 const recent = arr => arr.map((r, i) => [r, i]).sort((x, y) => { const a = x[0].last ? x[0].last.at : '', b = y[0].last ? y[0].last.at : '';
@@ -47,12 +52,12 @@ function listHtml(){
   const grp = [['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['현장', r => r.kind === 'site'], ['1:1', r => r.kind === 'dm']];
   const dnd = OWN() && !C.showClosed;
   const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}${r._kid?' ch-kid':''}" data-kid="${r._kid?1:0}" data-kids="${r._kids||0}" data-a="chOpen" data-id="${r.id}" ${dnd&&r.kind!=='dm'?`draggable="true" data-sec="${['all','team','custom'].includes(r.kind)?'g':r.kind}"`:''}><span class="ch-ic${OWN()&&r.mgr&&!H.S.needV6?' mgr':''}" ${OWN()&&r.mgr&&!H.S.needV6?'title="관리자(HQS)도 참여하는 방"':''}>${icOf(r)}</span>
-    <span class="t"><b>${esc(r.title)}${r.keep?' 📌':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
+    <span class="t"><b>${esc(r.title)}${r.kind==='dm'&&C.pushWho&&C.pushWho.has(r.staff_id)?' <small title="어닝톡 푸시로 받아요">📲</small>':''}${r.keep?' 📌':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
     <span class="r">${r.last?short(r.last.at):''}${r.unread?`<i class="ch-bd">${r.unread}</i>`:''}${r._kids?`<i class="ch-fold" data-fold="${r.id}" title="하위 방 접기/펴기">${C.fold[r.id]?'▸':'▾'} ${r._kids}</i>`:''}</span></button>`;
   const nClosed = rs.filter(r => r.closed).length;
   const due = !OWN() ? [] : rs.filter(r => r.kind === 'dm' && r.left_at && !r.keep && (Date.now() - new Date(r.left_at)) > 365*864e5);
   const dueHtml = due.map(r => `<div class="ch-due">⏳ <b>${esc(r.title)}</b> 퇴사 1년 지남 · 1:1 대화 ${r.count}건<span><button class="btn sm" data-a="chKeepId" data-id="${r.id}">장기 보관</button><button class="btn sm ghost" data-a="chPurge" data-id="${r.id}">정리</button></span></div>`).join('');
-  return `${K.needBadgeOk() ? '<button class="ch-due" data-a="chBadgeOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>아이콘에 안 읽은 숫자 보이기</b> · 눌러서 [허용] 한 번</button>' : ''}${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
+  return `${OWN() && C.pushReady && K.needPush() ? '<button class="ch-due" data-a="chPushOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>알림 받기</b> · 눌러서 [허용] 한 번 · 앱을 닫아도 새 메시지가 바로 와요</button>' : ''}${K.needBadgeOk() && !(OWN() && C.pushReady && K.needPush()) ? '<button class="ch-due" data-a="chBadgeOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>아이콘에 안 읽은 숫자 보이기</b> · 눌러서 [허용] 한 번</button>' : ''}${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
     ${C.showClosed ? `<div class="ch-sec">보관함 (닫은 방) <button class="link" data-a="chClosed">← 돌아가기</button></div>${vis.map(row).join('') || '<p class="note" style="padding:10px">닫은 방이 없어요</p>'}`
       : grp.map(([l, f]) => { const a = l === '1:1' ? recent(vis.filter(f)) : tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
         + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')}`;
@@ -296,6 +301,7 @@ H.ACT.chApp = () => { const u = location.origin + '/hq/?app=chat#chat', ios = /i
     <p class="note">직원은 각자 대화 화면 위 <b>[📲 앱으로]</b> 버튼으로 똑같이 만들 수 있어요</p>
     <div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button><button type="button" class="btn ghost" data-a="chAppCopy">주소 복사</button><a class="btn" href="${esc(u)}" style="text-decoration:none">앱 화면 열기</a></div>`); };
 H.ACT.chAppCopy = () => H.copy(location.origin + '/hq/?app=chat#chat', '주소를 복사했어요 · 사파리·크롬에 붙여넣으세요');
+H.ACT.chPushOk = async () => { const r = await K.pushOn(pushKey, pushSave, true); H.toast(r === 'ok' ? '알림을 켰어요 · 이제 푸시로 받아요' : r === 'denied' ? '알림이 꺼져 있어요 · 폰 설정 → 알림 → 어닝톡' : '이 폰에선 알림을 켤 수 없어요 (서버 업데이트 v17 필요할 수 있어요)'); await loadHome(); paint(true); };
 H.ACT.chBadgeOk = async () => { await K.badgeOk(); await loadHome(); paint(true); };
 H.ACT.chOn = async el => {
   const on = el.checked;

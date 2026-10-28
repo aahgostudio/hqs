@@ -196,10 +196,28 @@
     viewer(a.dataset.view, a.dataset.dl, a.dataset.name, all.map(x => ({view: x.dataset.view, dl: x.dataset.dl, name: x.dataset.name})), all.indexOf(a)); }, true);
 
   // 홈 화면 아이콘 배지: 안 읽은 수 (아이폰은 '알림 허용'을 한 번 눌러야 보여요)
-  function badge(n){ try { if (!('setAppBadge' in navigator)) return; n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } catch(_){} }
+  function badge(n){ try { if ('setAppBadge' in navigator) { n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } } catch(_){}
+    if (!n && 'serviceWorker' in navigator) navigator.serviceWorker.getRegistration('/').then(r => r && r.getNotifications().then(a => a.forEach(x => x.close()))).catch(() => {});   // 다 읽으면 알림도 정리
+  }
   const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const needBadgeOk = () => standalone() && 'Notification' in window && Notification.permission === 'default' && 'setAppBadge' in navigator;
   async function badgeOk(){ try { await Notification.requestPermission(); } catch(_){} }
+  // 📲 푸시 알림: 홈 화면 아이콘으로 연 사람만 (아니면 서버가 카톡 알림톡으로 보냄)
+  const canPush = () => standalone() && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const pushed = () => { try { return localStorage.getItem('ep_push') === '1'; } catch(_) { return false; } };
+  const needPush = () => canPush() && Notification.permission !== 'denied' && !(Notification.permission === 'granted' && pushed());
+  const u8 = b => { const p = '='.repeat((4 - b.length % 4) % 4), s = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, c => c.charCodeAt(0)); };
+  async function pushOn(getKey, save, ask){
+    if (!canPush()) return 'unsupported';
+    const perm = ask ? await Notification.requestPermission() : Notification.permission; if (perm !== 'granted') return perm;
+    const reg = await navigator.serviceWorker.register('/sw.js', {scope: '/'}); await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) { const key = await getKey(); if (!key) return 'no_key'; sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: u8(key)}); }
+    await save(sub.toJSON(), navigator.userAgent); try { localStorage.setItem('ep_push', '1'); } catch(_){}
+    return 'ok';
+  }
+  // 앱 열 때마다 조용히 다시 등록 (허용해 둔 사람만) — 구독이 바뀌어도 이어지게
+  function pushSync(getKey, save){ if (canPush() && Notification.permission === 'granted') pushOn(getKey, save, false).catch(() => {}); }
   // 파일 종류: 사진·동영상 말고 문서도 대화로 (PDF·한글·엑셀·워드·PPT·ZIP·TXT)
   const DOC = /\.(pdf|hwp|hwpx|xlsx?|docx?|pptx?|zip|txt|csv)$/i, VID = /\.(mov|mp4|m4v|webm|3gp)$/i, IMG = /\.(jpe?g|png|webp|heic|heif|gif)$/i;
   const kind = f => { const n = f.name || '', t = f.type || ''; if (/^video\//.test(t) || VID.test(n)) return 'vid'; if (/^image\//.test(t) || IMG.test(n)) return 'img'; if (DOC.test(n)) return 'doc'; return null; };
@@ -232,5 +250,5 @@
   function grid(ps, pub, o){ o = o || {}; const n = ps.length, show = ps.slice(0, 9);
     return `<div class="kit-grid${n >= 5 ? ' g3' : ''}">${show.map((m, i) => { const u = pub(m.photo);
       return `<a href="${esc(u)}" target="_blank" rel="noopener" data-view="${esc(u)}" data-dl="${esc(u)}?download=" ${o.own ? `data-own="${m.id}"` : ''} class="${n === 1 ? 'one' : ''}"><img src="${esc(u)}" alt="사진" loading="lazy">${i === 8 && n > 9 ? `<span class="more">+${n - 9}</span>` : ''}${o.sec ? `<button type="button" class="sec" data-a="chSecure" data-id="${m.id}" title="인사카드로 옮기기">🔒</button>` : ''}</a>`; }).join('')}</div>`; }
-  window.EPKit = {group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
+  window.EPKit = {needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();

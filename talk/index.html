@@ -6,11 +6,11 @@
 // 카톡 알림톡 [대화 보기]/[답장하기] → 이 주소 (?k=코드.방번호)
 //  m.코드 = 부동산(매물노트) · hq = 대표(HQ) · 그 외 = 클린 일정판
 (function(){
-  var k = new URLSearchParams(location.search).get('k') || '', room = '';
+  var q = new URLSearchParams(location.search), k = q.get('k') || '', room = '', app = q.get('app') === 'chat' ? '&app=chat' : '';   // app=chat: 어닝톡 푸시에서 열 때
   var m = k.match(/^(.*)\.(\d+)$/); if (m) { k = m[1]; room = m[2]; }
-  if (k === 'hq') { location.replace('../hq/#chat' + (room ? '/' + room : '')); return; }
-  if (k.indexOf('m.') === 0) { k = k.slice(2); location.replace('../maemul/?k=' + encodeURIComponent(k) + '&chat=' + (room || 'list')); return; }
-  if (k) { location.replace('../clean/?k=' + encodeURIComponent(k) + '&chat=' + (room || 'list')); return; }
+  if (k === 'hq') { location.replace('../hq/' + (app ? '?app=chat' : '') + '#chat' + (room ? '/' + room : '')); return; }
+  if (k.indexOf('m.') === 0) { k = k.slice(2); location.replace('../maemul/?k=' + encodeURIComponent(k) + '&chat=' + (room || 'list') + app); return; }
+  if (k) { location.replace('../clean/?k=' + encodeURIComponent(k) + '&chat=' + (room || 'list') + app); return; }
   location.replace('../go/');
 })();
 </script></body></html>
