@@ -96,7 +96,7 @@ function jobCard(j){
     : left===0 ? '<span class="pill p-ok">인원 완료</span>' : `<span class="pill p-warn">${left}자리 남음</span>`;
   const seen = a => a.seen_at && new Date(a.seen_at) >= new Date(j.changed_at);
   const active = j.status!=='done' && j.status!=='cancelled';
-  const bossChip = boss ? `<span class="who ok">✓ ${esc(H.S.name||'대표')}${active&&H.S.owner?`<button class="x" data-a="bossOn" data-j="${j.id}" aria-label="배정 빼기">✕</button>`:''}</span>` : '';   // 대표님도 직원처럼
+  const bossChip = boss ? `<span class="who ok">✓ ${esc(H.S.owner ? (H.S.name||'대표') : '대표님')}${active?`<button class="x" data-a="bossOn" data-j="${j.id}" aria-label="배정 빼기">✕</button>`:''}</span>` : '';   // 대표님도 직원처럼
   const people = bossChip + ap.map(a => `<span class="who ok ${seen(a)?'':'unseen'}" title="${seen(a)?'확인함 '+H.ago(a.seen_at):'아직 안 봤어요'}">${seen(a)?'✓':'!'} ${esc(H.P(a.staff_id).name)}${active?`<button class="x" data-a="unassign" data-j="${j.id}" data-s="${a.staff_id}" aria-label="배정 빼기">✕</button>`:''}</span>`).join('')
     + wait.map(a => `<span class="who wait">${esc(H.P(a.staff_id).name)} 신청<button data-a="approve" data-j="${j.id}" data-s="${a.staff_id}">승인</button><button class="no" data-a="reject" data-j="${j.id}" data-s="${a.staff_id}">거절</button></span>`).join('')
     + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '');
@@ -201,7 +201,7 @@ H.ACT.unassign = async el => { const sid = el.dataset.s; if (!confirm(`${H.P(sid
 // 👔 나도 가요 / 빼기: 대표님도 한 자리로 셈 → 자리가 다 차면 직원 신청 마감, 빼면 다시 열림
 H.ACT.bossOn = async el => { const j = (H.S.jobs||[]).find(x => x.id === +el.dataset.j); if (!j) return;
   const on = !j.boss_on, ap = (j.assignments||[]).filter(a => a.status === 'approved').length, full = ap + (on ? 1 : 0) >= j.headcount;
-  if (!on && !confirm(`${H.S.name||'대표'}님을 이 일정에서 뺄까요?`)) return;
+  if (!on && !confirm(`${H.S.owner ? (H.S.name||'대표') + '님' : '대표님'}을 이 일정에서 뺄까요?`)) return;
   const row = {boss_on: on}; if (on && full && j.status === 'open') row.status = 'full'; if (!on && !full && j.status === 'full') row.status = 'open';
   await H.q(sb.from('jobs').update(row).eq('id', j.id)); H.toast(on ? '배정했어요' : '배정에서 뺐어요'); H.refresh(); };
 
