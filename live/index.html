@@ -61,6 +61,22 @@ h1{font-size:20px;margin:0;font-weight:900;letter-spacing:-.02em}
 .toast.on{opacity:1}
 .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--navy);border-radius:50%;animation:sp .8s linear infinite;margin:80px auto}
 @keyframes sp{to{transform:rotate(360deg)}}
+.fab{position:fixed;right:max(16px,calc(50% - 244px));bottom:calc(18px + env(safe-area-inset-bottom));z-index:15;border:0;border-radius:999px;background:var(--navy);color:#fff;font-weight:700;font-size:15px;padding:13px 18px;box-shadow:0 6px 20px rgba(22,52,122,.35);display:flex;gap:6px;align-items:center;cursor:pointer}
+.fab i{font-style:normal;background:#EF4444;color:#fff;border-radius:999px;min-width:20px;height:20px;font-size:12px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
+.cs{position:fixed;inset:0;z-index:25;background:rgba(10,20,50,.45);display:flex;align-items:flex-end;justify-content:center}
+.csb{background:#fff;width:100%;max-width:520px;height:min(86vh,680px);border-radius:18px 18px 0 0;display:flex;flex-direction:column}
+.csh{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}.csh b{flex:1;font-size:16px}
+.csh button{border:0;background:none;font-size:22px;color:var(--sub);cursor:pointer;padding:0 4px}
+.csl{flex:1;overflow:auto;padding:14px 12px;background:var(--soft);display:flex;flex-direction:column;gap:8px}
+.bub{max-width:80%;padding:9px 12px;border-radius:14px;font-size:14.5px;white-space:pre-wrap;word-break:break-word;line-height:1.5}
+.bub small{display:block;font-size:11px;color:var(--sub);margin-top:2px}
+.bub.us{align-self:flex-start;background:#fff;border:1px solid var(--line)}.bub.me{align-self:flex-end;background:var(--navy);color:#fff}.bub.me small{color:#C7D2FE;text-align:right}
+.who{font-size:11.5px;color:var(--sub);margin:4px 0 -4px 4px}
+.csf{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.csf textarea{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;resize:none;max-height:120px}
+.csf button{border:0;border-radius:12px;background:var(--navy);color:#fff;font-weight:700;padding:0 16px;cursor:pointer}
+.csf button:disabled{opacity:.5}
+
 </style>
 </head>
 <body>
@@ -166,12 +182,57 @@ document.addEventListener('click', async e => {
   if (b.dataset.copy) { try { await navigator.clipboard.writeText(b.dataset.copy); toast('계좌번호를 복사했어요'); } catch(_) { prompt('계좌번호', b.dataset.copy); } }
 });
 
+/* 💬 문의하기 — 손님 ↔ 리츠 대화 (링크 안에서만, 우리 번호·직원 이름 안 보임) */
+const CH = {msgs:[], last:0, unread:0, open:false, ok:true, busy:false};
+async function chatLoad(){
+  const {data, error} = await sb.rpc('live_chat', {p_code: CODE, p_after: CH.last});
+  if (error) { CH.ok = false; return; }
+  (data.msgs||[]).forEach(m => { if (!CH.msgs.some(x => x.id === m.id)) CH.msgs.push(m); });
+  if (CH.msgs.length) CH.last = CH.msgs[CH.msgs.length-1].id;
+  CH.unread = data.unread || 0;
+  if (CH.open && CH.unread) { CH.unread = 0; sb.rpc('live_chat_read', {p_code: CODE}); }
+}
+function chatFab(){
+  let f = $('#fab'); if (!D || D.state === 'closed' || !CH.ok) { if (f) f.remove(); return; }
+  if (!f) { f = document.createElement('button'); f.id = 'fab'; f.className = 'fab'; f.dataset.chat = 'open'; document.body.appendChild(f); }
+  f.innerHTML = `💬 문의하기${CH.unread?`<i>${CH.unread}</i>`:''}`; f.style.display = CH.open ? 'none' : '';
+}
+function chatList(){
+  const l = $('#csl'); if (!l) return; const near = l.scrollHeight - l.scrollTop - l.clientHeight < 80;
+  l.innerHTML = CH.msgs.length ? CH.msgs.map(m => m.me
+      ? `<div class="bub me">${esc(m.deleted?'삭제된 메시지':m.body)}<small>${hm(m.at)}</small></div>`
+      : `<div class="who">리츠종합클린</div><div class="bub us">${esc(m.deleted?'삭제된 메시지':m.body)}<small>${hm(m.at)}</small></div>`).join('')
+    : '<div class="empty" style="padding:30px 10px">궁금한 점이나 요청 사항을 편하게 남겨주세요 😊<br><small>추가로 원하시는 곳, 주차·출입 안내 등</small></div>';
+  if (near || !chatList.done) l.scrollTop = l.scrollHeight; chatList.done = true;
+}
+function chatOpen(){
+  CH.open = true; chatList.done = false;
+  const w = document.createElement('div'); w.className = 'cs'; w.id = 'cs';
+  w.innerHTML = `<div class="csb" role="dialog" aria-modal="true" aria-label="문의하기"><div class="csh"><img src="img/mark.png" alt="" style="width:24px;height:24px"><b>리츠종합클린 문의</b><button data-chat="close" aria-label="닫기">×</button></div>
+    <div class="csl" id="csl"></div>
+    <form class="csf" id="csf"><textarea id="cst" rows="1" maxlength="1000" placeholder="메시지를 입력하세요"></textarea><button type="submit">보내기</button></form></div>`;
+  document.body.appendChild(w); chatList(); chatFab();
+  if (CH.unread) { CH.unread = 0; sb.rpc('live_chat_read', {p_code: CODE}); }
+  w.addEventListener('click', e => { if (e.target === w) chatClose(); });
+  const t = $('#cst'); t.addEventListener('input', () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; });
+  $('#csf').addEventListener('submit', async e => { e.preventDefault(); const v = t.value.trim(); if (!v || CH.busy) return;
+    CH.busy = true; const b = e.target.querySelector('button'); b.disabled = true;
+    const {error} = await sb.rpc('live_chat_send', {p_code: CODE, p_body: v});
+    CH.busy = false; b.disabled = false;
+    if (error) return toast(/too_many/.test(error.message) ? '잠시 후 다시 보내주세요' : /closed/.test(error.message) ? '문의가 닫혔어요 · 전화로 연락 주세요' : '전송이 안 됐어요 · 다시 눌러주세요');
+    t.value = ''; t.style.height = 'auto'; await chatLoad(); chatList(); });
+}
+function chatClose(){ CH.open = false; const w = $('#cs'); if (w) w.remove(); chatFab(); }
+document.addEventListener('click', e => { const b = e.target.closest('[data-chat]'); if (!b) return; b.dataset.chat === 'open' ? chatOpen() : chatClose(); });
+async function chatTick(){ if (document.visibilityState !== 'visible') return; try { await chatLoad(); } catch(_){} chatList(); chatFab(); }
+
 (async () => {
   if (!CODE) { $('#app').innerHTML = '<main><div class="empty">링크를 다시 확인해 주세요.</div></main>'; return; }
   try { await load(); render(); intro(false); }
   catch(_) { $('#app').innerHTML = '<header class="hd"><img src="img/mark.png" alt=""><b>리츠종합클린</b></header><main><div class="empty">링크를 찾지 못했어요.<br>받으신 링크를 다시 확인해 주세요.</div></main>'; return; }
   setInterval(async () => { if (document.visibilityState !== 'visible' || !D || D.state !== 'live' || $('#pop')) return;
     const n = (D.photos||[]).length; try { await load(); if ((D.photos||[]).length !== n || D.state !== 'live') { render(); if ((D.photos||[]).length > n) toast('새 사진이 올라왔어요'); } } catch(_){} }, 30000);
+  if (D.state !== 'closed') { await chatTick(); setInterval(() => { if (CH.open || Date.now() - (chatTick.t||0) > 25000) { chatTick.t = Date.now(); chatTick(); } }, 5000); }
 })();
 })();
 </script>

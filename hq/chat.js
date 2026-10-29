@@ -1,7 +1,7 @@
 /* 대화 — 대표 화면 (모든 방 · 원문/수정 이력 · 방 개설·인원·닫기 · 내보내기) */
 (function(H){
 const {esc} = H;
-const ICON = {dm:'👤', all:'📣', team:'👥', site:'📍', custom:'💬'};
+const ICON = {dm:'👤', all:'📣', team:'👥', site:'📍', custom:'💬', cust:'🙋'};
 const ordOf = () => ((((H.S.settings||{}).chat_icons)||{})._order) || [];
 const byOrd = arr => { const o = ordOf(); const ix = id => { const i = o.indexOf(id); return i < 0 ? 1e6 : i; }; return arr.map((r, i) => [r, i]).sort((a, b) => ix(a[0].id) - ix(b[0].id) || a[1] - b[1]).map(x => x[0]); };   // 대표가 끌어서 정한 방 순서
 const parOf = () => ((((H.S.settings||{}).chat_icons)||{})._parent) || {};
@@ -19,7 +19,7 @@ const ICON_SETS = [
   ['일정·업무', ['📅','🗓️','⏰','📋','📎','💼','📷','📸','📦','💬','💡','📊','💰','💳','🧮','🎯']],
   ['자연·기분', ['🌱','🌿','🍀','🌸','🌼','🌻','☀️','🌙','🌈','☕','🍙','🎈']]
 ];
-const KIND = {all:'전체', team:'팀', site:'현장', dm:'1:1', custom:'대표가 만든 방'};
+const KIND = {all:'전체', team:'팀', site:'현장', dm:'1:1', custom:'대표가 만든 방', cust:'고객 (손님 링크)'};
 const URL_ = (window.EP_CONFIG||{}).SUPABASE_URL;
 const pub = p => `${URL_}/storage/v1/object/public/chat/${p}`;
 const C = {fold: {}, home:null, cur:null, room:null, msgs:[], unread:{}, t:null, q:'', showClosed:false};
@@ -49,7 +49,7 @@ const recent = arr => arr.map((r, i) => [r, i]).sort((x, y) => { const a = x[0].
 function listHtml(){
   const rs = (C.home && C.home.rooms) || [], q = C.q.trim();
   const vis = rs.filter(r => (OWN() || (r.mgr && !r.closed && r.live)) && (C.showClosed ? r.closed : !r.closed) && (r.kind !== 'site' || r.live || r.count || C.showClosed) && (!q || r.title.includes(q)));
-  const grp = [['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['현장', r => r.kind === 'site'], ['1:1', r => r.kind === 'dm']];
+  const grp = [['고객 문의', r => r.kind === 'cust'], ['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['현장', r => r.kind === 'site'], ['1:1', r => r.kind === 'dm']];
   const dnd = OWN() && !C.showClosed;
   const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}${r._kid?' ch-kid':''}" data-kid="${r._kid?1:0}" data-kids="${r._kids||0}" data-a="chOpen" data-id="${r.id}" ${dnd&&r.kind!=='dm'?`draggable="true" data-sec="${['all','team','custom'].includes(r.kind)?'g':r.kind}"`:''}><span class="ch-ic${OWN()&&r.mgr&&!H.S.needV6?' mgr':''}" ${OWN()&&r.mgr&&!H.S.needV6?'title="관리자(HQS)도 참여하는 방"':''}>${icOf(r)}</span>
     <span class="t"><b>${esc(r.title)}${r.kind==='dm'&&C.pushWho&&C.pushWho.has(r.staff_id)?' <small title="어닝톡 푸시로 받아요">📲</small>':''}${r.keep?' 📌':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>

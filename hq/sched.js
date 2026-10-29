@@ -451,7 +451,7 @@ H.FORM.ev = async v => { const row = {ev_date:v.get('ev_date'), ev_time:H.nn(v.g
   const id = v.get('id'); await H.q(id ? sb.from('events').update(row).eq('id', +id) : sb.from('events').insert(row)); H.close(); H.toast('저장했어요'); H.refresh(); };
 
 /* ---------- 손님 링크 ---------- */
-H.liveMsg = j => `[리츠종합클린] 안녕하세요, 고객님 😊\n오늘 ${j.live_title||j.title} 진행합니다.\n\n작업 사진이 실시간으로 올라가는 페이지예요. 언제든 들어와 보세요!\n👉 ${H.liveUrl(j.live_code)}\n\n작업이 끝나면 전후 사진 리포트로 바뀌어요.`;
+H.liveMsg = j => `[리츠종합클린] 안녕하세요, 고객님 😊\n오늘 ${j.live_title||j.title} 진행합니다.\n\n작업 사진이 실시간으로 올라가는 페이지예요. 언제든 들어와 보세요!\n👉 ${H.liveUrl(j.live_code)}\n\n작업이 끝나면 전후 사진 리포트로 바뀌어요.\n궁금한 점은 페이지의 [💬 문의하기]로 편하게 남겨주세요.`;
 H.ACT.liveSheet = async el => {
   let j = J(el.dataset.j);
   if (!j.live_code) { const code = H.rnd(8), days = +((H.setting('live')||{}).close_days) || 7; await H.q(sb.from('jobs').update({live_code: code, live_close_days: days}).eq('id', j.id)); j.live_code = code; j.live_close_days = days; H._dirty = Date.now(); H.toast('손님 링크를 발급했어요'); }
