@@ -203,7 +203,9 @@ H.ACT.bossOn = async el => { const j = (H.S.jobs||[]).find(x => x.id === +el.dat
   const on = !j.boss_on, ap = (j.assignments||[]).filter(a => a.status === 'approved').length, full = ap + (on ? 1 : 0) >= j.headcount;
   if (!on && !confirm(`${H.S.owner ? (H.S.name||'대표') + '님' : '대표님'}을 이 일정에서 뺄까요?`)) return;
   const row = {boss_on: on}; if (on && full && j.status === 'open') row.status = 'full'; if (!on && !full && j.status === 'full') row.status = 'open';
-  await H.q(sb.from('jobs').update(row).eq('id', j.id)); H.toast(on ? '배정했어요' : '배정에서 뺐어요'); H.refresh(); };
+  await H.q(sb.from('jobs').update(row).eq('id', j.id)); H.toast(on ? '배정했어요' : '배정에서 뺐어요'); await H.refresh();
+  // 대표님이 수금 담당(= 담당 없음)이었는데 빠지면 → 수금 담당 바로 고르게
+  if (!on && !j.collector_id && j.status !== 'quote') H.ACT.collPick({dataset:{j: String(j.id), why: '1'}}); };
 
 /* 현장 올리기 · 수정 */
 
@@ -358,7 +360,7 @@ H.ACT.repDel = async el => { const j = J(el.dataset.j);
   H.close(); H.toast(el.dataset.scope === 'one' ? '이 날만 지웠어요' : `${md(j.job_date)} 이후 정기 일정을 지웠어요`); H.refresh(); };
 // 수금 담당 바로 바꾸기 (그날 투입된 사람 중에서)
 H.ACT.collPick = el => { const j = J(el.dataset.j); const ap = (j.assignments||[]).filter(a => a.status === 'approved').map(a => H.P(a.staff_id));
-  H.open(`<h3>💰 수금 담당</h3><p class="note" style="margin:-6px 0 12px">${esc(j.title)} · ${md(j.job_date)}<br>수금 담당만 잔금·고객 정보가 보이고, 고객님 방에서 [작업 끝]을 눌러요.</p>
+  H.open(`<h3>💰 수금 담당</h3>${el.dataset.why ? '<div class="banner warn" style="margin:-4px 0 10px">대표님이 빠져서 <b>수금 담당이 비었어요.</b> 현장에 가는 분 중에서 골라주세요 · 안 고르면 아무도 [작업 끝]을 못 눌러요</div>' : ''}<p class="note" style="margin:-6px 0 12px">${esc(j.title)} · ${md(j.job_date)}<br>수금 담당만 잔금·고객 정보가 보이고, 고객님 방에서 [작업 끝]을 눌러요.</p>
     <div style="display:grid;gap:8px">${ap.map(p => `<button class="ropt" data-a="collSet" data-j="${j.id}" data-s="${p.id}" ${j.collector_id===p.id?'style="border-color:var(--navy);background:#EEF2FF"':''}><b>${j.collector_id===p.id?'✓ ':''}${esc(p.name)} ${esc(p.role||'')}</b><small>${p.can_collect?'수금 담당 가능':''}</small></button>`).join('') || '<p class="empty">아직 확정된 사람이 없어요 · [+ 직접 배정] 먼저</p>'}
       <button class="ropt" data-a="collSet" data-j="${j.id}" data-s=""><b>${j.collector_id?'':'✓ '}없음 (대표 · 회사 계좌)</b><small>작업 끝은 HQ에서 눌러요</small></button></div>
     <div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button></div>`); };
