@@ -278,7 +278,7 @@ H.CHANGE.repPrev = el => { const f = el.form, r = f.querySelector('#rep'); if (!
     ${odd.length?`<br><span class="o">${x.rule.mday}일이 없는 달은 말일로 잡혀요</span>`:''}<br><span class="note">끝나기 2주 전에 HQ 홈에서 '연장할까요?' 알려드려요</span>` : '<span class="o">요일·기간을 확인해 주세요 (0건)</span>';
   if (btn) btn.textContent = ds.length ? `${ds.length}건 올리기` : '올리기';
 };
-const SERIES_COPY = ['boss_on','start_time','title','kind','headcount','teams','target_staff','public_note','address','private_note','order_channel','collector_id','total_amount','deposit_amount','balance_amount','admin_memo','contract_mode','live_title'];
+const SERIES_COPY = ['boss_on','start_time','title','kind','headcount','teams','target_staff','public_note','address','private_note','order_channel','collector_id','total_amount','deposit_amount','balance_amount','admin_memo','contract_mode','live_title','cust_name','cust_phone'];
 H.ACT.repExtend = async el => { const j = J(el.dataset.j); if (!j || !j.series_id) return;
   const {data:last} = await sb.from('jobs').select('*').eq('series_id', j.series_id).order('job_date', {ascending:false}).limit(1).single();
   const from = H.addDays(parse(last.job_date), 1), end = new Date(from); end.setMonth(end.getMonth()+3);
@@ -287,7 +287,7 @@ H.ACT.repExtend = async el => { const j = J(el.dataset.j); if (!j || !j.series_i
   if (!confirm(`${md(ds[0])} ~ ${md(ds[ds.length-1])} · ${ds.length}건 더 올릴까요?`)) return;
   await H.q(sb.from('jobs').insert(ds.map(d => repRow(last, d))));
   H.close(); H.toast(`${ds.length}건 연장했어요`); H.refresh(); };
-function repRow(src, d){ const r = {job_date:d, status:'open', series_id:src.series_id, series_rule:src.series_rule}; SERIES_COPY.forEach(k => r[k] = src[k] ?? null);
+function repRow(src, d){ const r = {job_date:d, status:'open', series_id:src.series_id, series_rule:src.series_rule}; SERIES_COPY.forEach(k => { if (k in src) r[k] = src[k] ?? null; });
   if (H.autoLive()) { r.live_code = H.rnd(8); r.live_close_days = +((H.setting('live')||{}).close_days) || 7; } return r; }
 
 H.jobSheet = jobSheet;
@@ -315,6 +315,9 @@ ${j.id ? repScopeHtml(j) : repHtml(j)}
     <div class="field full"><label>상세 주소</label><input name="address" value="${esc(j.address||'')}" placeholder="부산 수영구 광안동 ○○아파트 103동 2302호"></div>
     <div class="field full"><label>출입 비번 · 고객 요청</label><input name="private_note" value="${esc(j.private_note||'')}"></div>
     <div class="field full"><label>특정 사람에게만 보이기 <small>(도급 지정 등 · 비우면 팀 전체)</small></label><div class="chips">${S.staff.filter(s=>s.status!=='left').map(s=>`<label><input type="checkbox" name="target" value="${s.id}" ${tgt.includes(s.id)?'checked':''}><span>${esc(s.name)}</span></label>`).join('')}</div></div>
+    <div class="sec">${lock} 고객 정보 (대표님 · 수금 담당만 보임)</div>
+    <div class="field"><label>고객 이름</label><input name="cust_name" value="${esc(j.cust_name||'')}" placeholder="홍길동"></div>
+    <div class="field"><label>고객 전화번호</label><input name="cust_phone" type="tel" inputmode="tel" value="${esc(j.cust_phone||'')}" placeholder="010-0000-0000"></div>
     <div class="sec">${lock} 관리 정보 (직원에게 안 보임)</div>
     <div class="field"><label>오더 채널</label><select name="order_channel"><option value="">-</option>${chans.map(c=>`<option ${j.order_channel===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
     <div class="field"><label>상태</label><select name="status">${[['quote','견적 중 (오더 접수함)'],['open','모집 중'],['full','인원 완료'],['done','마감 완료'],['cancelled','취소']].map(([v,l])=>`<option value="${v}" ${j.status===v?'selected':''}>${l}</option>`).join('')}</select></div>
@@ -356,6 +359,7 @@ H.FORM.job = async v => {
     target_staff: v.getAll('target').length ? v.getAll('target') : null, public_note:H.nn(v.get('public_note')), address:H.nn(v.get('address')), private_note:H.nn(v.get('private_note')),
     order_channel:H.nn(v.get('order_channel')), collector_id:H.nn(v.get('collector_id')), total_amount:H.nnum(v.get('total_amount')), deposit_amount:H.nnum(v.get('deposit_amount')),
     balance_amount:H.nnum(v.get('balance_amount')), status:v.get('status'), admin_memo:H.nn(v.get('admin_memo')), contract_mode:H.nn(v.get('contract_mode')), live_title:H.nn(v.get('live_title')) };
+  if (!H.S.needV19) { row.cust_name = H.nn((v.get('cust_name')||'').trim()); row.cust_phone = H.nn((v.get('cust_phone')||'').trim()); }
   if (!H.S.needV4) row.boss_on = v.get('boss_on') === 'on';
   const id = v.get('id'); const old = id ? J(id) : null;
   if (['open','full'].includes(row.status) && H.autoLive() && !(old && old.live_code)) { row.live_code = H.rnd(8); row.live_close_days = +((H.setting('live')||{}).close_days) || 7; }

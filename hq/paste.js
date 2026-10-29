@@ -40,11 +40,12 @@ H.parseOrder = (raw) => {
   if (/VAT|부가세/.test(t)) memo.push('카드·현금영수증 시 VAT 10% 별도');
   // 고객 (관리 메모에만 · 직원에게 안 보임)
   const nm = after(t, ['고객님? ?성함','성함','고객명']).replace(/\s*님$/,''), ph = after(t, ['고객님? ?연락처','연락처']);
-  if (nm || ph) memo.unshift(`고객 ${[nm, ph].filter(Boolean).join(' ')}`);
+  if (nm) o.cust_name = nm; if (ph) o.cust_phone = (ph.match(/0\d{1,2}[-\s.]?\d{3,4}[-\s.]?\d{4}/)||[ph])[0].replace(/[\s.]/g,'-');
+  if ((nm || ph) && H.S && H.S.needV19) memo.unshift(`고객 ${[nm, ph].filter(Boolean).join(' ')}`);   // 업데이트 전엔 메모로
   if (memo.length) o.admin_memo = memo.join(' · ');
   return o;
 };
-const LABEL = {job_date:'날짜', start_time:'시간', title:'현장 이름', kind:'종류', headcount:'인원', address:'주소', public_note:'구조 메모', total_amount:'계약 금액', deposit_amount:'예약금', balance_amount:'잔금', admin_memo:'고객 메모'};
+const LABEL = {job_date:'날짜', start_time:'시간', title:'현장 이름', kind:'종류', headcount:'인원', address:'주소', public_note:'구조 메모', total_amount:'계약 금액', deposit_amount:'예약금', balance_amount:'잔금', admin_memo:'메모', cust_name:'고객 이름', cust_phone:'고객 전화'};
 H.ACT.jobPaste = () => {
   const f = document.querySelector('#sheet form[data-f="job"]'), ta = document.getElementById('jpaste'), out = document.getElementById('jpaste-out');
   if (!f || !ta) return;
