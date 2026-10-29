@@ -90,7 +90,11 @@ function personRow(p){
 H.teamStrip = () => {
   const d = H.teamData(), S = H.S;
   if (!d.sites.length && !d.people.length && !(d.partners||[]).length) return '';
-  const sIc = d.sites.map(x => `<span class="tm-ic ${x.warn.length?'warn':x.state}" title="${esc(x.j.title)}">🧹<em>${x.partner?'P':x.ppl.length}</em></span>`).join('');
+  // 오늘 청소 현장: 투입된 사람 얼굴 (사람 없으면 🧹 아이콘)
+  const ST = {on:'작업 중', over:'작업 중', next:'예정', done:'작업 끝'};
+  const sIc = d.sites.map(x => x.ppl.length
+      ? x.ppl.map(p => `<span class="tm-ic cln ${x.warn.length?'warn':x.state}" title="${esc(p.name)} · ${esc(x.j.title)} · ${ST[x.state]}">${H.av(p, 34)}<em>${x.state==='done'?'✅':'🧹'}</em></span>`).join('')
+      : `<span class="tm-ic ${x.warn.length?'warn':x.state}" title="${esc(x.j.title)}">🧹<em>${x.boss?'대표':0}</em></span>`).join('');
   const pIc = d.people.map(p => `<span class="tm-ic res ${p.warn?'warn':''}" title="${esc(p.s.name)} · ${esc(p.now)}">${H.av(p.s, 34)}<em>${p.icon}</em></span>`).join('');
   const gIc = (d.partners||[]).map(p => `<span class="tm-ic ago" title="${esc(p.s.name)} 사장님 · ${esc(p.now)}">${H.av(p.s, 34, 'ago')}<em>${p.icon}</em></span>`).join('');
   return `<a class="box tm-strip" href="#team"><div class="tm-sh"><b>지금 우리 팀</b>${d.warnN?`<span class="tg bad">⚠ ${d.warnN}</span>`:''}<span class="go">자세히 →</span></div>
