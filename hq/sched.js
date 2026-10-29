@@ -119,7 +119,7 @@ function jobCard(j){
       ${j.status==='quote'?`<button class="btn sm" data-a="quoteConfirm" data-j="${j.id}">확정</button>`:''}
       ${active && j.status!=='quote'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">당일 마감 · 지급액</button>`:''}${j.status==='done'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">지급액 수정</button>`:''}
       <button class="btn ghost sm" data-a="moneySheet" data-j="${j.id}">금액 · 증빙</button>
-      <button class="btn ghost sm" data-a="jobCopy" data-j="${j.id}">직원 안내 멘트</button>${H.S.isOwner?`<button class="btn sm danger" data-a="jobDel" data-j="${j.id}">🗑 삭제</button>`:""}</div>
+      <button class="btn ghost sm" data-a="jobCopy" data-j="${j.id}">직원 안내 멘트</button>${H.S.owner?`<button class="btn sm danger" data-a="jobDel" data-j="${j.id}">🗑 삭제</button>`:""}</div>
     ${showPromo ? H.promoRow(j) : ''}
   </div>`;
 }
