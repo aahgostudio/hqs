@@ -96,11 +96,10 @@ function jobCard(j){
     : left===0 ? '<span class="pill p-ok">인원 완료</span>' : `<span class="pill p-warn">${left}자리 남음</span>`;
   const seen = a => a.seen_at && new Date(a.seen_at) >= new Date(j.changed_at);
   const active = j.status!=='done' && j.status!=='cancelled';
-  const bossChip = boss ? `<span class="who ok" style="background:#141A2A;color:#fff;border-color:#141A2A" title="대표님도 이 현장에 가요">👔 대표${active?`<button class="x" data-a="bossOn" data-j="${j.id}" aria-label="대표 빼기" style="color:#fff">✕</button>`:''}</span>` : '';
+  const bossChip = boss ? `<span class="who ok">✓ ${esc(H.S.name||'대표')}${active&&H.S.owner?`<button class="x" data-a="bossOn" data-j="${j.id}" aria-label="배정 빼기">✕</button>`:''}</span>` : '';   // 대표님도 직원처럼
   const people = bossChip + ap.map(a => `<span class="who ok ${seen(a)?'':'unseen'}" title="${seen(a)?'확인함 '+H.ago(a.seen_at):'아직 안 봤어요'}">${seen(a)?'✓':'!'} ${esc(H.P(a.staff_id).name)}${active?`<button class="x" data-a="unassign" data-j="${j.id}" data-s="${a.staff_id}" aria-label="배정 빼기">✕</button>`:''}</span>`).join('')
     + wait.map(a => `<span class="who wait">${esc(H.P(a.staff_id).name)} 신청<button data-a="approve" data-j="${j.id}" data-s="${a.staff_id}">승인</button><button class="no" data-a="reject" data-j="${j.id}" data-s="${a.staff_id}">거절</button></span>`).join('')
-    + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '')
-    + (active && !boss && !H.S.needV4 && H.S.owner ? `<button class="btn ghost sm" data-a="bossOn" data-j="${j.id}" title="대표님도 이 현장에 가요">👔 나도 가요</button>` : '');
+    + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '');
   const tc = H.isPartner(j) ? 'var(--prt)' : j.status==='open' && left ? 'var(--cleanl)' : 'var(--clean)';
   const phs = H.photosOf(j.id).length;
   const live = j.live_code ? `<span class="who" style="background:#EEF2FF;color:var(--navy);border-color:transparent" data-a="liveSheet" data-j="${j.id}" role="button">🔗 손님 링크${j.live_views?' · '+j.live_views+'번 봄':''}</span>` : '';
@@ -198,9 +197,9 @@ H.ACT.unassign = async el => { const sid = el.dataset.s; if (!confirm(`${H.P(sid
 // 👔 나도 가요 / 빼기: 대표님도 한 자리로 셈 → 자리가 다 차면 직원 신청 마감, 빼면 다시 열림
 H.ACT.bossOn = async el => { const j = (H.S.jobs||[]).find(x => x.id === +el.dataset.j); if (!j) return;
   const on = !j.boss_on, ap = (j.assignments||[]).filter(a => a.status === 'approved').length, full = ap + (on ? 1 : 0) >= j.headcount;
-  if (!on && !confirm('이 현장에서 대표님을 뺄까요?')) return;
+  if (!on && !confirm(`${H.S.name||'대표'}님을 이 일정에서 뺄까요?`)) return;
   const row = {boss_on: on}; if (on && full && j.status === 'open') row.status = 'full'; if (!on && !full && j.status === 'full') row.status = 'open';
-  await H.q(sb.from('jobs').update(row).eq('id', j.id)); H.toast(on ? '대표님도 이 현장에 가요 · 직원 화면 대표 상태가 시간 맞춰 바뀌어요' : '대표님을 뺐어요'); H.refresh(); };
+  await H.q(sb.from('jobs').update(row).eq('id', j.id)); H.toast(on ? '배정했어요' : '배정에서 뺐어요'); H.refresh(); };
 
 /* 현장 올리기 · 수정 */
 
@@ -396,13 +395,14 @@ H.ACT.assign = el => { const j = J(el.dataset.j), S = H.S;
   const cand = S.staff.filter(s => s.status !== 'left' && j.teams.includes(s.team) && !j.assignments.some(a => a.staff_id === s.id && a.status === 'approved')).sort((a,b)=>(ok.has(b.id)-ok.has(a.id))||(no.has(a.id)-no.has(b.id)));
   const others = S.staff.filter(s => s.status !== 'left' && !j.teams.includes(s.team) && s.team !== 'RES');
   H.open(`<form data-f="assign"><h3>직접 배정</h3><p class="note" style="margin:-6px 0 10px">${esc(j.title)} · ${md(j.job_date)} · '가능'으로 표시한 사람이 앞에 와요</p>
-    <div class="chips">${cand.map(s=>`<label><input type="checkbox" name="s" value="${s.id}"><span>${esc(s.name)}${s.status==='leave'?` (${H.STL(s).leave})`:''}${tag(s)}</span></label>`).join('') || '<span class="note">팀 직원이 없어요</span>'}</div>
+    <div class="chips">${H.S.owner && !H.S.needV4 && !j.boss_on ? `<label><input type="checkbox" name="boss" value="1"><span>${esc(H.S.name||'대표')} (대표)</span></label>` : ''}${cand.map(s=>`<label><input type="checkbox" name="s" value="${s.id}"><span>${esc(s.name)}${s.status==='leave'?` (${H.STL(s).leave})`:''}${tag(s)}</span></label>`).join('') || '<span class="note">팀 직원이 없어요</span>'}</div>
     ${others.length?`<p class="note" style="margin:12px 0 6px">다른 팀에서 지원</p><div class="chips">${others.map(s=>`<label><input type="checkbox" name="s" value="${s.id}"><span>${s.team} ${esc(s.name)}${tag(s)}</span></label>`).join('')}</div>`:''}
     ${H.sacts('배정')}<input type="hidden" name="id" value="${j.id}"></form>`); };
-H.FORM.assign = async v => { const id = +v.get('id'); const ids = v.getAll('s'); if (!ids.length) return H.close();
+H.FORM.assign = async v => { const id = +v.get('id'); const ids = v.getAll('s'), me = v.get('boss') === '1'; if (!ids.length && !me) return H.close();
   const now = new Date().toISOString();
-  await H.q(sb.from('assignments').upsert(ids.map(s=>({job_id:id, staff_id:s, status:'approved', decided_at:now})), {onConflict:'job_id,staff_id'}));
-  const j = J(id); const n = new Set([...j.assignments.filter(a=>a.status==='approved').map(a=>a.staff_id), ...ids]).size;
+  if (ids.length) await H.q(sb.from('assignments').upsert(ids.map(s=>({job_id:id, staff_id:s, status:'approved', decided_at:now})), {onConflict:'job_id,staff_id'}));
+  if (me) await H.q(sb.from('jobs').update({boss_on: true}).eq('id', id));   // 대표님도 한 자리
+  const j = J(id); const n = new Set([...j.assignments.filter(a=>a.status==='approved').map(a=>a.staff_id), ...ids]).size + ((me || j.boss_on) ? 1 : 0);
   if (n >= j.headcount) await H.q(sb.from('jobs').update({status:'full'}).eq('id', id));
   H.close(); H.toast('배정했어요 · 카톡으로 알려주세요'); H.refresh(); };
 
@@ -416,6 +416,7 @@ H.ACT.payClose = el => { const j = J(el.dataset.j);
         <input class="in num" type="number" step="1000" name="pay_${a.staff_id}" value="${a.pay_amount??''}" placeholder="기본"></div>
       <input class="in num" type="number" step="1000" name="extra_${a.staff_id}" value="${a.extra_amount??''}" placeholder="추가수당"></div>
       <input class="in" style="margin:4px 0 6px" name="memo_${a.staff_id}" value="${esc(a.pay_memo||'')}" placeholder="${esc(H.P(a.staff_id).name)} 메모 (추가작업 내용 등)">`).join('') || '<p class="empty">확정된 사람이 없어요</p>'}
+    ${j.boss_on ? `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(H.S.name||'대표')}</b><span class="note">대표 · 지급 없음</span></div>` : ''}
     ${H.sacts('마감 저장')}<input type="hidden" name="id" value="${j.id}"></form>`); };
 H.CHANGE.preset = el => { const inp = document.querySelector(`[name="pay_${el.dataset.s}"]`); if (el.value) inp.value = el.value; };
 H.FORM.pay = async v => { const id = +v.get('id'); const j = J(id);
