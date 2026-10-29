@@ -127,6 +127,7 @@ function morph(oM, nM){
 function paint(keep){
   const L = document.getElementById('chList'), R = document.getElementById('chRoom'); if (!L || !R) return;
   L.innerHTML = listHtml(); bindDnd(L);
+  here();
   const W = L.parentElement; if (W) W.classList.toggle('inroom', !!C.cur); document.body.classList.toggle('chroom', !!C.cur);   // 폰: 방 열면 목록 숨기고 방만 꽉 차게
   const box0 = document.getElementById('chMsgs'), atB = !box0 || box0.scrollHeight - box0.scrollTop - box0.clientHeight < 80, top = box0 ? box0.scrollTop : 0;
   // 입력칸은 그대로 두고 나머지만 다시 그림 (폰에서 글 쓰는 중에 키보드가 닫히지 않게)
@@ -172,6 +173,14 @@ async function tick(){
   } catch(_){}
 }
 function poll(){ clearInterval(C.t); C.t = setInterval(tick, 4000); }
+// 지금 이 방 보고 있음 → 서버에 알려서 이 방 새 글은 어닝톡 알림 안 보냄 (SQL v18) · 방 나가거나 화면 내리면 바로 해제
+let hereR, hereT = 0;
+function here(force){
+  const r = H.cur() === 'chat' && !document.hidden && C.cur ? C.cur : null;
+  if (!force && r === hereR && (r === null || Date.now() - hereT < 4000)) return; hereR = r; hereT = Date.now();
+  H.sb.rpc('chat_here_boss', {p_room: r}).then(() => {}, () => {});
+}
+setInterval(here, 3000); document.addEventListener('visibilitychange', () => here(true)); addEventListener('pagehide', () => here(true));
 
 const isVid = p => /\.(mov|mp4|m4v|webm|3gp)$/i.test(p || '');
 const extOf = f => { const n = ((f.name || '').split('.').pop() || '').toLowerCase(); if (/^(jpe?g|png|webp|heic|heif|mov|mp4|m4v|webm|3gp)$/.test(n)) return n.replace('jpeg','jpg'); const t = (f.type || '').split('/')[1] || 'jpg'; return t === 'quicktime' ? 'mov' : t.replace('jpeg','jpg'); };

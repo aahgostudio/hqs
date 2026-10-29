@@ -253,6 +253,13 @@
     } catch(_){}
   }
   function poll(){ clearInterval(pollT); pollT = setInterval(refreshRoom, 3500); }
+  // 지금 이 방 보고 있음 → 서버에 알려서 이 방 새 글은 알림(푸시·알림톡) 안 보냄 (SQL v18) · 방 나가거나 화면 내리면 바로 해제
+  let hereR, hereT = 0;
+  function here(force){
+    if (opt.demo || !opt.token) return; const r = view === 'room' && room && !document.hidden ? room.room.id : null;
+    if (!force && r === hereR && (r === null || Date.now() - hereT < 4000)) return; hereR = r; hereT = Date.now();
+    fetch(`${URL_}/rest/v1/rpc/chat_here`, {method:'POST', keepalive:true, headers:Object.assign({'content-type':'application/json'}, H), body:JSON.stringify({p_token: opt.token, p_room: r})}).catch(() => {});
+  }
 
   async function send(){
     const t = document.getElementById('epc-t'); const v = (t.value || '').trim(); if (!v || busy) return;
@@ -371,6 +378,7 @@
       if (opt.token && !opt.demo) { pushKey(); K().pushSync(pushKey, pushSave); }   // 알림 허용해 둔 폰이면 조용히 다시 등록
       loadHome().then(() => { const q = new URLSearchParams(location.search).get('chat') || (APP ? 'list' : null); if (q && home && home.on) open(/^\d+$/.test(q) ? +q : null); });
       clearInterval(homeT); homeT = setInterval(() => { if (!document.hidden && view !== 'room') loadHome(); }, 25000);
+      setInterval(here, 3000); document.addEventListener('visibilitychange', () => here(true)); addEventListener('pagehide', () => here(true));
       document.addEventListener('visibilitychange', () => { if (!document.hidden) { view === 'room' ? refreshRoom() : loadHome(); } });
     },
     open, close,
