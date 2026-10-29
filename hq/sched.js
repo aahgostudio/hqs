@@ -108,13 +108,14 @@ function jobCard(j){
   return `<div class="card" style="--tc:${tc}">
     <div class="t"><span style="font-variant-numeric:tabular-nums">${j.start_time?j.start_time.slice(0,5):'시간 미정'}</span>${j.series_id?'<span title="정기 반복">🔁 </span>':''}${esc(j.title)} ${(j.teams||[]).map(c=>`<span class="tag" style="background:${H.T(c).color}">${c}</span>`).join('')}${j.contract_mode?`<span class="tag" style="background:var(--prt)">도급 ${j.contract_mode}</span>`:''}${pill}</div>
     <div class="m"><span>${j.headcount}명</span>${j.kind?`<span>${esc(j.kind)}</span>`:''}${j.order_channel?`<span>오더: ${esc(j.order_channel)}</span>`:''}${j.address?`<span>🔒 ${esc(j.address)}</span>`:''}${money}</div>
-    ${j.admin_memo?`<div class="m">메모: ${esc(j.admin_memo)}</div>`:''}
+    ${j.cust_name||j.cust_phone?`<div class="m"><span>👤 고객 ${esc(j.cust_name||'')}</span>${j.cust_phone?`<a href="tel:${esc(j.cust_phone.replace(/[^0-9]/g,''))}">${esc(j.cust_phone)}</a>`:''}</div>`:''}
+    ${(()=>{ const m = (j.cust_name||j.cust_phone) ? (j.admin_memo||'').replace(/^고객\s+\S+\s+0[\d\s.\-]{8,}\d\s*(·\s*)?/, '').trim() : j.admin_memo; return m?`<div class="m">메모: ${esc(m)}</div>`:''; })()}
     <div class="people">${people}${live}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}</div>
     <div class="acts"><button class="btn ghost sm" data-a="jobEdit" data-j="${j.id}">수정</button>
       ${j.status==='quote'?`<button class="btn sm" data-a="quoteConfirm" data-j="${j.id}">확정</button>`:''}
       ${active && j.status!=='quote'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">당일 마감 · 지급액</button>`:''}${j.status==='done'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">지급액 수정</button>`:''}
       <button class="btn ghost sm" data-a="moneySheet" data-j="${j.id}">금액 · 증빙</button>
-      ${j.status!=='quote'?`<button class="btn ghost sm" data-a="liveSheet" data-j="${j.id}">${j.live_code?'손님 링크':'손님 링크 발급'}</button>`:''}
+      ${j.status!=='quote'?`<button class="btn ghost sm" data-a="liveSheet" data-j="${j.id}">${j.live_code?'손님 링크':'손님 링크 발급'}</button>`:''}${j.live_code && !H.S.needV21?`<button class="btn ghost sm" data-a="custRoom" data-j="${j.id}">💬 손님방</button>`:''}
       <button class="btn ghost sm" data-a="jobCopy" data-j="${j.id}">카톡 문구</button>${H.S.isOwner?`<button class="btn sm danger" data-a="jobDel" data-j="${j.id}">🗑 삭제</button>`:""}</div>
     ${showPromo ? H.promoRow(j) : ''}
   </div>`;
@@ -352,6 +353,10 @@ H.ACT.repDel = async el => { const j = J(el.dataset.j);
   if (el.dataset.scope === 'one') await H.q(sb.from('jobs').delete().eq('id', j.id));
   else await H.q(sb.from('jobs').delete().eq('series_id', j.series_id).gte('job_date', j.job_date));
   H.close(); H.toast(el.dataset.scope === 'one' ? '이 날만 지웠어요' : `${md(j.job_date)} 이후 정기 일정을 지웠어요`); H.refresh(); };
+H.ACT.custRoom = async el => { const j = J(el.dataset.j);
+  let {data} = await sb.from('chat_rooms').select('id').eq('kind','cust').eq('job_id', j.id).maybeSingle();
+  if (!data) { const r = await sb.from('chat_rooms').insert({kind:'cust', job_id:j.id}).select('id').single(); if (r.error) return H.toast('손님방을 열지 못했어요 · HQ 업데이트(v21) 확인'); data = r.data; }
+  H._loaded = null; H.close(); location.hash = 'chat/' + data.id; };
 H.autoLive = () => { const c = H.setting('live'); return !c || c.auto_issue !== false; };
 H.FORM.job = async v => {
   const tms = v.getAll('teams'); if (!tms.length) return H.toast('팀을 하나 이상 골라주세요');

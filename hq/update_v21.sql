@@ -7,6 +7,14 @@
 --   · [작업 끝]은 그날 수금 담당이 (수금 담당이 없으면 확정자 누구나) → 방에 완료 안내 자동
 --   · 작업 끝 + 7일(설정값) 뒤 손님 링크·손님방 닫힘, 기록은 HQ에 남음
 -- ============================================================
+-- 메모에 남아 있던 '고객 이름 번호'를 고객 칸으로 옮기고 메모에서는 지움 (v19 보완)
+update public.jobs set
+  cust_phone = coalesce(cust_phone, (regexp_match(admin_memo, '(01[016789][-\s.]?\d{3,4}[-\s.]?\d{4})'))[1]),
+  cust_name  = coalesce(cust_name, nullif(trim((regexp_match(admin_memo, '^고객\s+([^\s·0-9]+)'))[1]), ''))
+where admin_memo ~ '^고객\s';
+update public.jobs set admin_memo = nullif(trim(regexp_replace(admin_memo, '^고객\s+\S+\s+0[0-9\s.-]{8,}[0-9]\s*(·\s*)?', '')), '')
+where admin_memo ~ '^고객\s' and (cust_name is not null or cust_phone is not null);
+
 create or replace function public._live_open(j public.jobs) returns boolean language sql stable as $$
   select j.live_code is not null and not coalesce(j.live_closed, false) and j.status <> 'cancelled'
      and (coalesce(j.work_done_at, j.done_at) is null
