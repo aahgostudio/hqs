@@ -364,3 +364,5 @@ html.chatapp .fab{display:none}
 .croom-go b{display:block;font-size:14px}.croom-go small{display:block;font-size:11.5px;opacity:.85}
 .croom-go .go{margin-left:auto;font-size:12.5px;font-weight:700;opacity:.9;white-space:nowrap}
 .croom-ln{border:1px dashed #93A9E0;background:#EEF2FF;color:var(--navy);border-radius:12px;padding:8px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.croom-go small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.croom-go>span:nth-child(2){min-width:0}
+.croom-ln small{display:block;font-size:11px;font-weight:500;opacity:.8}

@@ -113,7 +113,7 @@ function jobCard(j){
     <div class="people">${people}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}</div>
     ${j.status!=='quote' ? (j.live_code ? `<div class="croom">
       <button class="croom-go" ${H.S.needV21?'data-a="liveSheet"':'data-a="custRoom"'} data-j="${j.id}"><span class="ic">💬</span><span><b>고객님 방</b><small>${j.live_views?`고객 ${j.live_views}번 봄`:'고객이 아직 안 봄'}${phs?` · 사진 ${phs}장`:''}${j.work_done_at?' · ✅ 작업 끝':''}</small></span><span class="go">열기 ›</span></button>
-      <button class="croom-ln" data-a="liveSheet" data-j="${j.id}">🔗 링크·안내 멘트</button></div>`
+      <button class="croom-ln" data-a="liveSheet" data-j="${j.id}">🔗 링크<small>안내 멘트</small></button></div>`
       : `<div class="croom"><button class="croom-ln" style="flex:1" data-a="liveSheet" data-j="${j.id}">🔗 고객님 방 링크 발급</button></div>`) : ''}
     <div class="acts"><button class="btn ghost sm" data-a="jobEdit" data-j="${j.id}">수정</button>
       ${j.status==='quote'?`<button class="btn sm" data-a="quoteConfirm" data-j="${j.id}">확정</button>`:''}
