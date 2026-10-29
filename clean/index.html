@@ -166,12 +166,12 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1029p"></script>
+<script src="../status.js?v=1029q"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1029p'</script>
-<script src="../chatkit.js?v=1029p"></script>
-<script src="../chat.js?v=1029p"></script>
+<script>window.EP_VER='1029q'</script>
+<script src="../chatkit.js?v=1029q"></script>
+<script src="../chat.js?v=1029q"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -432,7 +432,7 @@ function shootView(){
       ${shoot.busy?`<div class="okline">올리는 중… ${shoot.busy}</div>`:''}
       ${shoot.done.length?`<div class="okline">✓ ${shoot.done.length}장 올렸어요 · 고객님 방에 바로 보여요</div><div class="phg">${shoot.done.slice(-9).map(x=>`<figure><img src="${x.url}" alt=""><figcaption>${lab[x.stage]}</figcaption></figure>`).join('')}</div>`:''}
       ${j.cust_room?`<button class="btn ghost" style="width:100%" data-croom="${j.cust_room}">💬 고객님 방 열기 · 글·사진 보내기</button>`:''}
-      ${j.work_done?'<div class="okline">작업 끝으로 표시됐어요 · 고객님 방이 완료 리포트로 바뀌었어요</div>':j.can_done===false?'<div class="okline" style="background:#F3F4F6;color:var(--sub)">[작업 끝]은 오늘 수금 담당이 눌러요</div>':`<button class="btn" style="background:var(--ok)" data-workdone="${j.id}">작업 끝 (후 사진 다 올렸어요)</button>`}
+      ${j.work_done?'<div class="okline">작업 끝으로 표시됐어요 · 고객님 방이 완료 리포트로 바뀌었어요</div>':j.can_done===false?'':`<button class="btn" style="background:var(--ok)" data-workdone="${j.id}">작업 끝 (후 사진 다 올렸어요)</button>`}
     </div>`;
 }
 
@@ -593,7 +593,9 @@ document.addEventListener('submit', async e => {
   EPMoney.init({token:TOKEN, demo:DEMO, onChange:()=>{ if (D && tab==='mine') render(); }});
   { let last = '';
     EPChat.init({token:TOKEN, demo:DEMO && qs.has('chat'), accent:(getComputedStyle(document.documentElement).getPropertyValue('--navy')||'#16347A').trim(),
-      onState:st => { const k = st.on + '/' + st.unread; if (k !== last) { last = k; tabbar(); } }}); }
+      onState:st => { const k = st.on + '/' + st.unread; if (k !== last) { last = k; tabbar(); } },
+      custJob: rid => D && (D.jobs||[]).find(j => j.cust_room == rid),
+      onWorkDone: async id => { await rpc('staff_work_done',{p_token:TOKEN,p_job:id}); const j = D.jobs.find(x=>x.id==id); if (j) j.work_done = new Date().toISOString(); toast('작업 끝! 고생 많으셨어요 🙏'); }}); }
   EPStatus.init({manual:()=>D&&D.boss, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }, demo:DEMO});
   try { await load(); if (EVT()) scope = 'mine';
     if (qs.has('new') && EVT()) { evEdit = {date: ymd(today), kind: isRES() ? '계약' : '미팅', show_boss: true, gcal: false}; tab = 'ev'; }   // 매물노트 [＋ 계약·잔금·안내 넣기] → 바로 입력칸

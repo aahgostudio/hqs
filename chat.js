@@ -151,6 +151,31 @@
         <p class="epc-note">🔒 내가 속한 방만 보여요.${g(['site']).length ? ' 현장방은 작업 완료 보고 7일 뒤 목록에서 빠져요.' : ''}<br>대화와 사진은 업무 기록으로 보관돼요.</p>
       </div>`;
   }
+  // 고객님 방: [작업 끝]은 그날 수금 담당만 (clean 화면이 custJob·onWorkDone을 넘겨줌)
+  const hhmm = t => { const d = new Date(t); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
+  function custBar(){
+    const j = opt.custJob ? opt.custJob(room.room.id) : null; if (!j) return '';
+    if (j.work_done) return `<div style="margin:8px 10px 0;background:#DCFCE7;color:#065F46;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:700;text-align:center">✅ 작업 끝 · ${hhmm(j.work_done)}<br><span style="font-weight:500;font-size:12px">고객님 화면이 완료 리포트로 바뀌었어요</span></div>`;
+    if (!j.can_done) return '';
+    return `<button data-cdone="${j.id}" style="display:block;width:calc(100% - 20px);margin:8px 10px 0;border:0;border-radius:14px;background:#059669;color:#fff;padding:12px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 4px 12px rgba(5,150,105,.3)">✅ 작업 끝 누르기<span style="display:block;font-weight:500;font-size:11.5px;opacity:.9;margin-top:2px">후 사진까지 다 올렸으면 눌러주세요 · 수금 담당만 보여요</span></button>`;
+  }
+  function custConfirm(id){
+    const j = opt.custJob ? opt.custJob(room.room.id) : null; if (!j) return;
+    const d = document.createElement('div'); d.id = 'cdone';
+    const pa = j.ph_after || 0, pb = j.ph_before || 0;
+    d.innerHTML = `<div style="position:fixed;inset:0;z-index:310;background:rgba(15,23,42,.5);display:flex;align-items:flex-end;justify-content:center" data-cx="1">
+      <div style="width:100%;max-width:480px;background:#fff;color:#141A2A;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));font-family:inherit">
+        <b style="font-size:17px">작업을 끝낼까요?</b>
+        <p style="margin:6px 0 12px;font-size:13.5px;color:#4B5563;line-height:1.55">누르면 고객님 방이 <b>완료 리포트</b>(전·후 사진 · 잔금 · 계좌)로 바뀌어요.</p>
+        <div style="background:#F4F6FA;border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.9;margin-bottom:12px">📷 작업 전 사진 ${pb}장 ${pb?'✓':''}<br>${pa ? `📷 작업 후 사진 ${pa}장 ✓` : '<span style="color:#DC2626;font-weight:700">⚠ 작업 후 사진이 없어요</span>'}${j.balance != null ? `<br>💰 받을 잔금 <b>${Number(j.balance).toLocaleString()}원</b>` : ''}</div>
+        <button data-cok="${id}" style="display:block;width:100%;border:0;border-radius:12px;background:#059669;color:#fff;padding:13px;font:inherit;font-weight:800;font-size:15px;cursor:pointer">✅ 네, 작업 끝</button>
+        <button data-cx="1" style="display:block;width:100%;margin-top:8px;border:1px solid #E5E7EB;border-radius:12px;background:#fff;color:#4B5563;padding:12px;font:inherit;font-weight:700;cursor:pointer">아직이에요</button></div></div>`;
+    d.addEventListener('click', async e => {
+      const t = e.target.closest('[data-cx],[data-cok]'); if (!t || (t.dataset.cx && t !== e.target && t.tagName !== 'BUTTON')) return;
+      if (t.dataset.cok) { t.disabled = true; t.textContent = '처리 중…'; try { await opt.onWorkDone(+t.dataset.cok); } catch(err) { alert(err && /collector_only/.test(err.message||'') ? '작업 끝은 오늘 수금 담당만 누를 수 있어요.' : '처리하지 못했어요. 다시 눌러주세요.'); } d.remove(); drawRoom(true); refreshRoom(); return; }
+      d.remove(); });
+    document.body.appendChild(d);
+  }
   function drawRoom(keepScroll){
     const w = shell(); if (!room) return;
     const box0 = w.querySelector('.epc-msgs'), atBottom = !box0 || box0.scrollHeight - box0.scrollTop - box0.clientHeight < 80, prevTop = box0 ? box0.scrollTop : 0;
@@ -172,6 +197,7 @@
     const keepIn = oldIn && w.dataset.room === String(room.room.id) && w.dataset.ed === edKey;   // 글 쓰는 중엔 입력칸 유지 (키보드 안 닫히게)
     const html = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
       ${room.room.kind==='cust'?'<div class="epc-note" style="text-align:center;background:#FFF7E6;color:#92400E;padding:6px 10px;margin:0">🙋 고객님도 보는 방이에요 · 고객님에겐 \'리츠종합클린 현장팀\'으로만 보여요</div>':''}
+      ${room.room.kind==='cust' ? custBar() : ''}
       <div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
       ${editing ? `<div class="epc-edit"><span>✏️ 메시지 수정 중</span><button data-epccancel="1">취소</button></div>` : ''}
       ${K().bar({id:'epc-t'})}`;
@@ -332,6 +358,7 @@
     if (b.dataset.pushok) return K().pushOn(pushKey, pushSave, true).then(r => { if (r !== 'ok') alert(r === 'denied' ? '알림이 꺼져 있어요. 폰 설정 → 알림 → 어닝톡에서 켜주세요' : '이 폰에서는 알림을 켤 수 없어요. 카톡 알림으로 계속 받아요'); drawList(); loadHome(); });
     if (b.dataset.list) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }
     if (b.dataset.room) return openRoom(+b.dataset.room);
+    if (b.dataset.cdone) return custConfirm(+b.dataset.cdone);
     if (b.dataset.send) return send();
     if (b.dataset.photo) return pickMedia(async fs => { for (const f of fs) await sendPhoto(f); });
     if (b.dataset.epccancel) { editing = null; return drawRoom(true); }
