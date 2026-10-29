@@ -77,7 +77,12 @@
   const fine = () => matchMedia('(pointer:fine)').matches;
   function sync(t){
     if (!t) return; const b = t.closest('.kit-bar'); if (!b) return;
+    // 입력칸 높이를 재려고 잠깐 'auto'로 줄이면 대화창이 커졌다 작아지며 스크롤 위치가 밀림(글자 칠 때마다 뒤 화면이 들썩)
+    // → 재기 전 대화창 위치를 기억했다가 되돌림. 맨 아래 보고 있었으면 줄이 늘어도 맨 아래(최신 대화)에 붙여 둠
+    const box = b.parentElement && b.parentElement.querySelector('.ch-msgs,.epc-msgs');
+    const top = box ? box.scrollTop : 0, atB = !!box && box.scrollHeight - top - box.clientHeight < 80;
     t.style.height = 'auto'; t.style.height = Math.min(120, t.scrollHeight) + 'px';
+    if (box) { const nt = atB ? box.scrollHeight : top; if (box.scrollTop !== nt) box.scrollTop = nt; }
     const s = b.querySelector('.kit-send'); if (s) s.classList.toggle('on', !!t.value.trim());
   }
   function insert(t, text){
