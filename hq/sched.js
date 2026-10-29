@@ -89,15 +89,18 @@ function jobCard(j){
   const S = H.S;
   const ap = (j.assignments||[]).filter(a => a.status === 'approved');
   const wait = (j.assignments||[]).filter(a => a.status === 'applied');
-  const left = Math.max(0, j.headcount - ap.length);
+  const boss = !!j.boss_on && !H.S.needV4;   // 대표님도 이 현장에 감 → 한 자리로 셈
+  const left = Math.max(0, j.headcount - ap.length - (boss ? 1 : 0));
   const pill = j.status==='cancelled' ? '<span class="pill p-mute">취소</span>' : j.status==='quote' ? '<span class="pill p-info">견적 중</span>'
     : j.status==='done' ? '<span class="pill p-mute">마감 완료</span>'
     : left===0 ? '<span class="pill p-ok">인원 완료</span>' : `<span class="pill p-warn">${left}자리 남음</span>`;
   const seen = a => a.seen_at && new Date(a.seen_at) >= new Date(j.changed_at);
   const active = j.status!=='done' && j.status!=='cancelled';
-  const people = ap.map(a => `<span class="who ok ${seen(a)?'':'unseen'}" title="${seen(a)?'확인함 '+H.ago(a.seen_at):'아직 안 봤어요'}">${seen(a)?'✓':'!'} ${esc(H.P(a.staff_id).name)}${active?`<button class="x" data-a="unassign" data-j="${j.id}" data-s="${a.staff_id}" aria-label="배정 빼기">✕</button>`:''}</span>`).join('')
+  const bossChip = boss ? `<span class="who ok" style="background:#141A2A;color:#fff;border-color:#141A2A" title="대표님도 이 현장에 가요">👔 대표${active?`<button class="x" data-a="bossOn" data-j="${j.id}" aria-label="대표 빼기" style="color:#fff">✕</button>`:''}</span>` : '';
+  const people = bossChip + ap.map(a => `<span class="who ok ${seen(a)?'':'unseen'}" title="${seen(a)?'확인함 '+H.ago(a.seen_at):'아직 안 봤어요'}">${seen(a)?'✓':'!'} ${esc(H.P(a.staff_id).name)}${active?`<button class="x" data-a="unassign" data-j="${j.id}" data-s="${a.staff_id}" aria-label="배정 빼기">✕</button>`:''}</span>`).join('')
     + wait.map(a => `<span class="who wait">${esc(H.P(a.staff_id).name)} 신청<button data-a="approve" data-j="${j.id}" data-s="${a.staff_id}">승인</button><button class="no" data-a="reject" data-j="${j.id}" data-s="${a.staff_id}">거절</button></span>`).join('')
-    + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '');
+    + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '')
+    + (active && !boss && !H.S.needV4 && H.S.owner ? `<button class="btn ghost sm" data-a="bossOn" data-j="${j.id}" title="대표님도 이 현장에 가요">👔 나도 가요</button>` : '');
   const tc = H.isPartner(j) ? 'var(--prt)' : j.status==='open' && left ? 'var(--cleanl)' : 'var(--clean)';
   const phs = H.photosOf(j.id).length;
   const live = j.live_code ? `<span class="who" style="background:#EEF2FF;color:var(--navy);border-color:transparent" data-a="liveSheet" data-j="${j.id}" role="button">🔗 손님 링크${j.live_views?' · '+j.live_views+'번 봄':''}</span>` : '';
@@ -191,6 +194,13 @@ H.ACT.reject = async el => { await H.q(sb.from('assignments').update({status:'re
 H.ACT.unassign = async el => { const sid = el.dataset.s; if (!confirm(`${H.P(sid).name}님을 이 일정에서 뺄까요?`)) return;
   await H.q(sb.from('assignments').update({status:'cancelled', decided_at:new Date().toISOString()}).match({job_id:+el.dataset.j, staff_id:sid}));
   await sb.from('jobs').update({status:'open'}).eq('id', +el.dataset.j).eq('status','full'); H.refresh(); };
+
+// 👔 나도 가요 / 빼기: 대표님도 한 자리로 셈 → 자리가 다 차면 직원 신청 마감, 빼면 다시 열림
+H.ACT.bossOn = async el => { const j = (H.S.jobs||[]).find(x => x.id === +el.dataset.j); if (!j) return;
+  const on = !j.boss_on, ap = (j.assignments||[]).filter(a => a.status === 'approved').length, full = ap + (on ? 1 : 0) >= j.headcount;
+  if (!on && !confirm('이 현장에서 대표님을 뺄까요?')) return;
+  const row = {boss_on: on}; if (on && full && j.status === 'open') row.status = 'full'; if (!on && !full && j.status === 'full') row.status = 'open';
+  await H.q(sb.from('jobs').update(row).eq('id', j.id)); H.toast(on ? '대표님도 이 현장에 가요 · 직원 화면 대표 상태가 시간 맞춰 바뀌어요' : '대표님을 뺐어요'); H.refresh(); };
 
 /* 현장 올리기 · 수정 */
 
