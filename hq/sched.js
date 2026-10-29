@@ -421,17 +421,24 @@ H.FORM.assign = async v => { const id = +v.get('id'); const ids = v.getAll('s'),
 /* 당일 마감 · 지급액 */
 H.ACT.payClose = el => { const j = J(el.dataset.j);
   const ap = j.assignments.filter(a => a.status === 'approved');
-  const presets = H.S.settings.pay_presets || [];
+  const presets = [60000,70000,80000,100000,120000,150000];   // 빠른 금액 (대표님 지정)
   H.open(`<form data-f="pay"><h3>당일 마감 · 지급액</h3><p class="note" style="margin:-6px 0 10px">${esc(j.title)} · ${md(j.job_date)}<br>직원은 마감 후에 자기 금액만 봐요. 공제(3.3% 등)는 직원별 지급 방식대로 정산에서 계산돼요.</p>
     ${ap.map(a => `<div style="display:grid;grid-template-columns:72px 1fr 1fr;gap:6px;align-items:center;padding:8px 0 2px;border-top:1px solid var(--line)"><b>${esc(H.P(a.staff_id).name)}</b>
       <input class="in num" type="text" inputmode="numeric" name="pay_${a.staff_id}" value="${a.pay_amount!=null?Number(a.pay_amount).toLocaleString():''}" placeholder="금액 직접 입력" data-c="payFmt">
       <input class="in num" type="text" inputmode="numeric" name="extra_${a.staff_id}" value="${a.extra_amount!=null?Number(a.extra_amount).toLocaleString():''}" placeholder="추가수당" data-c="payFmt"></div>
       ${presets.length?`<div class="chips" style="margin:6px 0 0 78px">${presets.map(p=>`<button type="button" class="pchip" data-a="payPick" data-s="${a.staff_id}" data-v="${p}">${(p/10000).toLocaleString()}만</button>`).join('')}</div>`:''}
+      <div class="note" id="net_${a.staff_id}" style="margin:4px 0 0 78px">${payNet(a.staff_id, a.pay_amount, a.extra_amount)}</div>
       <input class="in" style="margin:4px 0 6px" name="memo_${a.staff_id}" value="${esc(a.pay_memo||'')}" placeholder="${esc(H.P(a.staff_id).name)} 메모 (추가작업 내용 등)">`).join('') || '<p class="empty">확정된 사람이 없어요</p>'}
     ${j.boss_on ? `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(H.S.name||'대표')}</b><span class="note">대표 · 지급 없음</span></div>` : ''}
     ${H.sacts('마감 저장')}<input type="hidden" name="id" value="${j.id}"></form>`); };
-H.ACT.payPick = el => { const inp = document.querySelector(`[name="pay_${el.dataset.s}"]`); if (inp) { inp.value = Number(el.dataset.v).toLocaleString(); inp.classList.add('filled'); } };
-H.CHANGE.payFmt = el => { const n = H.nnum(el.value); if (n != null && !isNaN(n)) el.value = n.toLocaleString(); };
+// 실지급액 (직원 지급 방식대로 공제 — 직원 '내 돈'에 보이는 금액과 같음)
+function payNet(sid, pay, extra){ const st = H.P(sid), g = (+pay||0) + (+extra||0); if (!g) return '';
+  const ded = st.pay_type === 'salary' ? 0 : H.deduct(st.pay_type, g, 1), t = H.PT[st.pay_type] || '공제 없음';
+  return `💸 실제 보낼 돈 <b>${H.won(g - ded)}원</b> <span>(${ded ? t + ' −' + H.won(ded) + '원' : t})</span>`; }
+function payNetUpd(sid){ const f = document.querySelector('#sheet form[data-f="pay"]'), o = document.getElementById('net_' + sid); if (!f || !o) return;
+  o.innerHTML = payNet(sid, H.nnum(f.elements['pay_' + sid].value), H.nnum(f.elements['extra_' + sid].value)); }
+H.ACT.payPick = el => { const inp = document.querySelector(`[name="pay_${el.dataset.s}"]`); if (inp) { inp.value = Number(el.dataset.v).toLocaleString(); inp.classList.add('filled'); payNetUpd(el.dataset.s); } };
+H.CHANGE.payFmt = el => { const n = H.nnum(el.value); if (n != null && !isNaN(n)) el.value = n.toLocaleString(); payNetUpd(el.name.replace(/^(pay|extra)_/, '')); };
 H.FORM.pay = async v => { const id = +v.get('id'); const j = J(id);
   for (const a of j.assignments.filter(a=>a.status==='approved'))
     await H.q(sb.from('assignments').update({pay_amount:H.nnum(v.get('pay_'+a.staff_id)), extra_amount:H.nnum(v.get('extra_'+a.staff_id)), pay_memo:H.nn(v.get('memo_'+a.staff_id))}).match({job_id:id, staff_id:a.staff_id}));
