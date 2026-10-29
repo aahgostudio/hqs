@@ -415,14 +415,15 @@ H.ACT.payClose = el => { const j = J(el.dataset.j);
   const ap = j.assignments.filter(a => a.status === 'approved');
   const presets = H.S.settings.pay_presets || [];
   H.open(`<form data-f="pay"><h3>당일 마감 · 지급액</h3><p class="note" style="margin:-6px 0 10px">${esc(j.title)} · ${md(j.job_date)}<br>직원은 마감 후에 자기 금액만 봐요. 공제(3.3% 등)는 직원별 지급 방식대로 정산에서 계산돼요.</p>
-    ${ap.map(a => `<div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)"><b>${esc(H.P(a.staff_id).name)}</b>
-      <div style="display:flex;gap:4px"><select class="in" data-c="preset" data-s="${a.staff_id}"><option value="">금액</option>${presets.map(p=>`<option value="${p}" ${a.pay_amount===p?'selected':''}>${won(p)}</option>`).join('')}</select>
-        <input class="in num" type="number" step="1000" name="pay_${a.staff_id}" value="${a.pay_amount??''}" placeholder="기본"></div>
-      <input class="in num" type="number" step="1000" name="extra_${a.staff_id}" value="${a.extra_amount??''}" placeholder="추가수당"></div>
+    ${ap.map(a => `<div style="display:grid;grid-template-columns:72px 1fr 1fr;gap:6px;align-items:center;padding:8px 0 2px;border-top:1px solid var(--line)"><b>${esc(H.P(a.staff_id).name)}</b>
+      <input class="in num" type="text" inputmode="numeric" name="pay_${a.staff_id}" value="${a.pay_amount!=null?Number(a.pay_amount).toLocaleString():''}" placeholder="금액 직접 입력" data-c="payFmt">
+      <input class="in num" type="text" inputmode="numeric" name="extra_${a.staff_id}" value="${a.extra_amount!=null?Number(a.extra_amount).toLocaleString():''}" placeholder="추가수당" data-c="payFmt"></div>
+      ${presets.length?`<div class="chips" style="margin:6px 0 0 78px">${presets.map(p=>`<button type="button" class="pchip" data-a="payPick" data-s="${a.staff_id}" data-v="${p}">${(p/10000).toLocaleString()}만</button>`).join('')}</div>`:''}
       <input class="in" style="margin:4px 0 6px" name="memo_${a.staff_id}" value="${esc(a.pay_memo||'')}" placeholder="${esc(H.P(a.staff_id).name)} 메모 (추가작업 내용 등)">`).join('') || '<p class="empty">확정된 사람이 없어요</p>'}
     ${j.boss_on ? `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(H.S.name||'대표')}</b><span class="note">대표 · 지급 없음</span></div>` : ''}
     ${H.sacts('마감 저장')}<input type="hidden" name="id" value="${j.id}"></form>`); };
-H.CHANGE.preset = el => { const inp = document.querySelector(`[name="pay_${el.dataset.s}"]`); if (el.value) inp.value = el.value; };
+H.ACT.payPick = el => { const inp = document.querySelector(`[name="pay_${el.dataset.s}"]`); if (inp) { inp.value = Number(el.dataset.v).toLocaleString(); inp.classList.add('filled'); } };
+H.CHANGE.payFmt = el => { const n = H.nnum(el.value); if (n != null && !isNaN(n)) el.value = n.toLocaleString(); };
 H.FORM.pay = async v => { const id = +v.get('id'); const j = J(id);
   for (const a of j.assignments.filter(a=>a.status==='approved'))
     await H.q(sb.from('assignments').update({pay_amount:H.nnum(v.get('pay_'+a.staff_id)), extra_amount:H.nnum(v.get('extra_'+a.staff_id)), pay_memo:H.nn(v.get('memo_'+a.staff_id))}).match({job_id:id, staff_id:a.staff_id}));
