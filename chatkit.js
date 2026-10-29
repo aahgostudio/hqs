@@ -168,8 +168,10 @@
       const v = (await (await fetch(base + '?t=' + Date.now(), {cache: 'no-store'})).text()).trim();
       if (!v || v === window.EP_VER) return;
       const a = document.activeElement; if (a && /^(TEXTAREA|INPUT)$/.test(a.tagName) && a.value) return;
-      const key = 'ep_upd_' + v; if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1');
-      const u = new URL(location.href); u.searchParams.set('_v', v); location.replace(u.href);
+      // 한 번만 시도하면 폰(홈 화면 앱)이 옛 화면을 다시 띄웠을 때 계속 옛 버전에 머묾 → 1분 간격으로 최대 3번까지 다시 시도
+      const key = 'ep_upd_' + v; let s = {n: 0, t: 0}; try { s = JSON.parse(sessionStorage.getItem(key)) || s; } catch(_) {}
+      if (s.n >= 3 || Date.now() - s.t < 60000) return; try { sessionStorage.setItem(key, JSON.stringify({n: s.n + 1, t: Date.now()})); } catch(_) {}
+      const u = new URL(location.href); u.searchParams.set('_v', v + '.' + (s.n + 1)); location.replace(u.href);
     } catch(_){} };
     setTimeout(check, 1500); setInterval(check, 5 * 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); }); })();
 

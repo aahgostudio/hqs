@@ -60,7 +60,8 @@ function listHtml(){
   return `${OWN() && C.pushReady && K.needPush() ? '<button class="ch-due" data-a="chPushOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>알림 받기</b> · 눌러서 [허용] 한 번 · 앱을 닫아도 새 메시지가 바로 와요</button>' : ''}${K.needBadgeOk() && !(OWN() && C.pushReady && K.needPush()) ? '<button class="ch-due" data-a="chBadgeOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>아이콘에 안 읽은 숫자 보이기</b> · 눌러서 [허용] 한 번</button>' : ''}${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
     ${C.showClosed ? `<div class="ch-sec">보관함 (닫은 방) <button class="link" data-a="chClosed">← 돌아가기</button></div>${vis.map(row).join('') || '<p class="note" style="padding:10px">닫은 방이 없어요</p>'}`
       : grp.map(([l, f]) => { const a = l === '1:1' ? recent(vis.filter(f)) : tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
-        + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')}`;
+        + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')
+        + `<p class="note" style="text-align:center;font-size:11px;opacity:.5;margin:10px 0 4px">버전 ${esc(window.EP_VER || '')}</p>`}`;
 }
 
 function roomHtml(){
