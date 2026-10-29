@@ -225,6 +225,7 @@ tr.boss td{background:#F5F7FF}
 .ch-ic{width:36px;height:36px;border-radius:11px;background:var(--soft);display:grid;place-items:center;font-size:17px;flex:none}
 .ch-row .t{flex:1;min-width:0}.ch-row b{display:block;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ch-row small{display:block;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-row b small{display:inline;margin-left:4px;font-size:13px}
 .ch-row .r{display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:11px;color:var(--sub)}
 .ch-bd{font-style:normal;min-width:18px;height:18px;border-radius:9px;background:#E5484D;color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;padding:0 5px}
 .ch-row small.ch-tag,.ch-tag{display:inline-block;vertical-align:2px;margin-left:5px;font-size:9.5px;line-height:1.5;background:none;border:1px solid var(--line);color:var(--sub);border-radius:5px;padding:0 4px;font-weight:600}
