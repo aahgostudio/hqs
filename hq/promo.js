@@ -81,7 +81,7 @@ H.view('promo', {label:'홍보',
         ${todo.slice(0,10).map(t=>`<div class="rw"><span>${t}</span></div>`).join('') || '<div class="note">밀린 홍보가 없어요 👍</div>'}
         <div class="ptitle">최근 올린 링크</div>
         ${links.slice(0,8).map(l=>`<div class="rw"><span>${esc(l.ch)} · <a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.job.title)}</a></span><span class="note">${l.at?md(l.at.slice(0,10)):''}</span></div>`).join('') || '<div class="note">아직 없어요</div>'}
-        <div class="acts" style="margin-top:12px"><button class="btn sm ghost" data-a="liveCfg">손님 링크 설정</button></div></section>
+        <div class="acts" style="margin-top:12px"><button class="btn sm ghost" data-a="liveCfg">고객님 방 링크 설정</button></div></section>
     </div>
     <section class="box"><div class="bh"><h3>홍보 채널 바로가기</h3><button class="btn sm ghost" data-a="plEdit">링크 편집</button></div>
       <div class="links">${pl.map(l=>`<div class="lk"><b>${esc(l.name)}</b><span>${esc(l.sub||l.url)}</span><a href="${esc(l.url)}" target="_blank" rel="noopener">열기</a></div>`).join('')}</div></section>`;
@@ -95,9 +95,9 @@ H.ACT.plEdit = () => { const pl = H.S.settings.promo_links || [];
 H.FORM.plEdit = async v => { const pl = String(v.get('t')).split('\n').map(x=>x.split('|').map(s=>s.trim())).filter(x=>x[0]&&x[1]).map(([name,url,sub])=>({name,url,sub:sub||''}));
   await H.q(sb.from('settings').upsert({key:'promo_links', value:pl})); H.S.settings.promo_links = pl; H.close(); H.render(); };
 
-/* 손님 링크 설정 */
+/* 고객님 방 링크 설정 */
 H.ACT.liveCfg = () => { const c = Object.assign({auto_issue:true, close_days:7}, H.setting('live')||{});
-  H.open(`<form data-f="liveCfg"><h3>손님 링크 설정</h3><div class="fg">
+  H.open(`<form data-f="liveCfg"><h3>고객님 방 링크 설정</h3><div class="fg">
     <div class="field full"><label>네이버 스마트플레이스 후기 주소</label><input name="review_url" value="${esc(c.review_url||'')}" placeholder="스마트플레이스 › 리뷰 › 리뷰 쓰기 링크"><div class="hint">완료 리포트·마감 화면의 [네이버 후기 남기기] 버튼이 여기로 가요</div></div>
     <div class="field"><label>문의 전화</label><input name="phone" value="${esc(c.phone||'')}"></div>
     <div class="field"><label>카톡 상담 링크</label><input name="kakao" value="${esc(c.kakao||'')}" placeholder="카카오 채널·오픈채팅 주소"></div>
@@ -105,8 +105,8 @@ H.ACT.liveCfg = () => { const c = Object.assign({auto_issue:true, close_days:7},
     <div class="field"><label>계좌번호</label><input name="account" value="${esc(c.account||'')}"></div>
     <div class="field"><label>예금주</label><input name="holder" value="${esc(c.holder||'')}"></div>
     <div class="field"><label>기본 자동 닫기</label><select name="close_days">${[1,3,7,14,30].map(d=>`<option value="${d}" ${+c.close_days===d?'selected':''}>작업 끝 + ${d}일</option>`).join('')}</select></div>
-    <div class="field full"><label style="display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" name="auto_issue" ${c.auto_issue!==false?'checked':''} style="width:auto">현장이 확정되면 손님 링크 자동 발급</label>
-      <label style="display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" name="show_staff" ${c.show_staff?'checked':''} style="width:auto">손님 화면에 직원 이름 보이기</label></div>
+    <div class="field full"><label style="display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" name="auto_issue" ${c.auto_issue!==false?'checked':''} style="width:auto">현장이 확정되면 고객님 방 링크 자동 발급</label>
+      <label style="display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" name="show_staff" ${c.show_staff?'checked':''} style="width:auto">고객 화면에 직원 이름 보이기</label></div>
     <div class="sec">안내 이미지 (주소를 바꾸면 그림이 바뀌어요)</div>
     <div class="field full"><label>들어올 때 (여러 장은 줄바꿈)</label><textarea class="in" name="intro" rows="2">${esc((c.intro_imgs||[]).join('\n'))}</textarea></div>
     <div class="field"><label>작업 끝 · 계좌 안내</label><input name="done_img" value="${esc(c.done_img||'')}"></div>

@@ -48,7 +48,7 @@ function order(){
       <div class="m"><span>기본 ${won(j.total_amount)}원</span>${(j.quote&&j.quote.items||[]).length?`<span>체크: ${esc(j.quote.items.join(', '))}</span>`:''}${j.quote&&j.quote.note?`<span>${esc(j.quote.note)}</span>`:''}</div>
       <div class="acts"><button class="btn sm ghost" data-a="quoteSheet" data-j="${j.id}">견적 체크리스트</button><button class="btn sm ghost" data-a="quoteCopy" data-j="${j.id}">견적 카톡 문구</button><button class="btn sm ghost" data-a="jobEdit" data-j="${j.id}">수정</button><button class="btn sm" data-a="quoteConfirm" data-j="${j.id}">확정 → 모집 시작</button></div></div>`).join('') || '<p class="empty">견적 중인 오더가 없어요. 숨고·블로그·당근으로 들어온 문의를 [+ 오더 접수]로 넣어 두세요.</p>'}</section>
     <section class="box"><div class="bh"><h3>채널별 (이번 달 + 견적 중)</h3></div>${Object.entries(chans).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`<div class="rw"><span>${esc(c)}</span><b>${n}건</b></div>`).join('') || '<div class="note">아직 없어요</div>'}
-      <p class="note" style="margin-top:10px">흐름: 접수(견적 중) → 견적 체크리스트로 예상 추가금 미리 안내 → 확정하면 일정판에 모집으로 올라가고 손님 링크가 생겨요.</p></section></div>`;
+      <p class="note" style="margin-top:10px">흐름: 접수(견적 중) → 견적 체크리스트로 예상 추가금 미리 안내 → 확정하면 일정판에 모집으로 올라가고 고객님 방 링크가 생겨요.</p></section></div>`;
 }
 const parseRange = p => { const s = String(p||'').replace(/,/g,''); if (/평당/.test(s)) return null;
   const m = s.match(/(\d+(?:\.\d+)?)\s*(만)?\s*(?:원)?\s*(~)?\s*(\d+(?:\.\d+)?)?\s*(만)?/); if (!m) return null;
@@ -59,7 +59,7 @@ H.ACT.quoteSheet = el => { const j = H.J(el.dataset.j); const opts = H.setting('
   H.open(`<form data-f="quote"><h3>견적 · 미리 묻는 체크리스트</h3><p class="note" style="margin:-6px 0 10px">${esc(j.title)} · 상담 때 고객에게 확인 → 체크한 항목은 견적서에 '예상 추가금'으로 미리 표시돼요.</p>
     <div class="fg"><div class="field"><label>기본 금액</label><input type="number" step="1000" name="base" value="${j.total_amount??''}"></div><div class="field"><label>메모</label><input name="note" value="${esc((j.quote&&j.quote.note)||'')}"></div></div>
     ${groups.map(g=>`<div class="ptitle">${esc(g)}</div><div class="chk">${opts.filter(o=>o.g===g).map(o=>`<label><input type="checkbox" name="it" value="${esc(o.n)}" ${sel.has(o.n)?'checked':''}>${esc(o.n)}<b>${esc(o.p)}</b></label>`).join('')}</div>`).join('')}
-    ${H.sacts('저장', `<button type="button" class="btn ghost" data-a="quoteCopyForm" style="flex:0 0 auto">카톡 문구 복사</button>`)}<input type="hidden" name="id" value="${j.id}"></form>`, true); };
+    ${H.sacts('저장', `<button type="button" class="btn ghost" data-a="quoteCopyForm" style="flex:0 0 auto">안내 멘트 복사</button>`)}<input type="hidden" name="id" value="${j.id}"></form>`, true); };
 const quoteText = (j, base, items) => { const opts = H.setting('extra_options') || []; let lo = 0, hi = 0, open = false;
   items.forEach(n => { const o = opts.find(x=>x.n===n); const r = o && parseRange(o.p); if (!r) { open = true; return; } lo += r[0]; if (r[1] == null) open = true; else hi += r[1]; });
   const rng = items.length ? ` + 예상 추가 ${won(lo)}${hi>lo?'~'+won(hi):''}원${open?'~':''}` : '';
@@ -145,7 +145,7 @@ H.FORM.money = async (v, f) => { const id = +v.get('id'); const j = H.J(id);
     how: r.querySelector('[name=x_how]').value || null, proof: r.querySelector('[name=x_proof]').value || null, agreed: r.querySelector('[name=x_agreed]').checked, issued: r.querySelector('[name=x_issued]').checked}))
     .filter(x => x.name || x.amount);
   if (extras.some(x => !x.name)) return H.toast('추가금마다 사유를 적어주세요');
-  if (extras.some(x => x.notice === 'site' && !x.agreed) && !confirm('현장 추가 중 고객 동의 체크가 안 된 줄이 있어요. 동의 안 된 금액은 매출·손님 잔금에 안 들어가요. 저장할까요?')) return;
+  if (extras.some(x => x.notice === 'site' && !x.agreed) && !confirm('현장 추가 중 고객 동의 체크가 안 된 줄이 있어요. 동의 안 된 금액은 매출·고객님 잔금에 안 들어가요. 저장할까요?')) return;
   const up = {total_amount:H.nnum(v.get('total_amount')), contract_mode:H.nn(v.get('contract_mode')), deposit_amount:H.nnum(v.get('deposit_amount')), deposit_how:H.nn(v.get('deposit_how')), deposit_proof:H.nn(v.get('deposit_proof')),
     deposit_paid:v.get('deposit_paid')==='on', deposit_issued:v.get('deposit_issued')==='on', balance_amount:H.nnum(v.get('balance_amount')), balance_how:H.nn(v.get('balance_how')), balance_proof:H.nn(v.get('balance_proof')),
     balance_issued:v.get('balance_issued')==='on', collector_id:H.nn(v.get('collector_id')), extras};

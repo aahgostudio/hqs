@@ -76,7 +76,7 @@ function siteCard(x){
     <div class="ppl">${x.boss ? '<i class="lead">대표 현장</i>' : x.partner ? '<span class="tg prt">도급 파트너</span> ' + x.ppl.map(p => esc(p.name)).join('·')
       : `<span class="n">${x.ppl.length}${j.headcount?'/'+j.headcount:''}인</span>${x.ppl.map(p => `<i class="${p===lead?'lead':''}">${esc(p.name)}${p.role&&p===lead?' '+esc(p.role):''}</i>`).join('')}${empty?`<i class="empty">+${empty} 비었음</i>`:''}`}</div>
     <div class="st"><span class="tg ${tc}">${x.state==='done'?'✅ '+tl+' '+clock(x.done):tl}</span>${x.warn.map(w => `<span class="tg bad">⚠ ${esc(w)}</span>`).join('')}
-      ${x.ph.length?`<span>📸 ${x.ph.length}장 · 마지막 ${clock(x.ph[0].created_at)}</span>`:''}${j.live_views?`<span>👀 손님 ${j.live_views}번 봄</span>`:''}${x.info.map(t => `<span>${esc(t)}</span>`).join('')}</div>
+      ${x.ph.length?`<span>📸 ${x.ph.length}장 · 마지막 ${clock(x.ph[0].created_at)}</span>`:''}${j.live_views?`<span>👀 고객님 ${j.live_views}번 봄</span>`:''}${x.info.map(t => `<span>${esc(t)}</span>`).join('')}</div>
     ${x.state==='on'||x.state==='over'?`<div class="bar"><i style="width:${Math.round(x.prog*100)}%"></i></div>`:''}</a>`;
 }
 function personRow(p){

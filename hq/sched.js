@@ -102,7 +102,7 @@ function jobCard(j){
     + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '');
   const tc = H.isPartner(j) ? 'var(--prt)' : j.status==='open' && left ? 'var(--cleanl)' : 'var(--clean)';
   const phs = H.photosOf(j.id).length;
-  const live = j.live_code ? `<span class="who" style="background:#EEF2FF;color:var(--navy);border-color:transparent" data-a="liveSheet" data-j="${j.id}" role="button">🔗 손님 링크${j.live_views?' · '+j.live_views+'번 봄':''}</span>` : '';
+  const live = j.live_code ? `<span class="who" style="background:#EEF2FF;color:var(--navy);border-color:transparent" data-a="liveSheet" data-j="${j.id}" role="button">🔗 고객님 방 링크${j.live_views?' · '+j.live_views+'번 봄':''}</span>` : '';
   const money = (j.total_amount||j.balance_amount) ? `<span>계약 ${won(j.total_amount)} · 잔금 ${won(j.balance_amount)}${H.extrasSum(j)?' · 추가 '+won(H.extrasSum(j)):''}${j.collector_id?` (${esc(H.P(j.collector_id).name)} ${j.collected_at?'✓ 수금':'수금 대기'})`:''}</span>` : '';
   const showPromo = j.job_date <= ymd(H.today()) && j.status !== 'cancelled' && j.status !== 'quote';
   return `<div class="card" style="--tc:${tc}">
@@ -115,8 +115,8 @@ function jobCard(j){
       ${j.status==='quote'?`<button class="btn sm" data-a="quoteConfirm" data-j="${j.id}">확정</button>`:''}
       ${active && j.status!=='quote'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">당일 마감 · 지급액</button>`:''}${j.status==='done'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">지급액 수정</button>`:''}
       <button class="btn ghost sm" data-a="moneySheet" data-j="${j.id}">금액 · 증빙</button>
-      ${j.status!=='quote'?`<button class="btn ghost sm" data-a="liveSheet" data-j="${j.id}">${j.live_code?'손님 링크':'손님 링크 발급'}</button>`:''}${j.live_code && !H.S.needV21?`<button class="btn ghost sm" data-a="custRoom" data-j="${j.id}">💬 고객님 방</button>`:''}
-      <button class="btn ghost sm" data-a="jobCopy" data-j="${j.id}">카톡 문구</button>${H.S.isOwner?`<button class="btn sm danger" data-a="jobDel" data-j="${j.id}">🗑 삭제</button>`:""}</div>
+      ${j.status!=='quote'?`<button class="btn ghost sm" data-a="liveSheet" data-j="${j.id}">${j.live_code?'고객님 방 링크':'고객님 방 링크 발급'}</button>`:''}${j.live_code && !H.S.needV21?`<button class="btn ghost sm" data-a="custRoom" data-j="${j.id}">💬 고객님 방</button>`:''}
+      <button class="btn ghost sm" data-a="jobCopy" data-j="${j.id}">직원 안내 멘트</button>${H.S.isOwner?`<button class="btn sm danger" data-a="jobDel" data-j="${j.id}">🗑 삭제</button>`:""}</div>
     ${showPromo ? H.promoRow(j) : ''}
   </div>`;
 }
@@ -300,7 +300,7 @@ function jobSheet(j, def){
   const lock = I('lock').replace('class="i"','class="i" style="width:14px;height:14px"');
   H.open(`<form data-f="job"><h3>${j.id?'현장 수정':j.status==='quote'?'오더 접수':'클린 현장 올리기'}</h3>
     ${j.id ? '' : `<details class="jpaste" ${def&&def.paste?'open':''}><summary>📋 예약글(계약서) 붙여넣기 → 자동 채우기</summary>
-      <textarea id="jpaste" rows="5" placeholder="손님께 보낸 계약서 글을 통째로 붙여넣으세요"></textarea>
+      <textarea id="jpaste" rows="5" placeholder="고객님께 보낸 계약서 글을 통째로 붙여넣으세요"></textarea>
       <button type="button" class="btn" data-a="jobPaste" style="width:100%">자동 채우기</button><div id="jpaste-out" class="note"></div></details>`}
     <div class="fg">
     <div class="field full"><label>볼 수 있는 팀 (여러 개 가능)</label><div class="chips">${S.teams.filter(t=>t.code!=='HQS').map(t=>`<label><input type="checkbox" name="teams" value="${t.code}" ${(j.teams||[]).includes(t.code)?'checked':''}><span>${t.code} · ${esc(t.name)}</span></label>`).join('')}</div></div>
@@ -327,7 +327,7 @@ ${j.id ? repScopeHtml(j) : repHtml(j)}
     <div class="field"><label>현장 잔금</label><input type="number" name="balance_amount" step="1000" value="${j.balance_amount??''}"></div>
     <div class="field"><label>수금 담당</label><select name="collector_id"><option value="">없음 (대표 · 회사 계좌)</option>${[['수금 담당 가능', s=>s.can_collect], ['그 외 직원', s=>!s.can_collect]].map(([l,f])=>{ const o = S.staff.filter(s=>s.status!=='left'&&f(s)); return o.length?`<optgroup label="${l}">${o.map(s=>`<option value="${s.id}" ${j.collector_id===s.id?'selected':''}>${esc(s.name)} (${s.team})</option>`).join('')}</optgroup>`:''; }).join('')}</select></div>
     <div class="field"><label>도급 정산</label><select name="contract_mode"><option value="">도급 아님</option><option value="A" ${j.contract_mode==='A'?'selected':''}>A · 예약금만 본사</option><option value="B" ${j.contract_mode==='B'?'selected':''}>B · 전액 받고 잔금 송금</option></select></div>
-    <div class="field"><label>손님 링크 제목</label><input name="live_title" value="${esc(j.live_title||'')}" placeholder="비우면 현장 이름 (손님 이름 넣지 않기)"></div>
+    <div class="field"><label>고객님 방 링크 제목</label><input name="live_title" value="${esc(j.live_title||'')}" placeholder="비우면 현장 이름 (고객 이름 넣지 않기)"></div>
     <div class="field full"><label>대표 메모</label><input name="admin_memo" value="${esc(j.admin_memo||'')}"></div>
   </div>${H.sacts(j.id?'저장':'올리기', j.id?`<button type="button" class="btn danger" data-a="jobDel" data-j="${j.id}" style="flex:0 0 auto">삭제</button>`:'')}
   <input type="hidden" name="id" value="${j.id||''}"></form>`);
@@ -394,7 +394,7 @@ H.ACT.quoteConfirm = async el => { const j = J(el.dataset.j);
   const up = {status:'open'}; if (H.autoLive() && !j.live_code) { up.live_code = H.rnd(8); up.live_close_days = +((H.setting('live')||{}).close_days) || 7; }
   await H.q(sb.from('jobs').update(up).eq('id', j.id)); H.copy(jobMsg(Object.assign({}, j, up)), '확정 · 모집 시작 · 카톡 알림 문구 복사됐어요'); H.refresh(); };
 function jobMsg(j){ const d = parse(j.job_date); return `[${H.C.BRAND}] 새 일정이 올라왔어요\n${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]}) ${j.start_time?j.start_time.slice(0,5):''} ${j.title}\n필요 ${j.headcount}명 · 일정판에서 신청해주세요`; }
-H.ACT.jobCopy = el => H.copy(jobMsg(J(el.dataset.j)), '카톡 알림 문구 복사했어요');
+H.ACT.jobCopy = el => H.copy(jobMsg(J(el.dataset.j)), '직원 안내 멘트를 복사했어요');
 
 /* 직접 배정 */
 H.ACT.assign = el => { const j = J(el.dataset.j), S = H.S;
@@ -455,28 +455,28 @@ H.ACT.evDel = async el => { if (!confirm('이 일정을 지울까요?')) return;
 H.FORM.ev = async v => { const row = {ev_date:v.get('ev_date'), ev_time:H.nn(v.get('ev_time')), kind:v.get('kind'), biz:v.get('biz')||'common', maemul_id:H.nn(v.get('maemul_id')), title:v.get('title').trim(), memo:H.nn(v.get('memo')), staff_id:null, show_boss:true};
   const id = v.get('id'); await H.q(id ? sb.from('events').update(row).eq('id', +id) : sb.from('events').insert(row)); H.close(); H.toast('저장했어요'); H.refresh(); };
 
-/* ---------- 손님 링크 ---------- */
-H.liveMsg = j => `[리츠종합클린] 안녕하세요, 고객님 😊\n오늘 ${j.live_title||j.title} 진행합니다.\n\n작업 사진이 실시간으로 올라가는 페이지예요. 언제든 들어와 보세요!\n👉 ${H.liveUrl(j.live_code)}\n\n작업이 끝나면 전후 사진 리포트로 바뀌어요.\n궁금한 점은 페이지의 [💬 문의하기]로 편하게 남겨주세요.`;
+/* ---------- 고객님 방 링크 ---------- */
+H.liveMsg = j => `[리츠종합클린] 안녕하세요, 고객님 😊\n${j.live_title||j.title} 작업을 위한 고객님 전용 방이에요.\n\n작업 사진이 실시간으로 올라오고, 요청 사항도 이 방에 바로 남기실 수 있어요.\n👉 ${H.liveUrl(j.live_code)}\n\n작업이 끝나면 전·후 사진과 잔금 안내로 바뀌어요.`;
 H.ACT.liveSheet = async el => {
   let j = J(el.dataset.j);
-  if (!j.live_code) { const code = H.rnd(8), days = +((H.setting('live')||{}).close_days) || 7; await H.q(sb.from('jobs').update({live_code: code, live_close_days: days}).eq('id', j.id)); j.live_code = code; j.live_close_days = days; H._dirty = Date.now(); H.toast('손님 링크를 발급했어요'); }
+  if (!j.live_code) { const code = H.rnd(8), days = +((H.setting('live')||{}).close_days) || 7; await H.q(sb.from('jobs').update({live_code: code, live_close_days: days}).eq('id', j.id)); j.live_code = code; j.live_close_days = days; H._dirty = Date.now(); H.toast('고객님 방 링크를 발급했어요'); }
   const cfg = H.setting('live') || {};
   const done = j.work_done_at || j.done_at; const close = done ? addDays(new Date(done), j.live_close_days) : null;
   const state = j.live_closed || (close && close < new Date()) ? '<span class="pill p-mute">닫힘</span>' : done ? '<span class="pill p-ok">완료 리포트</span>' : '<span class="pill p-ok">열림 · 작업 중</span>';
-  H.open(`<h3>🔗 손님 링크 · ${esc(j.title)}</h3>
+  H.open(`<h3>🔗 고객님 방 링크 · ${esc(j.title)}</h3>
     <div class="lnk">${esc(H.liveUrl(j.live_code))}</div>
-    <div class="acts" style="margin:10px 0 12px"><button class="btn sm" data-a="liveCopy" data-j="${j.id}">링크 복사</button><button class="btn sm" data-a="liveMsgCopy" data-j="${j.id}">카톡 문구 복사</button><a class="btn sm ghost" href="${H.liveUrl(j.live_code)}" target="_blank" rel="noopener">미리보기</a><button class="btn sm ghost" data-a="liveQR" data-j="${j.id}">QR 보기</button><button class="btn sm ghost" data-a="liveNew" data-j="${j.id}">새로 발급</button><button class="btn sm danger" data-a="liveClose" data-j="${j.id}">${j.live_closed?'다시 열기':'지금 닫기'}</button></div>
-    <div class="opt"><span>링크 상태</span><span>${state} <span class="note">손님 ${j.live_views}번 봄 · 사진 ${H.photosOf(j.id).length}장</span></span></div>
+    <div class="acts" style="margin:10px 0 12px"><button class="btn sm" data-a="liveCopy" data-j="${j.id}">링크 복사</button><button class="btn sm" data-a="liveMsgCopy" data-j="${j.id}">안내 멘트 복사</button><a class="btn sm ghost" href="${H.liveUrl(j.live_code)}" target="_blank" rel="noopener">미리보기</a><button class="btn sm ghost" data-a="liveQR" data-j="${j.id}">QR 보기</button><button class="btn sm ghost" data-a="liveNew" data-j="${j.id}">새로 발급</button><button class="btn sm danger" data-a="liveClose" data-j="${j.id}">${j.live_closed?'다시 열기':'지금 닫기'}</button></div>
+    <div class="opt"><span>링크 상태</span><span>${state} <span class="note">고객님 ${j.live_views}번 봄 · 사진 ${H.photosOf(j.id).length}장</span></span></div>
     <div class="opt"><span>자동으로 닫기</span><select class="in sm" style="width:auto" data-c="liveDays" data-j="${j.id}">${[1,3,7,14,30].map(d=>`<option value="${d}" ${j.live_close_days===d?'selected':''}>작업 끝 + ${d}일</option>`).join('')}</select></div>
     <div class="opt"><span>작업 끝 표시</span>${j.work_done_at?`<span class="note">${new Date(j.work_done_at).toLocaleString('ko-KR')}</span>`:`<button class="btn sm ghost" data-a="liveDone" data-j="${j.id}">지금 작업 끝으로</button>`}</div>
-    <div class="ptitle">손님에게 보낼 카톡 문구</div><div class="kwrap"><div class="kmsg">${esc(H.liveMsg(j))}</div></div>
+    <div class="ptitle">고객님께 보낼 안내 멘트 <small class="note">(문자로 보내요)</small></div><div class="kwrap"><div class="kmsg">${esc(H.liveMsg(j))}</div></div>
     <div id="qrbox" style="margin-top:10px"></div>
-    <p class="note">손님이 처음 들어오면 청소 서비스 안내 → 추가 옵션 안내가 떠요. 작업이 끝나면 계좌 안내와 잔금, 닫히면 마감 인사와 네이버 후기 버튼이 나와요. (설정: 홍보 탭 › 손님 링크 설정)</p>
+    <p class="note">고객님이 처음 들어오면 청소 서비스 안내 → 추가 옵션 안내가 떠요. 작업이 끝나면 계좌 안내와 잔금, 닫히면 마감 인사와 네이버 후기 버튼이 나와요. (설정: 홍보 탭 › 고객님 방 링크 설정)</p>
     <div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button>${H.photosOf(j.id).length?`<button class="btn" data-a="photosSheet" data-j="${j.id}">사진함 보기</button>`:''}</div>`);
-  if (!cfg.review_url) H.toast('네이버 후기 주소가 비어 있어요 · 홍보 탭 › 손님 링크 설정');
+  if (!cfg.review_url) H.toast('네이버 후기 주소가 비어 있어요 · 홍보 탭 › 고객님 방 링크 설정');
 };
 H.ACT.liveCopy = el => H.copy(H.liveUrl(J(el.dataset.j).live_code), '링크를 복사했어요');
-H.ACT.liveMsgCopy = el => H.copy(H.liveMsg(J(el.dataset.j)), '카톡 문구를 복사했어요');
+H.ACT.liveMsgCopy = el => H.copy(H.liveMsg(J(el.dataset.j)), '안내 멘트를 복사했어요 · 문자로 보내주세요');
 H.ACT.liveNew = async el => { if (!confirm('새로 발급하면 예전 링크는 바로 막혀요. 올린 사진도 새 링크로 옮겨지지 않아요. 계속할까요?')) return;
   const j = J(el.dataset.j); const code = H.rnd(8); await H.q(sb.from('jobs').update({live_code: code, live_views:0}).eq('id', j.id)); j.live_code = code; j.live_views = 0; H.toast('새 링크를 발급했어요'); H.ACT.liveSheet(el); H._dirty = Date.now(); };
 H.ACT.liveClose = async el => { const j = J(el.dataset.j); await H.q(sb.from('jobs').update({live_closed: !j.live_closed}).eq('id', j.id)); j.live_closed = !j.live_closed; H.toast(j.live_closed?'닫았어요':'다시 열었어요'); H.ACT.liveSheet(el); H._dirty = Date.now(); };
@@ -485,14 +485,14 @@ H.CHANGE.liveDays = async el => { const j = J(el.dataset.j); await H.q(sb.from('
 H.ACT.liveQR = async el => { const j = J(el.dataset.j); const box = document.getElementById('qrbox');
   try {
     if (!window.QRCode) await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
-    box.innerHTML = '<div id="qrimg" style="width:180px;padding:8px;border:1px solid var(--line);border-radius:10px;background:#fff"></div><div class="note">현장에서 손님 폰으로 찍으면 바로 열려요</div>';
+    box.innerHTML = '<div id="qrimg" style="width:180px;padding:8px;border:1px solid var(--line);border-radius:10px;background:#fff"></div><div class="note">현장에서 고객님 폰으로 찍으면 바로 열려요</div>';
     new QRCode(document.getElementById('qrimg'), {text: H.liveUrl(j.live_code), width: 162, height: 162, correctLevel: QRCode.CorrectLevel.M});
   } catch(_) { box.innerHTML = '<div class="note">QR을 불러오지 못했어요. 링크 복사로 보내 주세요.</div>'; } };
 
 /* 사진함 */
 H.ACT.photosSheet = el => { const j = J(el.dataset.j); const ph = H.photosOf(j.id);
   const lab = {before:'작업 전', during:'작업 중', after:'작업 후'};
-  H.open(`<h3>📷 ${esc(j.title)} · 사진 ${ph.length}장</h3><p class="note" style="margin:-6px 0 10px">직원이 현장노트에서 올린 사진이에요. 흐린 사진은 손님 화면에서 숨겨요.</p>
+  H.open(`<h3>📷 ${esc(j.title)} · 사진 ${ph.length}장</h3><p class="note" style="margin:-6px 0 10px">직원이 현장노트에서 올린 사진이에요. 흐린 사진은 고객 화면에서 숨겨요.</p>
     <div class="ph-grid">${ph.map(p=>`<figure class="${p.hidden?'hid':''}"><a href="${H.photoUrl(p.path)}" target="_blank" rel="noopener"><img loading="lazy" src="${H.photoUrl(p.path)}" alt=""></a><figcaption>${lab[p.stage]||''} · ${esc(H.P(p.staff_id).name)} <button class="btn sm ghost" style="padding:1px 6px;font-size:11px" data-a="phHide" data-id="${p.id}" data-j="${j.id}">${p.hidden?'보이기':'숨기기'}</button></figcaption></figure>`).join('') || '<p class="empty">아직 사진이 없어요</p>'}</div>
     <div class="sacts"><button class="btn ghost" data-a="close">닫기</button></div>`, true); };
 H.ACT.phHide = async el => { const p = H.S.photos.find(x=>x.id==el.dataset.id); await H.q(sb.from('job_photos').update({hidden: !p.hidden}).eq('id', p.id)); p.hidden = !p.hidden; H.ACT.photosSheet(el); };
