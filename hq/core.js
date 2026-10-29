@@ -29,7 +29,7 @@ H.toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on')
 H.fail = e => { console.error(e); let b = document.getElementById('errbar'); if (!b){ b = document.createElement('div'); b.id='errbar'; b.style.cssText='position:fixed;left:12px;right:12px;top:12px;z-index:99;background:#FDECEC;color:#B91C1C;border:1px solid #F5B5B5;border-radius:12px;padding:10px 14px;font-size:13.5px;white-space:pre-wrap;box-shadow:0 8px 24px rgba(0,0,0,.15);cursor:pointer'; b.onclick=()=>b.remove(); document.body.appendChild(b); } b.textContent = '문제가 생겼어요 (눌러서 닫기)\n' + [e && e.message || e, e && e.details, e && e.hint].filter(Boolean).join('\n'); };
 H.copy = async (t, m) => { try { await navigator.clipboard.writeText(t); H.toast(m || '복사했어요'); } catch(_) { prompt('복사해서 쓰세요', t); } };
 H.q = async p => { const r = await p; if (r.error) throw r.error; return r.data; };
-H.photoUrl = path => `${C.SUPABASE_URL}/storage/v1/object/public/live/${path}`;
+H.photoUrl = (path, bucket) => `${C.SUPABASE_URL}/storage/v1/object/public/${bucket === 'chat' ? 'chat' : 'live'}/${path}`;
 H.liveUrl = code => `${location.origin}/live/?s=${code}`;
 H.setting = k => H.S.settings ? H.S.settings[k] : null;
 
@@ -135,7 +135,7 @@ H.loadRange = async (from, to) => {
     H.q(sb.from('jobs').select('*, assignments(*)').gte('job_date', f).lte('job_date', t).order('job_date').order('start_time', {nullsFirst:true})),
     H.q(sb.from('events').select('*').gte('ev_date', f).lte('ev_date', t).order('ev_date').order('ev_time', {nullsFirst:true})),
     H.q(sb.from('availability').select('*').gte('day', f).lte('day', t)),
-    H.q(sb.from('job_photos').select('id,job_id,path,stage,memo,hidden,created_at,staff_id').order('created_at', {ascending:false}).limit(2000))
+    H.q(sb.from('job_photos').select('*').order('created_at', {ascending:false}).limit(2000))
   ]);
   S.jobs = jobs; S.events = evs; S.avail = av; S.photos = ph; S.range = [f, t];
 };
@@ -283,7 +283,7 @@ H.boot = async () => {
     if (error || !isAdmin){ await sb.auth.signOut(); return loginView('관리자 계정이 아니에요'); }
     const ver = await sb.rpc('hq_schema_version');
     if (ver.error || (ver.data||0) < 2) return setupView();
-    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4; H.S.needV5 = (ver.data||0) < 5; H.S.needV6 = (ver.data||0) < 6; H.S.needV7 = (ver.data||0) < 7; H.S.needV8 = (ver.data||0) < 8; H.S.needV9 = (ver.data||0) < 9; H.S.needV10 = (ver.data||0) < 10; H.S.needV19 = (ver.data||0) < 19; H.S.needV20 = (ver.data||0) < 20; H.S.needV21 = (ver.data||0) < 21; H.S.needV22 = (ver.data||0) < 22; H.S.needV23 = (ver.data||0) < 23; H.S.needV24 = (ver.data||0) < 24;
+    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4; H.S.needV5 = (ver.data||0) < 5; H.S.needV6 = (ver.data||0) < 6; H.S.needV7 = (ver.data||0) < 7; H.S.needV8 = (ver.data||0) < 8; H.S.needV9 = (ver.data||0) < 9; H.S.needV10 = (ver.data||0) < 10; H.S.needV19 = (ver.data||0) < 19; H.S.needV20 = (ver.data||0) < 20; H.S.needV21 = (ver.data||0) < 21; H.S.needV22 = (ver.data||0) < 22; H.S.needV23 = (ver.data||0) < 23; H.S.needV24 = (ver.data||0) < 24; H.S.needV25 = (ver.data||0) < 25;
     const own = await sb.rpc('is_owner');
     H.S.isOwner = !!own.data && (session.user.email||'').toLowerCase() === OWNER_EMAIL;
     // 대표님이 관리자(HQS) 화면을 미리 볼 수 있게: ?mode=hqs 로 들어오거나 모드 버튼을 누르면 전환

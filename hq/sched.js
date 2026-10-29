@@ -503,7 +503,7 @@ H.ACT.liveQR = async el => { const j = J(el.dataset.j); const box = document.get
 H.ACT.photosSheet = el => { const j = J(el.dataset.j); const ph = H.photosOf(j.id);
   const lab = {before:'작업 전', during:'작업 중', after:'작업 후'};
   H.open(`<h3>📷 ${esc(j.title)} · 사진 ${ph.length}장</h3><p class="note" style="margin:-6px 0 10px">직원이 현장노트에서 올린 사진이에요. 흐린 사진은 고객 화면에서 숨겨요.</p>
-    <div class="ph-grid">${ph.map(p=>`<figure class="${p.hidden?'hid':''}"><a href="${H.photoUrl(p.path)}" target="_blank" rel="noopener"><img loading="lazy" src="${H.photoUrl(p.path)}" alt=""></a><figcaption>${lab[p.stage]||''} · ${esc(H.P(p.staff_id).name)} <button class="btn sm ghost" style="padding:1px 6px;font-size:11px" data-a="phHide" data-id="${p.id}" data-j="${j.id}">${p.hidden?'보이기':'숨기기'}</button></figcaption></figure>`).join('') || '<p class="empty">아직 사진이 없어요</p>'}</div>
+    <div class="ph-grid">${ph.map(p=>`<figure class="${p.hidden?'hid':''}"><a href="${H.photoUrl(p.path, p.bucket)}" target="_blank" rel="noopener"><img loading="lazy" src="${H.photoUrl(p.path, p.bucket)}" alt=""></a><figcaption>${lab[p.stage]||''} · ${esc(H.P(p.staff_id).name)} <button class="btn sm ghost" style="padding:1px 6px;font-size:11px" data-a="phHide" data-id="${p.id}" data-j="${j.id}">${p.hidden?'보이기':'숨기기'}</button></figcaption></figure>`).join('') || '<p class="empty">아직 사진이 없어요</p>'}</div>
     <div class="sacts"><button class="btn ghost" data-a="close">닫기</button></div>`, true); };
 H.ACT.phHide = async el => { const p = H.S.photos.find(x=>x.id==el.dataset.id); await H.q(sb.from('job_photos').update({hidden: !p.hidden}).eq('id', p.id)); p.hidden = !p.hidden; H.ACT.photosSheet(el); };
 })(window.HQ);
