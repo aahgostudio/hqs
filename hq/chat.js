@@ -53,7 +53,7 @@ const recent = arr => arr.map((r, i) => [r, i]).sort((x, y) => { const a = x[0].
   return a === b ? x[1] - y[1] : (a < b ? 1 : -1); }).map(x => x[0]);
 function listHtml(){
   const rs = (C.home && C.home.rooms) || [], q = C.q.trim();
-  const vis = rs.filter(r => (OWN() || (r.mgr && !r.closed && r.live)) && (C.showClosed ? r.closed : !r.closed) && (r.kind !== 'site' || r.live || r.count || C.showClosed) && (!q || r.title.includes(q)));
+  const vis = rs.filter(r => (OWN() || (r.mgr && !r.closed && r.live)) && (C.showClosed ? r.closed : !r.closed) && (r.kind !== 'site' || r.live || r.count || C.showClosed) && (r.kind !== 'site' || r.count || !rs.some(x => x.kind === 'cust' && x.job_id === r.job_id)) && (!q || r.title.includes(q)));
   const grp = [['현장', r => ['cust','site'].includes(r.kind)], ['함께하는 방', r => ['all','team','custom'].includes(r.kind)], ['1:1', r => r.kind === 'dm']];
   const dnd = OWN() && !C.showClosed;
   const row = r => `<button class="ch-row ${C.cur===r.id?'on':''}${r._kid?' ch-kid':''}" data-kid="${r._kid?1:0}" data-kids="${r._kids||0}" data-a="chOpen" data-id="${r.id}" ${dnd&&r.kind!=='dm'?`draggable="true" data-sec="${['all','team','custom'].includes(r.kind)?'g':r.kind}"`:''}><span class="ch-ic${OWN()&&r.mgr&&!H.S.needV6?' mgr':''}${jst(r)}" ${OWN()&&r.mgr&&!H.S.needV6?'title="관리자(HQS)도 참여하는 방"':''}>${icOf(r)}</span>
