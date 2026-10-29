@@ -166,12 +166,12 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1029n"></script>
+<script src="../status.js?v=1029o"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1029n'</script>
-<script src="../chatkit.js?v=1029n"></script>
-<script src="../chat.js?v=1029n"></script>
+<script>window.EP_VER='1029o'</script>
+<script src="../chatkit.js?v=1029o"></script>
+<script src="../chat.js?v=1029o"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -411,7 +411,7 @@ function evForm(){
     <div class="field"><label>종류</label><div class="segs">${kinds.map(k=>`<button type="button" data-evk="${k}" aria-pressed="${e.kind===k}">${k}</button>`).join('')}</div></div>
     ${isRES()?`<div class="field"><label>매물번호 (선택)</label><input name="maemul" value="${esc(e.maemul||'')}" placeholder="2610-원001"></div>`:''}
     <div style="display:flex;gap:8px"><div class="field" style="flex:1"><label>날짜</label><input type="date" name="date" value="${e.date}" required></div><div class="field" style="flex:1"><label>시간</label><input type="time" name="time" value="${e.time||''}"></div></div>
-    <div class="field"><label>캘린더에 보일 말</label><input name="title" value="${esc(e.title||'')}" placeholder="${isRES()?'광안동 원룸 계약':isAGO()?'스튜디오 라이브 촬영':'병원'}" required maxlength="80"><div class="hint">손님 이름·연락처는 넣지 말아 주세요 (매물번호·동네까지만)</div></div>
+    <div class="field"><label>캘린더에 보일 말</label><input name="title" value="${esc(e.title||'')}" placeholder="${isRES()?'광안동 원룸 계약':isAGO()?'스튜디오 라이브 촬영':'병원'}" required maxlength="80"><div class="hint">고객 이름·연락처는 넣지 말아 주세요 (매물번호·동네까지만)</div></div>
     <div class="field"><label>메모 (나만 보기)</label><input name="memo" value="${esc(e.memo||'')}" maxlength="500"></div>
     <label class="tog">대표님 일정판에 보이기<input type="checkbox" name="show_boss" ${e.show_boss!==false?'checked':''}></label>
     <label class="tog">내 구글 캘린더에 넣기<input type="checkbox" name="gcal" ${e.gcal?'checked':''}></label>

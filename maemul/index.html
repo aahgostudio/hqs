@@ -285,12 +285,12 @@ window.addEventListener('unhandledrejection',function(e){window.__epErr((e.reaso
 setTimeout(function(){var r=document.getElementById('root');if(r&&r.querySelector('.spin'))window.__epErr('서버 응답이 없어요 (20초)');},20000);
 </script>
 <script src="regions.js"></script>
-<script src="../status.js?v=1029n"></script>
+<script src="../status.js?v=1029o"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1029n'</script>
-<script src="../chatkit.js?v=1029n"></script>
-<script src="../chat.js?v=1029n"></script>
+<script>window.EP_VER='1029o'</script>
+<script src="../chatkit.js?v=1029o"></script>
+<script src="../chat.js?v=1029o"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -439,7 +439,7 @@ function bossBar(){ const b=S.boss; if(!b||(b.state==='근무중'&&!b.memo)) ret
 async function loadBoss(){ try{ const r=await fetch(SB_URL+'/rest/v1/rpc/boss_status',{method:'POST',headers:{apikey:SB_KEY,'content-type':'application/json'},body:'{}'}); if(r.ok){ const b=await r.json(); const ch=JSON.stringify(b)!==JSON.stringify(S.boss)||!S.v2; S.boss=b; S.v2=true; if(ch&&S.data) render(); } }catch(e){} }
 // 다가오는 내 일정 (일정판 서버, 2주)
 const DEMO_EVS=(()=>{const f=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-  return [{date:f(0),time:'15:00',kind:'안내',maemul:'2610-원005',title:'광안동 원룸 손님 안내'},{date:f(1),time:'11:00',kind:'계약',maemul:'2610-원002',title:'양정동 분리형 원룸 계약'},{date:f(3),time:'',kind:'잔금',maemul:'2610-원011',title:'연산동 상가 잔금'},{date:f(6),time:'14:00',kind:'안내',maemul:'',title:'수영동 투룸 2곳 안내'}]})();
+  return [{date:f(0),time:'15:00',kind:'안내',maemul:'2610-원005',title:'광안동 원룸 고객 안내'},{date:f(1),time:'11:00',kind:'계약',maemul:'2610-원002',title:'양정동 분리형 원룸 계약'},{date:f(3),time:'',kind:'잔금',maemul:'2610-원011',title:'연산동 상가 잔금'},{date:f(6),time:'14:00',kind:'안내',maemul:'',title:'수영동 투룸 2곳 안내'}]})();
 async function loadEvents(){ if(!KEY) return; try{ const f=today(),e=new Date();e.setDate(e.getDate()+14);
   const t=e.getFullYear()+'-'+String(e.getMonth()+1).padStart(2,'0')+'-'+String(e.getDate()).padStart(2,'0');
   const r=await fetch(SB_URL+'/rest/v1/rpc/staff_board',{method:'POST',headers:{apikey:SB_KEY,'content-type':'application/json'},body:JSON.stringify({p_token:KEY,p_from:f,p_to:t})});

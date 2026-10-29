@@ -31,7 +31,7 @@ H.view('ops', {label:'운영',
     const quotes = (H.S.jobs||[]).filter(j=>j.status==='quote').length;
     const nav = `<div class="subnav">${SUBS.map(([k,l])=>`<button data-a="opsSub" data-s="${k}" aria-pressed="${s===k}">${l}${k==='order'&&quotes?`<span class="cnt">${quotes}</span>`:''}</button>`).join('')}</div>`;
     const mnav = ['money','deals','buy','exp'].includes(s) ? `<div style="display:flex;gap:6px;align-items:center"><button class="btn ghost sm" data-a="opsMonth" data-n="-1">${H.I('left')}</button><b>${m.getFullYear()}년 ${m.getMonth()+1}월</b><button class="btn ghost sm" data-a="opsMonth" data-n="1">${H.I('right')}</button></div>` : '';
-    const body = {order, match, money, deals, buy, exp, cs}[s]();
+    const body = (s === 'money' && !H.S.isOwner) ? '<section class="box"><p class="empty">현장 금액은 대표님만 볼 수 있어요</p></section>' : {order, match, money, deals, buy, exp, cs}[s]();
     return `<div class="bh" style="margin:0">${nav}${mnav}</div>${body}`;
   }
 });
