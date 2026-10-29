@@ -110,7 +110,7 @@ function jobCard(j){
     <div class="m"><span>${j.headcount}명</span>${j.kind?`<span>${esc(j.kind)}</span>`:''}${j.order_channel?`<span>오더: ${esc(j.order_channel)}</span>`:''}${j.address?`<span>🔒 ${esc(j.address)}</span>`:''}${money}</div>
     ${j.cust_name||j.cust_phone?`<div class="m"><span>👤 고객 ${esc(j.cust_name||'')}</span>${j.cust_phone?`<a href="tel:${esc(j.cust_phone.replace(/[^0-9]/g,''))}">${esc(j.cust_phone)}</a>`:''}</div>`:''}
     ${(()=>{ const m = (j.cust_name||j.cust_phone) ? (j.admin_memo||'').replace(/^고객\s+\S+\s+0[\d\s.\-]{8,}\d\s*(·\s*)?/, '').trim() : j.admin_memo; return m?`<div class="m">메모: ${esc(m)}</div>`:''; })()}
-    <div class="people">${people}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}</div>
+    <div class="people">${people}${j.status!=='quote'?`<button class="who" data-a="collPick" data-j="${j.id}" style="cursor:pointer;${j.collector_id?'background:#FFF7E6;border-color:#FDE68A;color:#92400E':'background:#FEF2F2;border-color:#FECACA;color:#B91C1C'}">💰 수금 ${j.collector_id?esc(H.P(j.collector_id).name):'담당 없음'} ▾</button>`:''}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}</div>
     ${j.status!=='quote' ? (j.live_code ? `<div class="croom">
       <button class="croom-go" ${H.S.needV21?'data-a="liveSheet"':'data-a="custRoom"'} data-j="${j.id}"><span class="ic">💬</span><span><b>고객님 방</b><small>${j.live_views?`고객 ${j.live_views}번 봄`:'고객이 아직 안 봄'}${phs?` · 사진 ${phs}장`:''}${j.work_done_at?' · ✅ 작업 끝':''}</small></span><span class="go">열기 ›</span></button>
       <button class="croom-ln" data-a="liveSheet" data-j="${j.id}">🔗 링크<small>안내 멘트</small></button></div>`
@@ -356,6 +356,14 @@ H.ACT.repDel = async el => { const j = J(el.dataset.j);
   if (el.dataset.scope === 'one') await H.q(sb.from('jobs').delete().eq('id', j.id));
   else await H.q(sb.from('jobs').delete().eq('series_id', j.series_id).gte('job_date', j.job_date));
   H.close(); H.toast(el.dataset.scope === 'one' ? '이 날만 지웠어요' : `${md(j.job_date)} 이후 정기 일정을 지웠어요`); H.refresh(); };
+// 수금 담당 바로 바꾸기 (그날 투입된 사람 중에서)
+H.ACT.collPick = el => { const j = J(el.dataset.j); const ap = (j.assignments||[]).filter(a => a.status === 'approved').map(a => H.P(a.staff_id));
+  H.open(`<h3>💰 수금 담당</h3><p class="note" style="margin:-6px 0 12px">${esc(j.title)} · ${md(j.job_date)}<br>수금 담당만 잔금·고객 정보가 보이고, 고객님 방에서 [작업 끝]을 눌러요.</p>
+    <div style="display:grid;gap:8px">${ap.map(p => `<button class="ropt" data-a="collSet" data-j="${j.id}" data-s="${p.id}" ${j.collector_id===p.id?'style="border-color:var(--navy);background:#EEF2FF"':''}><b>${j.collector_id===p.id?'✓ ':''}${esc(p.name)} ${esc(p.role||'')}</b><small>${p.can_collect?'수금 담당 가능':''}</small></button>`).join('') || '<p class="empty">아직 확정된 사람이 없어요 · [+ 직접 배정] 먼저</p>'}
+      <button class="ropt" data-a="collSet" data-j="${j.id}" data-s=""><b>${j.collector_id?'':'✓ '}없음 (대표 · 회사 계좌)</b><small>작업 끝은 HQ에서 눌러요</small></button></div>
+    <div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button></div>`); };
+H.ACT.collSet = async el => { const id = +el.dataset.j, sid = el.dataset.s || null;
+  await H.q(sb.from('jobs').update({collector_id: sid}).eq('id', id)); H.close(); H.toast(sid ? `수금 담당: ${H.P(sid).name}` : '수금 담당 없음'); H.refresh(); };
 H.ACT.custRoom = async el => { const j = J(el.dataset.j);
   let {data} = await sb.from('chat_rooms').select('id').eq('kind','cust').eq('job_id', j.id).maybeSingle();
   if (!data) { const r = await sb.from('chat_rooms').insert({kind:'cust', job_id:j.id}).select('id').single(); if (r.error) return H.toast('고객님 방을 열지 못했어요 · HQ 업데이트(v21) 확인'); data = r.data; }
