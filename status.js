@@ -52,11 +52,13 @@
   function openSheet(){
     const c = current(), L = LOOK[c.state] || LOOK['근무중'];
     const tel = PHONE.replace(/-/g,'');
-    const hint = c.state === '업무 종료' ? '지금은 업무 시간이 아니에요. 카톡으로 남겨주시면 아침에 바로 답드릴게요.'
-      : L.busy ? '지금은 바로 받기 어려울 수 있어요. 급하지 않으면 카톡으로 남겨주세요. 급하면 전화 주세요.'
-      : '지금 사무실에 있어요. 편하게 전화나 카톡 주세요.';
+    const talk = !!(window.EPChat && EPChat.state.on), KT = talk ? '어닝톡' : '카톡';   // 어닝톡(팀 대화) 켜져 있으면 어닝톡 1:1로, 아니면 예전처럼 카톡 채널
+    const hint = c.state === '업무 종료' ? `지금은 업무 시간이 아니에요. ${KT}으로 남겨주시면 아침에 바로 답드릴게요.`
+      : L.busy ? `지금은 바로 받기 어려울 수 있어요. 급하지 않으면 ${KT}으로 남겨주세요. 급하면 전화 주세요.`
+      : `지금 사무실에 있어요. 편하게 전화나 ${KT} 주세요.`;
     const btnCall = `<a class="epst-btn ${L.busy?'':'pri'}" href="tel:${tel}">📞 전화하기<small>${PHONE}</small></a>`;
-    const btnKakao = `<a class="epst-btn ${L.busy?'pri':''}" href="${KAKAO}" target="_blank" rel="noopener">💬 카톡으로 문의<small>어닝플레이스 채널 1:1</small></a>`;
+    const btnKakao = talk ? `<button type="button" class="epst-btn ${L.busy?'pri':''}" data-epst-talk="1">💬 어닝톡으로 문의<small>대표님 1:1</small></button>`
+      : `<a class="epst-btn ${L.busy?'pri':''}" href="${KAKAO}" target="_blank" rel="noopener">💬 카톡으로 문의<small>어닝플레이스 채널 1:1</small></a>`;
     const btnSms = `<a class="epst-btn" href="sms:${tel}">✉️ 문자 보내기</a>`;
     const wrap = document.createElement('div');
     wrap.className = 'epst-back';
@@ -70,7 +72,10 @@
       <p class="epst-foot">상태는 대표님 일정에 맞춰 자동으로 바뀌어요.</p></div>`;
     document.body.appendChild(wrap);
     requestAnimationFrame(() => wrap.classList.add('on'));
-    wrap.addEventListener('click', e => { if (e.target === wrap || e.target.closest('[data-epst-close]')) { wrap.classList.remove('on'); setTimeout(() => wrap.remove(), 200); } });
+    const shut = () => { wrap.classList.remove('on'); setTimeout(() => wrap.remove(), 200); };
+    wrap.addEventListener('click', e => {
+      if (e.target.closest('[data-epst-talk]')) { shut(); EPChat.openDm().then(ok => { if (!ok) window.open(KAKAO, '_blank'); }); return; }
+      if (e.target === wrap || e.target.closest('[data-epst-close]')) shut(); });
   }
 
   let bossJobs = [];
@@ -123,6 +128,7 @@
 .epst-btn{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--epl);border-radius:14px;padding:14px 16px;font-size:15px;font-weight:700;color:var(--epink);text-decoration:none;background:var(--epbg)}
 .epst-btn small{font-size:12px;font-weight:500;color:var(--epsub)}
 .epst-btn.pri{background:var(--accent,var(--navy,#16347A));border-color:transparent;color:#fff}.epst-btn.pri small{color:rgba(255,255,255,.8)}
+button.epst-btn{width:100%;font:inherit;font-size:15px;font-weight:700;cursor:pointer;text-align:left}
 .epst-close{width:100%;margin-top:10px;border:0;background:none;color:var(--epsub);font:inherit;font-size:14px;padding:10px}
 .epst-foot{text-align:center;font-size:11.5px;color:var(--epsub);margin:0}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);

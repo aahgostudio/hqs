@@ -382,6 +382,8 @@
       document.addEventListener('visibilitychange', () => { if (!document.hidden) { view === 'room' ? refreshRoom() : loadHome(); } });
     },
     open, close,
+    // 대표님과 1:1 방 바로 열기 (상태 시트의 [어닝톡으로 문의]) — 대화 꺼져 있거나 방이 없으면 false
+    async openDm(){ if (!home) await loadHome(); const r = home && home.on && (home.rooms || []).find(x => x.kind === 'dm'); if (!r) return false; await open(r.id); return true; },
     badge(n){ return n ? `<span class="epc-tabbd">${n > 99 ? '99+' : n}</span>` : ''; },
     get state(){ return {on: !!(home && home.on), unread: home && home.on ? home.rooms.reduce((a, r) => a + (r.unread || 0), 0) : 0}; }
   };
