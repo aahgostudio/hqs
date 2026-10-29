@@ -355,3 +355,5 @@ html.chatapp .fab{display:none}
 .pchip{border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:12.5px;background:var(--card);color:var(--ink);cursor:pointer}.pchip:active{background:#EEF2FF}
 .tm-ic.cln{overflow:visible}.tm-ic.cln .hav{width:100%!important;height:100%!important}
 .tm-ic.cln em{background:#fff;color:inherit;font-size:11px;border-color:#fff;box-shadow:0 0 0 1px var(--line)}
+
+.ch-ic.jon{box-shadow:0 0 0 2.5px #10B981}.ch-ic.jdone{box-shadow:0 0 0 2.5px #EF4444}

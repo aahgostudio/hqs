@@ -5,6 +5,8 @@
 --   · 확인창에 작업 전·후 사진 장수 표시
 --   · 작업 끝 안내 글을 수금 담당 이름으로 올려 대표님·HQS 관리자에게 알림
 --   · 수금 담당이 없는 현장은 HQ에서 [지금 작업 끝으로]
+--   · 현장 대화방은 하나로: 고객님 방이 있는 현장은 직원 현장방을 따로 안 만듦
+--   · 방 목록에 작업 상태 (작업 중 초록 · 작업 끝 빨강)
 -- ============================================================
 create or replace function public.staff_board(p_token text, p_from date, p_to date)
 returns jsonb language plpgsql security definer set search_path = public, extensions as $$
@@ -124,6 +126,101 @@ begin
                             '불편한 곳이 있으면 이 방에 편하게 남겨주세요 (' || days || '일 뒤 이 방은 닫혀요).');
   return null;
 exception when others then return null;
+end $$;
+
+create or replace function public._chat_ensure(s public.staff) returns void
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if public._chat_in_all(s.team) then
+    insert into public.chat_rooms (kind) values ('all') on conflict do nothing;
+  end if;
+  if public._chat_grp(s.team) is not null then
+    insert into public.chat_rooms (kind, grp) values ('team', public._chat_grp(s.team)) on conflict do nothing;
+  end if;
+  insert into public.chat_rooms (kind, staff_id) values ('dm', s.id) on conflict do nothing;
+  insert into public.chat_rooms (kind, job_id)
+    select 'site', j.id from public.jobs j
+     where j.live_code is null and exists (select 1 from public.assignments a where a.job_id = j.id and a.staff_id = s.id and a.status = 'approved')
+       and public._chat_site_live(j)
+    on conflict do nothing;
+  -- 손님방: 확정된 현장 + 손님 링크가 열려 있는 동안 (작업일 하루 전부터)
+  insert into public.chat_rooms (kind, job_id)
+    select 'cust', j.id from public.jobs j
+     where exists (select 1 from public.assignments a where a.job_id = j.id and a.staff_id = s.id and a.status = 'approved')
+       and j.live_code is not null and j.job_date <= public._today() + 1 and public._live_open(j)
+    on conflict do nothing;
+end $$;
+
+create or replace function public._chat_can(s public.staff, r public.chat_rooms) returns boolean
+language sql stable security definer set search_path = public, extensions as $$
+  select r.closed_at is null
+     and s.id in (select public._chat_members(r))
+     and (r.kind <> 'site' or exists (select 1 from public.jobs j where j.id = r.job_id and public._chat_site_live(j)
+                                         and (j.live_code is null or exists (select 1 from public.chat_messages m where m.room_id = r.id))))   -- v24: 고객님 방이 있으면 현장방은 숨김 (대화가 있던 방은 유지)
+     and (r.kind <> 'cust' or exists (select 1 from public.jobs j where j.id = r.job_id and public._live_open(j)))
+$$;
+
+create or replace function public.chat_admin_home() returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare st public.staff; own boolean := public.is_owner(); me text := public._chat_who();
+begin
+  if not public.is_admin() then raise exception 'not_admin'; end if;
+  for st in select * from public.staff where status <> 'left' and not hidden loop
+    perform public._chat_ensure(st);
+  end loop;
+  return jsonb_build_object(
+    'on', coalesce((select value #>> '{}' from public.settings where key = 'chat_on'), 'false') = 'true',
+    'owner', own,
+    'rooms', coalesce((select jsonb_agg(x order by (x->>'closed')::boolean, (x->>'kind_o')::int, x->>'last_at' desc nulls last) from (
+      select jsonb_build_object(
+        'id', r.id, 'kind', r.kind, 'grp', r.grp, 'title', public._chat_title_hq(r), 'custom_title', r.title,
+        'staff_id', r.staff_id, 'job_id', r.job_id, 'keep', r.keep, 'mgr', public._chat_mgr(r),
+        'closed', r.closed_at is not null or (r.kind = 'cust' and not exists (select 1 from public.jobs j where j.id = r.job_id and public._live_open(j))),
+        'job_date', (select job_date from public.jobs j where j.id = r.job_id),
+        'job_done', (select coalesce(j.work_done_at, j.done_at) from public.jobs j where j.id = r.job_id), 'closed_at', r.closed_at, 'created_at', r.created_at,
+        'live', r.kind <> 'site' or exists (select 1 from public.jobs j where j.id = r.job_id and public._chat_site_live(j)),
+        'left_at', case when r.kind = 'dm' then (select left_at from public.staff where id = r.staff_id) end,
+        'kind_o', case r.kind when 'all' then 1 when 'team' then 2 when 'custom' then 3 when 'cust' then 0 when 'site' then 4 else 5 end,
+        'last', (select jsonb_build_object('body', case when m.deleted_at is not null then '삭제된 메시지' when coalesce(m.body,'') = '' then '사진' else m.body end,
+                         'name', public._chat_msg_json(m, null, false)->>'name', 'at', m.created_at)
+                   from public.chat_messages m where m.room_id = r.id order by m.id desc limit 1),
+        'last_at', (select max(created_at) from public.chat_messages m where m.room_id = r.id),
+        'count', (select count(*) from public.chat_messages m where m.room_id = r.id),
+        'unread', (select count(*) from public.chat_messages m where m.room_id = r.id
+                     and (m.cust or not (m.staff_id is null and (m.admin_uid = auth.uid() or (m.admin_uid is null and own))))
+                     and m.id > coalesce((select last_id from public.chat_reads where room_id = r.id and who = me), 0)),
+        'members', (select coalesce(jsonb_agg(x2), '[]'::jsonb) from public._chat_members(r) x2)
+      ) x
+      from public.chat_rooms r
+     where own or (public._chat_mgr(r) and r.closed_at is null
+                   and (r.kind <> 'site' or exists (select 1 from public.jobs j where j.id = r.job_id and public._chat_site_live(j))))) q), '[]'::jsonb));
+end $$;
+grant execute on function public.chat_admin_home() to authenticated;
+
+create or replace function public.chat_home(p_token text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare s public.staff := public._me(p_token);
+begin
+  if not public._chat_on(s) then return jsonb_build_object('on', false); end if;
+  perform public._chat_ensure(s);
+  return jsonb_build_object('on', true, 'me', jsonb_build_object('id', s.id, 'name', s.name),
+    'rooms', coalesce((select jsonb_agg(x order by (x->>'kind_o')::int, x->>'last_at' desc nulls last) from (
+      select jsonb_build_object(
+        'id', r.id, 'kind', r.kind, 'title', case when r.kind = 'dm' then '대표님' else public._chat_title(r) end,
+        'kind_o', case r.kind when 'dm' then 1 when 'all' then 2 when 'team' then 3 when 'site' then 4 when 'cust' then 4 else 5 end,
+        'job_date', (select job_date from public.jobs j where j.id = r.job_id),
+        'job_done', (select coalesce(j.work_done_at, j.done_at) from public.jobs j where j.id = r.job_id),
+        'last', (select jsonb_build_object('body', case when m.deleted_at is not null then '삭제된 메시지' when m.body is null or m.body = '' then '사진' else m.body end,
+                         'name', public._chat_msg_json(m, s.id, false)->>'name', 'at', m.created_at)
+                   from public.chat_messages m where m.room_id = r.id order by m.id desc limit 1),
+        'last_at', (select max(created_at) from public.chat_messages m where m.room_id = r.id),
+        'unread', (select count(*) from public.chat_messages m where m.room_id = r.id
+                     and m.id > coalesce((select last_id from public.chat_reads where room_id = r.id and who = s.id::text), 0)
+                     and (m.staff_id is distinct from s.id)),
+        'n', (select count(*) from public._chat_members(r)) + 1,
+        'mgr', public._chat_mgr(r)
+      ) x
+      from public.chat_rooms r where public._chat_can(s, r)) q), '[]'::jsonb));
 end $$;
 
 create or replace function public.hq_schema_version() returns int

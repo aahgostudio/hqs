@@ -13,7 +13,7 @@
   const two = n => { n = String(n || '?').trim(); return n.length >= 3 ? n.slice(1, 3) : n; };
   const isVid = p => /\.(mov|mp4|m4v|webm|3gp)$/i.test(p || '');
   const extOf = f => { const n = ((f.name || '').split('.').pop() || '').toLowerCase(); if (/^(jpe?g|png|webp|heic|heif|mov|mp4|m4v|webm|3gp)$/.test(n)) return n.replace('jpeg','jpg'); const t = (f.type || '').split('/')[1] || 'jpg'; return t === 'quicktime' ? 'mov' : t.replace('jpeg','jpg'); };
-  const ICON = {dm:'👔', all:'📣', team:'👥', site:'📍', custom:'💬'};
+  const ICON = {dm:'👔', all:'📣', team:'👥', site:'📍', custom:'💬', cust:'📍'};
   let ICONS = null;   // 대표가 고른 방 아이콘 {방번호: 이모지}
   const APP = new URLSearchParams(location.search).get('app') === 'chat';   // 홈 화면 '어닝톡' 앱 모드: 대화만
   let opt = {token:'', demo:false, accent:'#16347A', onState:()=>{}};
@@ -133,7 +133,7 @@
   function drawList(){
     const w = shell(), rs = (home && home.rooms) || [];
     const total = rs.reduce((a, r) => a + (r.unread || 0), 0);
-    const row = r => `<button class="epc-row${r._kid ? ' epc-kid' : ''}" data-room="${r.id}"><span class="epc-ic">${(ICONS && ICONS[r.id]) || ICON[r.kind] || '💬'}</span>
+    const row = r => `<button class="epc-row${r._kid ? ' epc-kid' : ''}" data-room="${r.id}"><span class="epc-ic" style="${r.job_done ? 'box-shadow:0 0 0 2.5px #EF4444' : r.job_date && r.job_date <= new Date(Date.now() + 9*36e5).toISOString().slice(0,10) ? 'box-shadow:0 0 0 2.5px #10B981' : ''}">${(ICONS && ICONS[r.id]) || ICON[r.kind] || '💬'}</span>
       <span class="t"><b>${esc(r.title)}${r.kind !== 'dm' ? ` <small style="color:var(--epc-mute);font-weight:600;font-size:12px">${r.n}</small>` : ''}</b>
       <p>${r.last ? esc((r.kind === 'dm' ? '' : r.last.name + ': ') + r.last.body) : '아직 대화가 없어요'}</p></span>
       <span class="r">${r.last ? short(r.last.at) : ''}${r.unread ? `<span class="epc-bd">${r.unread > 99 ? '99+' : r.unread}</span>` : ''}</span></button>`;
@@ -144,11 +144,11 @@
       a.forEach(r => { const p = P[r.id]; if (p && ids.has(+p) && !P[p]) return; out.push(r); a.filter(x => +P[x.id] === r.id).forEach(x => out.push(Object.assign({}, x, {_kid: true}))); }); return out; };
     w.innerHTML = `<div class="epc-h">${APP ? '' : '<button class="epc-back" data-close="1" aria-label="닫기">←</button>'}<span class="sp"><b>${APP ? '어닝톡' : '대화'}</b>${total ? `<small>안 읽음 ${total}</small>` : ''}</span>${APP ? '' : '<button class="epc-back" data-appadd="1" aria-label="홈 화면에 대화 앱 추가" style="width:auto;padding:0 10px;font-size:13px;font-weight:700">📲 앱으로</button>'}</div>
       <div class="epc-list">
+        ${g(['cust','site']).length ? `<div class="epc-sec">내 현장</div>${g(['cust','site']).sort((a,b)=>(b.job_date||'').localeCompare(a.job_date||'')).map(row).join('')}` : ''}
         ${g(['dm']).length ? `<div class="epc-sec">1:1</div>${g(['dm']).map(row).join('')}` : ''}
         ${g(['all','team','custom']).length ? `<div class="epc-sec">함께하는 방</div>${gt(['all','team','custom']).map(row).join('')}` : ''}
-        ${g(['site']).length ? `<div class="epc-sec">내 현장</div>${g(['site']).map(row).join('')}` : ''}
         ${pushReady && K().needPush() ? '<button class="epc-row" data-pushok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>알림 받기</b><p>눌러서 [허용] 한 번 · 새 메시지가 바로 와요</p></span></button>' : K().needBadgeOk() ? '<button class="epc-row" data-badgeok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>아이콘에 안 읽은 숫자 보이기</b><p>눌러서 [허용]을 한 번만 눌러주세요</p></span></button>' : ''}
-        <p class="epc-note">🔒 내가 속한 방만 보여요.${g(['site']).length ? ' 현장방은 작업 완료 보고 7일 뒤 목록에서 빠져요.' : ''}<br>대화와 사진은 업무 기록으로 보관돼요.</p>
+        <p class="epc-note">🔒 내가 속한 방만 보여요.${g(['cust','site']).length ? ' 현장 방은 작업 끝 7일 뒤 목록에서 빠져요 · 초록 = 작업 중, 빨강 = 작업 끝' : ''}<br>대화와 사진은 업무 기록으로 보관돼요.</p>
       </div>`;
   }
   // 고객님 방: [작업 끝]은 그날 수금 담당만 (clean 화면이 custJob·onWorkDone을 넘겨줌)
