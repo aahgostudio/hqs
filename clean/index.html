@@ -166,12 +166,12 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1029j"></script>
+<script src="../status.js?v=1029k"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1029j'</script>
-<script src="../chatkit.js?v=1029j"></script>
-<script src="../chat.js?v=1029j"></script>
+<script>window.EP_VER='1029k'</script>
+<script src="../chatkit.js?v=1029k"></script>
+<script src="../chat.js?v=1029k"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -259,7 +259,7 @@ function card(j){
   else if (j.my_status === 'applied') btn = `<div class="acts"><button class="btn wait" data-cancel="${j.id}">승인 기다리는 중 · 취소</button></div>`;
   else if (canApply && j.status === 'open' && j.approved < j.headcount) btn = `<div class="acts"><button class="btn" data-apply="${j.id}">신청하기</button></div>`;
   const shootable = V2() && j.my_status === 'approved' && j.status !== 'cancelled' && j.date >= ymd(addDays(today,-2)) && j.date <= ymd(addDays(today,1));
-  const shootBtn = shootable ? `<div class="acts"><button class="btn" data-shoot="${j.id}">${I('cam')}${W('현장 사진','촬영 사진')}${j.photos?` (${j.photos}장)`:''}</button>${j.cust_room?`<button class="btn ghost" data-croom="${j.cust_room}">💬 손님방</button>`:''}${j.work_done?'<span class="pill p-ok" style="align-self:center">작업 끝</span>':''}</div>` : '';
+  const shootBtn = shootable ? `<div class="acts"><button class="btn" data-shoot="${j.id}">${I('cam')}${W('현장 사진','촬영 사진')}${j.photos?` (${j.photos}장)`:''}</button>${j.cust_room?`<button class="btn ghost" data-croom="${j.cust_room}">💬 고객님 방</button>`:''}${j.work_done?'<span class="pill p-ok" style="align-self:center">작업 끝</span>':''}</div>` : '';
 
   const ack = j.need_ack ? `<div class="ack"><span>일정이 바뀌었어요. 확인해주세요</span><button class="btn sm" style="background:var(--warn)" data-ack="${j.id}">확인했어요</button></div>` : '';
   const addr = j.my_status === 'approved'
@@ -431,7 +431,7 @@ function shootView(){
       <div class="field"><label>한 줄 메모 (선택 · 손님 화면에 보여요)</label><input id="shootmemo" value="${esc(shoot.memo||'')}" placeholder="예) 줄눈 곰팡이 집중 작업 중이에요" maxlength="200"></div>
       ${shoot.busy?`<div class="okline">올리는 중… ${shoot.busy}</div>`:''}
       ${shoot.done.length?`<div class="okline">✓ ${shoot.done.length}장 올렸어요 · 손님 페이지에 바로 보여요</div><div class="phg">${shoot.done.slice(-9).map(x=>`<figure><img src="${x.url}" alt=""><figcaption>${lab[x.stage]}</figcaption></figure>`).join('')}</div>`:''}
-      ${j.cust_room?`<button class="btn ghost" style="width:100%" data-croom="${j.cust_room}">💬 손님방 열기 · 손님에게 글·사진 보내기</button>`:''}
+      ${j.cust_room?`<button class="btn ghost" style="width:100%" data-croom="${j.cust_room}">💬 고객님 방 열기 · 글·사진 보내기</button>`:''}
       ${j.work_done?'<div class="okline">작업 끝으로 표시됐어요 · 손님 화면이 완료 리포트로 바뀌었어요</div>':j.can_done===false?'<div class="okline" style="background:#F3F4F6;color:var(--sub)">[작업 끝]은 오늘 수금 담당이 눌러요</div>':`<button class="btn" style="background:var(--ok)" data-workdone="${j.id}">작업 끝 (후 사진 다 올렸어요)</button>`}
     </div>`;
 }

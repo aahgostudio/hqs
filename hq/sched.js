@@ -115,7 +115,7 @@ function jobCard(j){
       ${j.status==='quote'?`<button class="btn sm" data-a="quoteConfirm" data-j="${j.id}">확정</button>`:''}
       ${active && j.status!=='quote'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">당일 마감 · 지급액</button>`:''}${j.status==='done'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">지급액 수정</button>`:''}
       <button class="btn ghost sm" data-a="moneySheet" data-j="${j.id}">금액 · 증빙</button>
-      ${j.status!=='quote'?`<button class="btn ghost sm" data-a="liveSheet" data-j="${j.id}">${j.live_code?'손님 링크':'손님 링크 발급'}</button>`:''}${j.live_code && !H.S.needV21?`<button class="btn ghost sm" data-a="custRoom" data-j="${j.id}">💬 손님방</button>`:''}
+      ${j.status!=='quote'?`<button class="btn ghost sm" data-a="liveSheet" data-j="${j.id}">${j.live_code?'손님 링크':'손님 링크 발급'}</button>`:''}${j.live_code && !H.S.needV21?`<button class="btn ghost sm" data-a="custRoom" data-j="${j.id}">💬 고객님 방</button>`:''}
       <button class="btn ghost sm" data-a="jobCopy" data-j="${j.id}">카톡 문구</button>${H.S.isOwner?`<button class="btn sm danger" data-a="jobDel" data-j="${j.id}">🗑 삭제</button>`:""}</div>
     ${showPromo ? H.promoRow(j) : ''}
   </div>`;
@@ -355,7 +355,7 @@ H.ACT.repDel = async el => { const j = J(el.dataset.j);
   H.close(); H.toast(el.dataset.scope === 'one' ? '이 날만 지웠어요' : `${md(j.job_date)} 이후 정기 일정을 지웠어요`); H.refresh(); };
 H.ACT.custRoom = async el => { const j = J(el.dataset.j);
   let {data} = await sb.from('chat_rooms').select('id').eq('kind','cust').eq('job_id', j.id).maybeSingle();
-  if (!data) { const r = await sb.from('chat_rooms').insert({kind:'cust', job_id:j.id}).select('id').single(); if (r.error) return H.toast('손님방을 열지 못했어요 · HQ 업데이트(v21) 확인'); data = r.data; }
+  if (!data) { const r = await sb.from('chat_rooms').insert({kind:'cust', job_id:j.id}).select('id').single(); if (r.error) return H.toast('고객님 방을 열지 못했어요 · HQ 업데이트(v21) 확인'); data = r.data; }
   H._loaded = null; H.close(); location.hash = 'chat/' + data.id; };
 H.autoLive = () => { const c = H.setting('live'); return !c || c.auto_issue !== false; };
 H.FORM.job = async v => {
