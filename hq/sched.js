@@ -110,12 +110,15 @@ function jobCard(j){
     <div class="m"><span>${j.headcount}명</span>${j.kind?`<span>${esc(j.kind)}</span>`:''}${j.order_channel?`<span>오더: ${esc(j.order_channel)}</span>`:''}${j.address?`<span>🔒 ${esc(j.address)}</span>`:''}${money}</div>
     ${j.cust_name||j.cust_phone?`<div class="m"><span>👤 고객 ${esc(j.cust_name||'')}</span>${j.cust_phone?`<a href="tel:${esc(j.cust_phone.replace(/[^0-9]/g,''))}">${esc(j.cust_phone)}</a>`:''}</div>`:''}
     ${(()=>{ const m = (j.cust_name||j.cust_phone) ? (j.admin_memo||'').replace(/^고객\s+\S+\s+0[\d\s.\-]{8,}\d\s*(·\s*)?/, '').trim() : j.admin_memo; return m?`<div class="m">메모: ${esc(m)}</div>`:''; })()}
-    <div class="people">${people}${live}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}</div>
+    <div class="people">${people}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}</div>
+    ${j.status!=='quote' ? (j.live_code ? `<div class="croom">
+      <button class="croom-go" ${H.S.needV21?'data-a="liveSheet"':'data-a="custRoom"'} data-j="${j.id}"><span class="ic">💬</span><span><b>고객님 방</b><small>${j.live_views?`고객 ${j.live_views}번 봄`:'고객이 아직 안 봄'}${phs?` · 사진 ${phs}장`:''}${j.work_done_at?' · ✅ 작업 끝':''}</small></span><span class="go">열기 ›</span></button>
+      <button class="croom-ln" data-a="liveSheet" data-j="${j.id}">🔗 링크·안내 멘트</button></div>`
+      : `<div class="croom"><button class="croom-ln" style="flex:1" data-a="liveSheet" data-j="${j.id}">🔗 고객님 방 링크 발급</button></div>`) : ''}
     <div class="acts"><button class="btn ghost sm" data-a="jobEdit" data-j="${j.id}">수정</button>
       ${j.status==='quote'?`<button class="btn sm" data-a="quoteConfirm" data-j="${j.id}">확정</button>`:''}
       ${active && j.status!=='quote'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">당일 마감 · 지급액</button>`:''}${j.status==='done'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">지급액 수정</button>`:''}
       <button class="btn ghost sm" data-a="moneySheet" data-j="${j.id}">금액 · 증빙</button>
-      ${j.status!=='quote'?`<button class="btn ghost sm" data-a="liveSheet" data-j="${j.id}">${j.live_code?'고객님 방 링크':'고객님 방 링크 발급'}</button>`:''}${j.live_code && !H.S.needV21?`<button class="btn ghost sm" data-a="custRoom" data-j="${j.id}">💬 고객님 방</button>`:''}
       <button class="btn ghost sm" data-a="jobCopy" data-j="${j.id}">직원 안내 멘트</button>${H.S.isOwner?`<button class="btn sm danger" data-a="jobDel" data-j="${j.id}">🗑 삭제</button>`:""}</div>
     ${showPromo ? H.promoRow(j) : ''}
   </div>`;

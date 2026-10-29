@@ -357,3 +357,10 @@ html.chatapp .fab{display:none}
 .tm-ic.cln em{background:#fff;color:inherit;font-size:11px;border-color:#fff;box-shadow:0 0 0 1px var(--line)}
 
 .ch-ic.jon{box-shadow:0 0 0 2.5px #10B981}.ch-ic.jdone{box-shadow:0 0 0 2.5px #EF4444}
+/* 현장 카드: 고객님 방 (다른 버튼과 구분) */
+.croom{display:flex;gap:6px;margin:10px 0 2px}
+.croom-go{flex:1;display:flex;align-items:center;gap:10px;text-align:left;border:0;border-radius:12px;padding:9px 12px;background:linear-gradient(135deg,#16347A,#2547A3);color:#fff;cursor:pointer;font:inherit}
+.croom-go .ic{width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:17px;flex:none}
+.croom-go b{display:block;font-size:14px}.croom-go small{display:block;font-size:11.5px;opacity:.85}
+.croom-go .go{margin-left:auto;font-size:12.5px;font-weight:700;opacity:.9;white-space:nowrap}
+.croom-ln{border:1px dashed #93A9E0;background:#EEF2FF;color:var(--navy);border-radius:12px;padding:8px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
