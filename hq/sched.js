@@ -103,19 +103,18 @@ function jobCard(j){
   const tc = H.isPartner(j) ? 'var(--prt)' : j.status==='open' && left ? 'var(--cleanl)' : 'var(--clean)';
   const phs = H.photosOf(j.id).length;
   const live = j.live_code ? `<span class="who" style="background:#EEF2FF;color:var(--navy);border-color:transparent" data-a="liveSheet" data-j="${j.id}" role="button">🔗 고객님 방 링크${j.live_views?' · '+j.live_views+'번 봄':''}</span>` : '';
-  const OWN = H.S.isOwner;
-  const money = (j.total_amount||j.balance_amount) ? `<span>${OWN?`계약금액 ${won(j.total_amount)}${j.deposit_amount?' · 예약금 '+won(j.deposit_amount):''} · `:''}잔금 ${won(j.balance_amount)}${H.extrasSum(j)?' · 추가 '+won(H.extrasSum(j)):''}${j.collector_id?` (${esc(H.P(j.collector_id).name)} ${j.collected_at?'✓ 수금':'수금 대기'})`:''}</span>` : '';
+  const money = (j.total_amount||j.balance_amount) ? `<span>계약금액 ${won(j.total_amount)}${j.deposit_amount?' · 예약금 '+won(j.deposit_amount):''} · 잔금 ${won(j.balance_amount)}${H.extrasSum(j)?' · 추가 '+won(H.extrasSum(j)):''}${j.collector_id?` (${esc(H.P(j.collector_id).name)} ${j.collected_at?'✓ 수금':'수금 대기'})`:''}</span>` : '';
   const showPromo = j.job_date <= ymd(H.today()) && j.status !== 'cancelled' && j.status !== 'quote';
   return `<div class="card" style="--tc:${tc}">
     <div class="t"><span style="font-variant-numeric:tabular-nums">${j.start_time?j.start_time.slice(0,5):'시간 미정'}</span>${j.series_id?'<span title="정기 반복">🔁 </span>':''}${esc(j.title)} ${(j.teams||[]).map(c=>`<span class="tag" style="background:${H.T(c).color}">${c}</span>`).join('')}${j.contract_mode?`<span class="tag" style="background:var(--prt)">도급 ${j.contract_mode}</span>`:''}${pill}</div>
     <div class="m"><span>${j.headcount}명</span>${j.kind?`<span>${esc(j.kind)}</span>`:''}${j.order_channel?`<span>오더: ${esc(j.order_channel)}</span>`:''}${j.address?`<span>🔒 ${esc(j.address)}</span>`:''}${money}</div>
-    ${OWN && (j.cust_name||j.cust_phone)?`<div class="m"><span>👤 고객 ${esc(j.cust_name||'')}</span>${j.cust_phone?`<a href="tel:${esc(j.cust_phone.replace(/[^0-9]/g,''))}">${esc(j.cust_phone)}</a>`:''}</div>`:''}
+    ${j.cust_name||j.cust_phone?`<div class="m"><span>👤 고객 ${esc(j.cust_name||'')}</span>${j.cust_phone?`<a href="tel:${esc(j.cust_phone.replace(/[^0-9]/g,''))}">${esc(j.cust_phone)}</a>`:''}</div>`:''}
     ${(()=>{ const m = (j.cust_name||j.cust_phone) ? (j.admin_memo||'').replace(/^고객\s+\S+\s+0[\d\s.\-]{8,}\d\s*(·\s*)?/, '').trim() : j.admin_memo; return m?`<div class="m">메모: ${esc(m)}</div>`:''; })()}
     <div class="people">${people}${live}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}</div>
     <div class="acts"><button class="btn ghost sm" data-a="jobEdit" data-j="${j.id}">수정</button>
       ${j.status==='quote'?`<button class="btn sm" data-a="quoteConfirm" data-j="${j.id}">확정</button>`:''}
       ${active && j.status!=='quote'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">당일 마감 · 지급액</button>`:''}${j.status==='done'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">지급액 수정</button>`:''}
-      ${H.S.isOwner?`<button class="btn ghost sm" data-a="moneySheet" data-j="${j.id}">금액 · 증빙</button>`:''}
+      <button class="btn ghost sm" data-a="moneySheet" data-j="${j.id}">금액 · 증빙</button>
       ${j.status!=='quote'?`<button class="btn ghost sm" data-a="liveSheet" data-j="${j.id}">${j.live_code?'고객님 방 링크':'고객님 방 링크 발급'}</button>`:''}${j.live_code && !H.S.needV21?`<button class="btn ghost sm" data-a="custRoom" data-j="${j.id}">💬 고객님 방</button>`:''}
       <button class="btn ghost sm" data-a="jobCopy" data-j="${j.id}">직원 안내 멘트</button>${H.S.isOwner?`<button class="btn sm danger" data-a="jobDel" data-j="${j.id}">🗑 삭제</button>`:""}</div>
     ${showPromo ? H.promoRow(j) : ''}
@@ -317,16 +316,14 @@ ${j.id ? repScopeHtml(j) : repHtml(j)}
     <div class="field full"><label>상세 주소</label><input name="address" value="${esc(j.address||'')}" placeholder="부산 수영구 광안동 ○○아파트 103동 2302호"></div>
     <div class="field full"><label>출입 비번 · 고객 요청</label><input name="private_note" value="${esc(j.private_note||'')}"></div>
     <div class="field full"><label>특정 사람에게만 보이기 <small>(도급 지정 등 · 비우면 팀 전체)</small></label><div class="chips">${S.staff.filter(s=>s.status!=='left').map(s=>`<label><input type="checkbox" name="target" value="${s.id}" ${tgt.includes(s.id)?'checked':''}><span>${esc(s.name)}</span></label>`).join('')}</div></div>
-    ${H.S.isOwner ? `<div class="sec">${lock} 고객 정보 (대표님 · 수금 담당만 보임)</div>
+    <div class="sec">${lock} 고객 정보 (대표님 · 수금 담당만 보임)</div>
     <div class="field"><label>고객 이름</label><input name="cust_name" value="${esc(j.cust_name||'')}" placeholder="홍길동"></div>
-    <div class="field"><label>고객 전화번호</label><input name="cust_phone" type="tel" inputmode="tel" value="${esc(j.cust_phone||'')}" placeholder="010-0000-0000"></div>`
-      : `<input type="hidden" name="cust_name" value="${esc(j.cust_name||'')}"><input type="hidden" name="cust_phone" value="${esc(j.cust_phone||'')}">`}
+    <div class="field"><label>고객 전화번호</label><input name="cust_phone" type="tel" inputmode="tel" value="${esc(j.cust_phone||'')}" placeholder="010-0000-0000"></div>
     <div class="sec">${lock} 관리 정보 (직원에게 안 보임)</div>
     <div class="field"><label>오더 채널</label><select name="order_channel"><option value="">-</option>${chans.map(c=>`<option ${j.order_channel===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
     <div class="field"><label>상태</label><select name="status">${[['quote','견적 중 (오더 접수함)'],['open','모집 중'],['full','인원 완료'],['done','마감 완료'],['cancelled','취소']].map(([v,l])=>`<option value="${v}" ${j.status===v?'selected':''}>${l}</option>`).join('')}</select></div>
-    ${H.S.isOwner ? `<div class="field"><label>계약금액 <small>(대표님만)</small></label><input type="number" name="total_amount" step="1000" value="${j.total_amount??''}"></div>
-    <div class="field"><label>예약금 <small>(대표님만)</small></label><input type="number" name="deposit_amount" step="1000" value="${j.deposit_amount??''}"></div>`
-      : `<input type="hidden" name="total_amount" value="${j.total_amount??''}"><input type="hidden" name="deposit_amount" value="${j.deposit_amount??''}">`}
+    <div class="field"><label>계약금액</label><input type="number" name="total_amount" step="1000" value="${j.total_amount??''}"></div>
+    <div class="field"><label>예약금</label><input type="number" name="deposit_amount" step="1000" value="${j.deposit_amount??''}"></div>
     <div class="field"><label>현장 잔금</label><input type="number" name="balance_amount" step="1000" value="${j.balance_amount??''}"></div>
     <div class="field"><label>수금 담당</label><select name="collector_id"><option value="">없음 (대표 · 회사 계좌)</option>${[['수금 담당 가능', s=>s.can_collect], ['그 외 직원', s=>!s.can_collect]].map(([l,f])=>{ const o = S.staff.filter(s=>s.status!=='left'&&f(s)); return o.length?`<optgroup label="${l}">${o.map(s=>`<option value="${s.id}" ${j.collector_id===s.id?'selected':''}>${esc(s.name)} (${s.team})</option>`).join('')}</optgroup>`:''; }).join('')}</select></div>
     <div class="field"><label>도급 정산</label><select name="contract_mode"><option value="">도급 아님</option><option value="A" ${j.contract_mode==='A'?'selected':''}>A · 예약금만 본사</option><option value="B" ${j.contract_mode==='B'?'selected':''}>B · 전액 받고 잔금 송금</option></select></div>
