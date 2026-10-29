@@ -17,7 +17,7 @@ language sql stable security definer set search_path = public, extensions as $$
     when 'all'  then '전체'
     when 'team' then public._chat_grp_title(r.grp)
     when 'dm'   then (select name from public.staff where id = r.staff_id)
-    when 'cust' then (select '💬 고객 · ' || to_char(j.job_date, 'MM/DD') || ' ' || coalesce(j.title, '현장') from public.jobs j where j.id = r.job_id)
+    when 'cust' then (select '🙋 손님방 · ' || to_char(j.job_date, 'MM/DD') || ' ' || coalesce(j.title, '현장') from public.jobs j where j.id = r.job_id)
     when 'site' then (select to_char(j.job_date, 'MM/DD') || ' ' || coalesce(j.title, '현장') from public.jobs j where j.id = r.job_id)
     else '대화방' end)
 $$;

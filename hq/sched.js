@@ -324,7 +324,7 @@ ${j.id ? repScopeHtml(j) : repHtml(j)}
     <div class="field"><label>계약 금액</label><input type="number" name="total_amount" step="1000" value="${j.total_amount??''}"></div>
     <div class="field"><label>예약금</label><input type="number" name="deposit_amount" step="1000" value="${j.deposit_amount??''}"></div>
     <div class="field"><label>현장 잔금</label><input type="number" name="balance_amount" step="1000" value="${j.balance_amount??''}"></div>
-    <div class="field"><label>수금 담당</label><select name="collector_id"><option value="">없음 (회사 계좌)</option>${S.staff.filter(s=>s.can_collect&&s.status!=='left').map(s=>`<option value="${s.id}" ${j.collector_id===s.id?'selected':''}>${esc(s.name)} (${s.team})</option>`).join('')}</select></div>
+    <div class="field"><label>수금 담당</label><select name="collector_id"><option value="">없음 (대표 · 회사 계좌)</option>${[['수금 담당 가능', s=>s.can_collect], ['그 외 직원', s=>!s.can_collect]].map(([l,f])=>{ const o = S.staff.filter(s=>s.status!=='left'&&f(s)); return o.length?`<optgroup label="${l}">${o.map(s=>`<option value="${s.id}" ${j.collector_id===s.id?'selected':''}>${esc(s.name)} (${s.team})</option>`).join('')}</optgroup>`:''; }).join('')}</select></div>
     <div class="field"><label>도급 정산</label><select name="contract_mode"><option value="">도급 아님</option><option value="A" ${j.contract_mode==='A'?'selected':''}>A · 예약금만 본사</option><option value="B" ${j.contract_mode==='B'?'selected':''}>B · 전액 받고 잔금 송금</option></select></div>
     <div class="field"><label>손님 링크 제목</label><input name="live_title" value="${esc(j.live_title||'')}" placeholder="비우면 현장 이름 (손님 이름 넣지 않기)"></div>
     <div class="field full"><label>대표 메모</label><input name="admin_memo" value="${esc(j.admin_memo||'')}"></div>

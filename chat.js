@@ -171,6 +171,7 @@
     const oldIn = w.querySelector('.kit-bar'), edKey = editing ? String(editing.id) : '';
     const keepIn = oldIn && w.dataset.room === String(room.room.id) && w.dataset.ed === edKey;   // 글 쓰는 중엔 입력칸 유지 (키보드 안 닫히게)
     const html = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
+      ${room.room.kind==='cust'?'<div class="epc-note" style="text-align:center;background:#FFF7E6;color:#92400E;padding:6px 10px;margin:0">🙋 손님도 보는 방이에요 · 손님에겐 \'리츠종합클린 현장팀\'으로만 보여요</div>':''}
       <div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
       ${editing ? `<div class="epc-edit"><span>✏️ 메시지 수정 중</span><button data-epccancel="1">취소</button></div>` : ''}
       ${K().bar({id:'epc-t'})}`;

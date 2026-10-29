@@ -61,22 +61,20 @@ h1{font-size:20px;margin:0;font-weight:900;letter-spacing:-.02em}
 .toast.on{opacity:1}
 .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--navy);border-radius:50%;animation:sp .8s linear infinite;margin:80px auto}
 @keyframes sp{to{transform:rotate(360deg)}}
-.fab{position:fixed;right:max(16px,calc(50% - 244px));bottom:calc(18px + env(safe-area-inset-bottom));z-index:15;border:0;border-radius:999px;background:var(--navy);color:#fff;font-weight:700;font-size:15px;padding:13px 18px;box-shadow:0 6px 20px rgba(22,52,122,.35);display:flex;gap:6px;align-items:center;cursor:pointer}
-.fab i{font-style:normal;background:#EF4444;color:#fff;border-radius:999px;min-width:20px;height:20px;font-size:12px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
-.cs{position:fixed;inset:0;z-index:25;background:rgba(10,20,50,.45);display:flex;align-items:flex-end;justify-content:center}
-.csb{background:#fff;width:100%;max-width:520px;height:min(86vh,680px);border-radius:18px 18px 0 0;display:flex;flex-direction:column}
-.csh{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}.csh b{flex:1;font-size:16px}
-.csh button{border:0;background:none;font-size:22px;color:var(--sub);cursor:pointer;padding:0 4px}
-.csl{flex:1;overflow:auto;padding:14px 12px;background:var(--soft);display:flex;flex-direction:column;gap:8px}
 .bub{max-width:80%;padding:9px 12px;border-radius:14px;font-size:14.5px;white-space:pre-wrap;word-break:break-word;line-height:1.5}
 .bub small{display:block;font-size:11px;color:var(--sub);margin-top:2px}
 .bub.us{align-self:flex-start;background:#fff;border:1px solid var(--line)}.bub.me{align-self:flex-end;background:var(--navy);color:#fff}.bub.me small{color:#C7D2FE;text-align:right}
 .who{font-size:11.5px;color:var(--sub);margin:4px 0 -4px 4px}
-.csf{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
-.csf textarea{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;resize:none;max-height:120px}
-.csf button{border:0;border-radius:12px;background:var(--navy);color:#fff;font-weight:700;padding:0 16px;cursor:pointer}
-.csf button:disabled{opacity:.5}
-
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;justify-content:center;background:linear-gradient(transparent,#fff 30%)}
+.bar form{width:100%;max-width:520px;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line)}
+.bar textarea{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;resize:none;max-height:120px}
+.bar button{border:0;border-radius:12px;background:var(--navy);color:#fff;font-weight:700;padding:0 16px;cursor:pointer}.bar button:disabled{opacity:.5}
+.feed{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.feed .grid{width:100%}
+.feed .pg{background:var(--soft);border-radius:14px;padding:8px}
+.feed .bub img,.feed .bub video{display:block;max-width:100%;border-radius:10px;margin-top:4px}
+.day{align-self:center;font-size:11.5px;color:var(--sub);background:#F3F4F6;border-radius:999px;padding:2px 10px;margin:6px 0}
+.app.chat main{padding-bottom:110px}
 </style>
 </head>
 <body>
@@ -103,6 +101,7 @@ const seenKey = 'ritz-live-' + CODE;
 const seen = () => { try { return localStorage.getItem(seenKey) === '1'; } catch(_) { return false; } };
 const setSeen = () => { try { localStorage.setItem(seenKey, '1'); } catch(_) {} };
 let D = null, slide = 0, counted = false;
+const CH = {msgs:[], last:0, ok:true, busy:false};
 
 async function load(){
   let first = false; try { first = !sessionStorage.getItem(seenKey + '-v'); sessionStorage.setItem(seenKey + '-v', '1'); } catch(_) { first = !counted; }
@@ -115,18 +114,25 @@ function header(){
   const b = D.state === 'live' ? '<span class="badge live"><i></i>작업 중</span>' : D.state === 'done' ? '<span class="badge done">작업 완료</span>' : '<span class="badge closed">종료됨</span>';
   return `<header class="hd"><img src="img/mark.png" alt=""><b>리츠종합클린</b>${b}</header>`;
 }
-function timeline(){
-  const ph = D.photos || [];
-  if (!ph.length) return '<div class="empty">곧 작업 사진이 올라와요 📷<br>이 페이지를 열어두면 자동으로 새로 보여요</div>';
-  // 같은 10분 안에 같은 단계로 올라온 사진은 한 묶음
+const curl = p => `${C.SUPABASE_URL}/storage/v1/object/public/chat/${p}`;
+const isVid = p => /\.(mov|mp4|m4v|webm|3gp)$/i.test(p||'');
+function feed(){
+  const ph = (D.photos || []).slice().sort((a,b) => new Date(a.at) - new Date(b.at));
   const groups = [];
   ph.forEach(p => { const g = groups[groups.length-1];
-    if (g && g.stage === p.stage && Math.abs(new Date(g.at) - new Date(p.at)) < 600000) { g.items.push(p); if (p.memo && !g.memo) g.memo = p.memo; }
-    else groups.push({stage:p.stage, at:p.at, memo:p.memo, items:[p]}); });
-  return groups.map((g,i) => `<div class="tl"><span><b>${hm(g.at)}</b> · ${LAB[g.stage]||''}</span><span>${i===0 && D.state==='live' ? '방금 올라온 사진' : ''}</span></div>
-    <div class="grid ${g.items.length>=3?'g3':''}">${g.items.map(p=>`<a href="${url(p.path)}" target="_blank" rel="noopener"><img loading="lazy" src="${url(p.path)}" alt="${LAB[p.stage]||'작업 사진'}"></a>`).join('')}</div>
-    ${g.memo?`<div class="memo">"${esc(g.memo)}"</div>`:''}`).join('');
+    if (g && g.stage === p.stage && Math.abs(new Date(p.at) - new Date(g.last)) < 600000) { g.items.push(p); g.last = p.at; if (p.memo && !g.memo) g.memo = p.memo; }
+    else groups.push({k:'p', stage:p.stage, at:p.at, last:p.at, memo:p.memo, items:[p]}); });
+  const items = groups.concat((CH.msgs||[]).map(m => Object.assign({k:'m'}, m))).sort((a,b) => new Date(a.at) - new Date(b.at));
+  if (!items.length) return `<div class="empty">${D.state==='live' ? '곧 작업 사진이 올라와요 📷<br>궁금한 점은 아래에 편하게 남겨주세요' : '기록이 없어요'}</div>`;
+  let day = '', out = '';
+  items.forEach(it => { const d = md(it.at); if (d !== day) { day = d; out += `<div class="day">${d}</div>`; }
+    if (it.k === 'p') out += `<div class="who">리츠종합클린 현장팀 · ${LAB[it.stage]||'작업 사진'}</div><div class="pg"><div class="grid ${it.items.length>=3?'g3':''}">${it.items.map(p=>`<a href="${url(p.path)}" target="_blank" rel="noopener"><img loading="lazy" src="${url(p.path)}" alt="${LAB[p.stage]||'작업 사진'}"></a>`).join('')}</div>${it.memo?`<div class="memo">"${esc(it.memo)}"</div>`:''}<small class="sub" style="display:block;text-align:right;margin-top:2px">${hm(it.last)}</small></div>`;
+    else { const media = it.photo ? (isVid(it.photo) ? `<video src="${curl(it.photo)}" controls playsinline preload="metadata"></video>` : /\.(jpe?g|png|webp|heic|heif|gif)$/i.test(it.photo) ? `<a href="${curl(it.photo)}" target="_blank" rel="noopener"><img loading="lazy" src="${curl(it.photo)}" alt=""></a>` : `<a href="${curl(it.photo)}" target="_blank" rel="noopener">📎 파일 보기</a>`) : '';
+      out += it.me ? `<div class="bub me">${esc(it.deleted?'삭제된 메시지':it.body||'')}${media}<small>${hm(it.at)}</small></div>`
+                   : `<div class="who">리츠종합클린 현장팀</div><div class="bub us">${it.deleted?'삭제된 메시지':esc(it.body||'')}${media}<small>${hm(it.at)}</small></div>`; } });
+  return out;
 }
+const timeline = feed;
 function steps(){
   const st = new Set((D.photos||[]).map(p=>p.stage));
   const done = D.state !== 'live';
@@ -139,9 +145,9 @@ function contact(){ const c = cfg(); return `<div class="row" style="margin-top:
 function render(){
   const c = cfg(); let body = '';
   if (D.state === 'live') {
-    body = `<h1>${esc(D.title)}</h1><div class="sub">${md(D.date)}${D.time?' '+D.time+' 시작':''}</div>${steps()}${timeline()}
+    body = `<h1>${esc(D.title)}</h1><div class="sub">${md(D.date)}${D.time?' '+D.time+' 시작':''}</div>${steps()}<div class="feed" id="feed">${feed()}</div>
       <div style="margin-top:20px" class="row"><button class="btn ghost sm" data-intro="1">안내 다시 보기</button>${c.phone?`<a class="btn ghost sm" href="tel:${esc(c.phone.replace(/[^0-9]/g,''))}">📞 전화</a>`:''}</div>
-      <p class="foot">사진은 자동으로 새로 올라와요 · 사진을 누르면 크게 볼 수 있어요</p>`;
+      <p class="foot">사진·글은 자동으로 새로 올라와요 · 사진을 누르면 크게 볼 수 있어요</p>`;
   } else if (D.state === 'done') {
     const ex = D.extras || [];
     const after = (D.photos||[]).filter(p=>p.stage==='after'), before = (D.photos||[]).filter(p=>p.stage==='before');
@@ -153,7 +159,7 @@ function render(){
         <div class="row" style="margin-top:10px"><button class="btn sm" data-copy="${esc(c.account)}">계좌번호 복사</button>${c.phone?`<a class="btn ghost sm" href="sms:${esc(c.phone.replace(/[^0-9]/g,''))}?&body=${encodeURIComponent('[현금영수증 신청] '+D.title+' / 휴대폰(또는 사업자)번호: ')}">현금영수증 신청</a>`:''}</div>`:''}
         ${D.paid?'<div class="paid">✓ 입금 확인됐어요. 감사합니다!</div>':''}</div>`:''}
       ${before.length||after.length?`<div class="tl"><span><b>전 → 후</b></span><span>${before.length+after.length}장</span></div><div class="grid">${[...before.slice(0,4), ...after.slice(0,4)].map(p=>`<a href="${url(p.path)}" target="_blank" rel="noopener"><img loading="lazy" src="${url(p.path)}" alt=""><span>${LAB[p.stage]}</span></a>`).join('')}</div>`:''}
-      ${(D.photos||[]).length?`<details style="margin-top:12px"><summary class="sub" style="cursor:pointer">작업 사진 전체 ${(D.photos||[]).length}장 보기</summary>${timeline()}</details>`:''}
+      <div class="tl" style="margin-top:20px"><span><b>현장 기록</b> · 사진·대화</span></div><div class="feed" id="feed">${feed()}</div>
       <div style="margin-top:18px">${reviewBtn()}</div>
       <p class="foot">7일 안에 불편한 곳이 있으면 편하게 연락 주세요.${D.close_at?`<br>이 페이지는 ${md(D.close_at)}에 닫혀요 · 사진은 길게 눌러 저장하세요`:''}</p>`;
   } else {
@@ -162,6 +168,7 @@ function render(){
       ${reviewBtn()}${contact()}`;
   }
   $('#app').innerHTML = header() + `<main>${body}<p class="foot">리츠종합클린 · 공간의 가치를 관리하고 높이는 기업</p></main>`;
+  chatBar();
 }
 
 function intro(force){
@@ -182,57 +189,39 @@ document.addEventListener('click', async e => {
   if (b.dataset.copy) { try { await navigator.clipboard.writeText(b.dataset.copy); toast('계좌번호를 복사했어요'); } catch(_) { prompt('계좌번호', b.dataset.copy); } }
 });
 
-/* 💬 문의하기 — 손님 ↔ 리츠 대화 (링크 안에서만, 우리 번호·직원 이름 안 보임) */
-const CH = {msgs:[], last:0, unread:0, open:false, ok:true, busy:false};
+/* 💬 손님방 — 사진·현장팀 글·손님 글이 한 흐름 (우리 번호·직원 이름 안 보임) */
 async function chatLoad(){
   const {data, error} = await sb.rpc('live_chat', {p_code: CODE, p_after: CH.last});
-  if (error) { CH.ok = false; return; }
-  (data.msgs||[]).forEach(m => { if (!CH.msgs.some(x => x.id === m.id)) CH.msgs.push(m); });
+  if (error) { CH.ok = false; return 0; }
+  let n = 0; (data.msgs||[]).forEach(m => { if (!CH.msgs.some(x => x.id === m.id)) { CH.msgs.push(m); if (!m.me) n++; } });
   if (CH.msgs.length) CH.last = CH.msgs[CH.msgs.length-1].id;
-  CH.unread = data.unread || 0;
-  if (CH.open && CH.unread) { CH.unread = 0; sb.rpc('live_chat_read', {p_code: CODE}); }
+  if (data.unread) sb.rpc('live_chat_read', {p_code: CODE});
+  return n;
 }
-function chatFab(){
-  let f = $('#fab'); if (!D || D.state === 'closed' || !CH.ok) { if (f) f.remove(); return; }
-  if (!f) { f = document.createElement('button'); f.id = 'fab'; f.className = 'fab'; f.dataset.chat = 'open'; document.body.appendChild(f); }
-  f.innerHTML = `💬 문의하기${CH.unread?`<i>${CH.unread}</i>`:''}`; f.style.display = CH.open ? 'none' : '';
-}
-function chatList(){
-  const l = $('#csl'); if (!l) return; const near = l.scrollHeight - l.scrollTop - l.clientHeight < 80;
-  l.innerHTML = CH.msgs.length ? CH.msgs.map(m => m.me
-      ? `<div class="bub me">${esc(m.deleted?'삭제된 메시지':m.body)}<small>${hm(m.at)}</small></div>`
-      : `<div class="who">리츠종합클린</div><div class="bub us">${esc(m.deleted?'삭제된 메시지':m.body)}<small>${hm(m.at)}</small></div>`).join('')
-    : '<div class="empty" style="padding:30px 10px">궁금한 점이나 요청 사항을 편하게 남겨주세요 😊<br><small>추가로 원하시는 곳, 주차·출입 안내 등</small></div>';
-  if (near || !chatList.done) l.scrollTop = l.scrollHeight; chatList.done = true;
-}
-function chatOpen(){
-  CH.open = true; chatList.done = false;
-  const w = document.createElement('div'); w.className = 'cs'; w.id = 'cs';
-  w.innerHTML = `<div class="csb" role="dialog" aria-modal="true" aria-label="문의하기"><div class="csh"><img src="img/mark.png" alt="" style="width:24px;height:24px"><b>리츠종합클린 문의</b><button data-chat="close" aria-label="닫기">×</button></div>
-    <div class="csl" id="csl"></div>
-    <form class="csf" id="csf"><textarea id="cst" rows="1" maxlength="1000" placeholder="메시지를 입력하세요"></textarea><button type="submit">보내기</button></form></div>`;
-  document.body.appendChild(w); chatList(); chatFab();
-  if (CH.unread) { CH.unread = 0; sb.rpc('live_chat_read', {p_code: CODE}); }
-  w.addEventListener('click', e => { if (e.target === w) chatClose(); });
-  const t = $('#cst'); t.addEventListener('input', () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; });
-  $('#csf').addEventListener('submit', async e => { e.preventDefault(); const v = t.value.trim(); if (!v || CH.busy) return;
-    CH.busy = true; const b = e.target.querySelector('button'); b.disabled = true;
+function drawFeed(stick){ const f = $('#feed'); if (!f) return; const atEnd = window.innerHeight + window.scrollY >= document.body.scrollHeight - 160; f.innerHTML = feed(); if (stick || atEnd) window.scrollTo(0, document.body.scrollHeight); }
+function chatBar(){
+  const on = D && D.state !== 'closed' && CH.ok; $('#app').classList.toggle('chat', on);
+  let b = $('#bar'); if (!on) { if (b) b.remove(); return; } if (b) return;
+  b = document.createElement('div'); b.className = 'bar'; b.id = 'bar';
+  b.innerHTML = `<form id="barf"><textarea id="bart" rows="1" maxlength="1000" placeholder="요청 사항·궁금한 점을 남겨주세요"></textarea><button type="submit">보내기</button></form>`;
+  document.body.appendChild(b);
+  const t = $('#bart'); t.addEventListener('input', () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; });
+  $('#barf').addEventListener('submit', async e => { e.preventDefault(); const v = t.value.trim(); if (!v || CH.busy) return;
+    CH.busy = true; const btn = e.target.querySelector('button'); btn.disabled = true;
     const {error} = await sb.rpc('live_chat_send', {p_code: CODE, p_body: v});
-    CH.busy = false; b.disabled = false;
-    if (error) return toast(/too_many/.test(error.message) ? '잠시 후 다시 보내주세요' : /closed/.test(error.message) ? '문의가 닫혔어요 · 전화로 연락 주세요' : '전송이 안 됐어요 · 다시 눌러주세요');
-    t.value = ''; t.style.height = 'auto'; await chatLoad(); chatList(); });
+    CH.busy = false; btn.disabled = false;
+    if (error) return toast(/too_many/.test(error.message) ? '잠시 후 다시 보내주세요' : /closed/.test(error.message) ? '이 방은 닫혔어요 · 전화로 연락 주세요' : '전송이 안 됐어요 · 다시 눌러주세요');
+    t.value = ''; t.style.height = 'auto'; await chatLoad(); drawFeed(true); });
 }
-function chatClose(){ CH.open = false; const w = $('#cs'); if (w) w.remove(); chatFab(); }
-document.addEventListener('click', e => { const b = e.target.closest('[data-chat]'); if (!b) return; b.dataset.chat === 'open' ? chatOpen() : chatClose(); });
-async function chatTick(){ if (document.visibilityState !== 'visible') return; try { await chatLoad(); } catch(_){} chatList(); chatFab(); }
+async function chatTick(){ if (document.visibilityState !== 'visible' || !CH.ok) return; try { const n = await chatLoad(); if (n) { drawFeed(); toast('새 메시지가 왔어요'); } } catch(_){} }
 
 (async () => {
   if (!CODE) { $('#app').innerHTML = '<main><div class="empty">링크를 다시 확인해 주세요.</div></main>'; return; }
-  try { await load(); render(); intro(false); }
+  try { await load(); try { await chatLoad(); } catch(_){} render(); intro(false); }
   catch(_) { $('#app').innerHTML = '<header class="hd"><img src="img/mark.png" alt=""><b>리츠종합클린</b></header><main><div class="empty">링크를 찾지 못했어요.<br>받으신 링크를 다시 확인해 주세요.</div></main>'; return; }
   setInterval(async () => { if (document.visibilityState !== 'visible' || !D || D.state !== 'live' || $('#pop')) return;
     const n = (D.photos||[]).length; try { await load(); if ((D.photos||[]).length !== n || D.state !== 'live') { render(); if ((D.photos||[]).length > n) toast('새 사진이 올라왔어요'); } } catch(_){} }, 30000);
-  if (D.state !== 'closed') { await chatTick(); setInterval(() => { if (CH.open || Date.now() - (chatTick.t||0) > 25000) { chatTick.t = Date.now(); chatTick(); } }, 5000); }
+  if (D.state !== 'closed') setInterval(chatTick, 5000);
 })();
 })();
 </script>
