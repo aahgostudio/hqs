@@ -285,12 +285,12 @@ window.addEventListener('unhandledrejection',function(e){window.__epErr((e.reaso
 setTimeout(function(){var r=document.getElementById('root');if(r&&r.querySelector('.spin'))window.__epErr('서버 응답이 없어요 (20초)');},20000);
 </script>
 <script src="regions.js"></script>
-<script src="../status.js?v=1030g"></script>
+<script src="../status.js?v=1030h"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1030g'</script>
-<script src="../chatkit.js?v=1030g"></script>
-<script src="../chat.js?v=1030g"></script>
+<script>window.EP_VER='1030h'</script>
+<script src="../chatkit.js?v=1030h"></script>
+<script src="../chat.js?v=1030h"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -792,7 +792,16 @@ function fromDanggeun(o){const g=k=>String(o[k]??'').trim();const r={},memo=[],f
   r.feature=feat.join(' / ');r.memo=memo.join(' / ');return r}
 function missOf(r){return RULES.filter(x=>x.k!=='feeAmt'&&x.k!=='feeChk'&&x.show(r)&&x.req(r)&&!String(r[x.k]??'').trim()).map(x=>x.l)}
 
-const shrink=file=>new Promise((ok,no)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const m=1600,sc=Math.min(1,m/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',0.85))};img.onerror=no;img.src=u});
+// 사진 줄이기 — 갤럭시 고화소 사진도 메모리 적게 (줄이면서 읽고, 다 쓰면 바로 비움). 안 되는 폰은 예전 방식으로
+const shrink=async file=>{const m=1600,draw=(src,w,h)=>{const sc=Math.min(1,m/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.round(w*sc);c.height=Math.round(h*sc);c.getContext('2d').drawImage(src,0,0,c.width,c.height);const d=c.toDataURL('image/jpeg',0.85);c.width=c.height=0;return d};
+  if(self.createImageBitmap){try{const b=await createImageBitmap(file,{resizeWidth:m,resizeQuality:'medium',imageOrientation:'from-image'});try{return draw(b,b.width,b.height)}finally{b.close&&b.close()}}catch(_){}}
+  return new Promise((ok,no)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{try{ok(draw(img,img.naturalWidth,img.naturalHeight))}catch(e){no(e)}finally{URL.revokeObjectURL(u);img.src=''}};img.onerror=e=>{URL.revokeObjectURL(u);no(e)};img.src=u})};
+// 작성 중인 새 매물 임시 저장 — 폰이 튕겨도 다시 열면 이어서 (24시간)
+const DRAFT='ritz_draft_'+(KEY||'x').slice(-8);
+const draftGet=()=>{try{const d=JSON.parse(localStorage.getItem(DRAFT)||'null');return d&&Date.now()-d._at<864e5?d:null}catch(_){return null}};
+const draftDel=()=>{try{localStorage.removeItem(DRAFT)}catch(_){}};
+const draftAsk=()=>{if(S.edit&&!S.edit.id&&draftGet()&&confirm('작성하던 매물을 지울까요?\n[취소]를 누르면 다음에 [새 매물]에서 이어서 쓸 수 있어요'))draftDel()};
+const newEdit=()=>{const d=draftGet();if(d){const r={...d};delete r._at;delete r.id;setTimeout(()=>toast('작성하던 매물을 불러왔어요'),300);return r}return{status:'진행',deal:'월세'}};
 function aiToRec(r,base){const o={...(base||{})};Object.keys(r||{}).forEach(k=>{const x=r[k];if(x===null||x===undefined||x===''||k==='gu'||k==='dong')return;if(F.includes(k))o[k]=String(x)});
   if(r&&r.gu){const sd=SIDOS.includes(r.sido)?r.sido:'부산광역시',g=String(r.gu).trim();if((REG[sd]||{})[g]){o.gu=sd==='부산광역시'?g:sd+' '+g;o.dong=(REG[sd][g]||[]).includes(r.dong)?r.dong:''}else{const a=parseAddr([r.sido,r.gu,r.dong].filter(Boolean).join(' '));if(a.gu){o.gu=a.sido==='부산광역시'?a.gu:a.sido+' '+a.gu;o.dong=a.dong}}}
   if(!o.dirBase&&o.direction&&HOUSE.includes(o.type))o.dirBase='거실';
@@ -870,9 +879,9 @@ function bind(){
   const bg=document.getElementById('bk-go');if(bg)bg.onclick=async()=>{const B=S.bulk,todo=B.rows.filter(x=>x.on);B.busy=true;B.done=0;B.total=todo.length;render();let fail=0;
     for(const x of todo){const r={...x.rec};r.status=x.miss.length?'보류':'진행';if(x.miss.length)r.memo='[확인 필요] 빈칸: '+x.miss.join(', ')+(r.memo?' / '+r.memo:'');try{S.data=await call('saveListing',r)}catch(e){fail++}B.done++;render()}
     S.bulk=null;S.view='mine';S.mineFilter='전체';render();toast(`${todo.length-fail}건 등록했어요${fail?` · ${fail}건 실패`:''}. 보류된 매물은 열어서 빈칸을 채워 주세요`)};
-  root.querySelectorAll('[data-new]').forEach(b=>b.onclick=e=>{e.stopPropagation();S.open=null;S.edit={status:'진행',deal:'월세'};render()});
+  root.querySelectorAll('[data-new]').forEach(b=>b.onclick=e=>{e.stopPropagation();S.open=null;S.edit=newEdit();render()});
   root.querySelectorAll('[data-open]').forEach(c=>{c.onclick=e=>{if(e.target.closest('[data-check],[data-edit]'))return;S.open=c.dataset.open;render()};c.onkeydown=e=>{if(e.key==='Enter'){S.open=c.dataset.open;render()}}});
-  root.querySelectorAll('[data-close]').forEach(b=>b.onclick=e=>{if(e.target!==b&&!e.target.closest('button[data-close]'))return;if(S.bulk&&S.bulk.busy)return;S.open=null;S.edit=null;S.bulk=null;render()});
+  root.querySelectorAll('[data-close]').forEach(b=>b.onclick=e=>{if(e.target!==b&&!e.target.closest('button[data-close]'))return;if(S.bulk&&S.bulk.busy)return;draftAsk();S.open=null;S.edit=null;S.bulk=null;render()});
   root.querySelectorAll('[data-check]').forEach(b=>b.onclick=async e=>{e.stopPropagation();await act('markChecked',b.dataset.check,'오늘 확인으로 기록했어요')});
   root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=allRows().mine.find(x=>x.id===b.dataset.edit);S.open=null;S.edit={...r};render()});
   root.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{S.mineFilter=b.dataset.mf;render()});
@@ -893,7 +902,7 @@ function bind(){
     phGrid.querySelectorAll('[data-phdel]').forEach(b=>b.onclick=phDel);
     if(phAdd)phAdd.onchange=async()=>{let p=photoInfo(phIn.value);const fs=[...phAdd.files].slice(0,Math.max(0,20-p.ids.length));if(!fs.length){toast('사진은 최대 20장까지예요');return}
       let done=0,fail=0;phAdd.disabled=true;
-      for(const fl of fs){phTxt.textContent=`올리는 중… ${done+1}/${fs.length}`;try{const data=await shrink(fl);const r=await call('uploadPhoto',{folder:p.folder,data,label:(f.elements.loc&&f.elements.loc.value)||''});p={...p,folder:r.folder,ids:[...p.ids,r.id]};phSet(p.folder,p.ids)}catch(x){fail++}done++}
+      for(const fl of fs){phTxt.textContent=`올리는 중… ${done+1}/${fs.length}`;try{const data=await shrink(fl);const r=await call('uploadPhoto',{folder:p.folder,data,label:(f.elements.loc&&f.elements.loc.value)||''});p={...p,folder:r.folder,ids:[...p.ids,r.id]};phSet(p.folder,p.ids);dsave()}catch(x){fail++}done++}
       phAdd.disabled=false;phAdd.value='';phTxt.innerHTML=`${ic('plus')} 사진 올리기`;toast(fail?`${fs.length-fail}장 올렸어요 · ${fail}장 실패`:`${fs.length}장 올렸어요`)};
     const snap=()=>{const fd=new FormData(f),r={...S.edit};fd.forEach((x,k)=>{if(k!=='feeChk')r[k]=String(x).trim()});const amt=[];f.querySelectorAll('[data-fa]').forEach(i=>{if(i.value!=='')amt.push(i.dataset.fa+' '+i.value)});r.feeItems=amt.length?amt.join(', '):fd.getAll('feeChk').join(', ');if(r.gu&&r.sido&&r.sido!=='부산광역시')r.gu=r.sido+' '+r.gu;delete r.sido;return r};
     const ai=document.getElementById('af-img'),at=document.getElementById('af-imgtxt');
@@ -902,13 +911,15 @@ function bind(){
     if(ag)ag.onclick=async()=>{const text=document.getElementById('af-text').value.trim(),files=[...(ai.files||[])].slice(0,6);
       if(!text&&!files.length){toast('캡처나 글을 먼저 넣어 주세요');return}
       ag.disabled=true;ag.textContent='읽는 중… (10~20초)';
-      try{const images=await Promise.all(files.map(shrink));const r=await call('autofill',{text,images});const cur=snap();
+      try{const images=[];for(const fl of files)images.push(await shrink(fl));const r=await call('autofill',{text,images});const cur=snap();
         Object.assign(cur,aiToRec(r,cur));
         S.edit=cur;render();toast('채웠어요. 빈칸·틀린 곳만 확인해 주세요')}
       catch(x){ag.disabled=false;ag.textContent='자동 채우기';toast('읽지 못했어요: '+(x&&x.message||x))}};
     const bindGu=()=>{const g=document.getElementById('f-gu');g.onchange=()=>{document.getElementById('dongbox').innerHTML=dongField(f.elements.sido.value,g.value,'')}};bindGu();
     f.elements.sido.onchange=()=>{const sd=f.elements.sido.value;document.getElementById('gubox').innerHTML=guField(sd,'');document.getElementById('dongbox').innerHTML=dongField(sd,'','');bindGu()};
     ['deposit','sale','area'].forEach(k=>{const el=f.elements[k];if(el) el.addEventListener('input',()=>{const a=document.getElementById('aux-'+k)||(()=>{const s=document.createElement('span');s.className='aux';s.id='aux-'+k;el.after(s);return s})();a.textContent=el.value?(k==='area'?pyeong(el.value)+'평':won(+el.value)+'만원'):''})});
+    const dsave=()=>{if(!S.edit||S.edit.id||S.busy)return;try{localStorage.setItem(DRAFT,JSON.stringify({...snap(),_at:Date.now()}))}catch(_){}};
+    f.addEventListener('input',dsave);f.addEventListener('change',dsave);
     f.onsubmit=async e=>{e.preventDefault();
       const fd=new FormData(f),rec={...S.edit};fd.forEach((val,k)=>rec[k]=String(val).trim());if(rec.gu&&rec.sido&&rec.sido!=='부산광역시')rec.gu=rec.sido+' '+rec.gu;delete rec.sido;
       const err=document.getElementById('ferr');
@@ -923,7 +934,7 @@ function bind(){
       rec.feeItems=shown(fr)?Object.entries(amt).map(([k,x])=>k+' '+x).join(', '):shown(fc)?fd.getAll('feeChk').join(', '):'';
       if(shown(fr))rec.fee=String(Math.round(Object.values(amt).reduce((a,b)=>a+(+b||0),0)*10)/10);
       S.edit=rec;S.busy=true;render();
-      try{S.data=await call('saveListing',rec);S.edit=null;S.busy=false;toast(rec.id?'저장했어요':'등록했어요. 다른 직원 화면에는 1분 안에 보여요')}
+      try{S.data=await call('saveListing',rec);if(!rec.id)draftDel();S.edit=null;S.busy=false;toast(rec.id?'저장했어요':'등록했어요. 다른 직원 화면에는 1분 안에 보여요')}
       catch(x){S.busy=false;render();const er=document.getElementById('ferr');er.textContent='저장하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요. ('+(x&&x.message||x)+')';er.hidden=false}
     };
   }
@@ -932,7 +943,7 @@ async function act(fn,id,msg){
   try{S.data=await call(fn,id);toast(msg)}catch(x){toast('처리하지 못했어요. 다시 시도해 주세요.')}
 }
 function toast(m){S.toast=m;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{S.toast='';const t=document.querySelector('.toast');if(t)t.remove();else render()},2600)}  // 지울 땐 화면 전체를 다시 그리지 않음(입력 중 오류 안내가 사라지지 않게)
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(S.open||S.edit)){S.open=null;S.edit=null;render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(S.open||S.edit)){draftAsk();S.open=null;S.edit=null;render()}});
 
 let DEMO=null;
 function demoInit(){
@@ -980,7 +991,7 @@ function demoCall(fn,arg){
 }
 
 (async()=>{
-  try{S.demo=!hasGAS;S.data=await call('getBootstrap');if(new URLSearchParams(location.search).has('new')){S.edit={status:'진행',deal:'월세'};try{const u=new URL(location.href);u.searchParams.delete('new');history.replaceState(null,'',u.pathname+u.search)}catch(_){}}render()}
+  try{S.demo=!hasGAS;S.data=await call('getBootstrap');if(new URLSearchParams(location.search).has('new')||draftGet()){S.edit=newEdit();try{const u=new URL(location.href);u.searchParams.delete('new');history.replaceState(null,'',u.pathname+u.search)}catch(_){}}render()}
   catch(e){root.innerHTML=`<div class="loading"><div style="text-align:center;max-width:360px;padding-inline:16px"><b style="color:var(--ink)">매물 정보를 불러오지 못했어요</b><br>시트 접근 권한을 확인하고 새로고침해 주세요.<br><span class="muted" style="font-size:12px">${esc(e&&e.message||e)}</span></div></div>`}
 })();
 })();
