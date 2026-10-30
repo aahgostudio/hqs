@@ -257,5 +257,39 @@
   function grid(ps, pub, o){ o = o || {}; const n = ps.length, show = ps.slice(0, 9);
     return `<div class="kit-grid${n >= 5 ? ' g3' : ''}">${show.map((m, i) => { const u = pub(m.photo);
       return `<a href="${esc(u)}" target="_blank" rel="noopener" data-view="${esc(u)}" data-dl="${esc(u)}?download=" ${o.own ? `data-own="${m.id}"` : ''} class="${n === 1 ? 'one' : ''}"><img src="${esc(u)}" alt="사진" loading="lazy">${i === 8 && n > 9 ? `<span class="more">+${n - 9}</span>` : ''}${o.sec ? `<button type="button" class="sec" data-a="chSecure" data-id="${m.id}" title="인사카드로 옮기기">🔒</button>` : ''}</a>`; }).join('')}</div>`; }
-  window.EPKit = {needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
+  // 📷 큰 사진(15MB 넘음)은 올리기 전에 폰에서 줄임 — 긴 쪽 4000px · 화질 90% (홍보용으로 충분) · 15MB 이하 사진은 원본 그대로
+  async function shrink(f){
+    const LIM = 15 * 1024 * 1024;
+    if (!f || f.size <= LIM || !/^image\//.test(f.type || '') || /gif/i.test(f.type)) return f;
+    let bmp; try { bmp = await createImageBitmap(f, {imageOrientation: 'from-image'}); } catch(_) {
+      try { bmp = await new Promise((ok, no) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => { URL.revokeObjectURL(u); no(); }; im.src = u; }); } catch(_) { return f; } }   // 못 읽는 형식(일부 HEIC)은 원본 그대로
+    const W = bmp.width, Hh = bmp.height;
+    for (const [side, q] of [[4000, 0.9], [3200, 0.85], [2400, 0.8]]) {
+      const s = Math.min(1, side / Math.max(W, Hh)), c = document.createElement('canvas');
+      c.width = Math.round(W * s); c.height = Math.round(Hh * s); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      const b = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
+      if (b && b.size <= LIM) { try { bmp.close && bmp.close(); } catch(_){} return new File([b], (f.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', {type: 'image/jpeg'}); }
+    }
+    return f;
+  }
+  // 👀 고객님 방 위쪽 한 줄: 지금 보는 중 / 몇 시 확인 / 아직 안 들어오심
+  function seenLine(s){
+    if (!s) return '<div class="kit-seen"></div>';
+    const now = new Date(s.now || Date.now()), last = s.last ? new Date(s.last) : null;
+    const t = d => { const p = n => String(n).padStart(2, '0'), sameDay = d.toDateString() === now.toDateString();
+      return (sameDay ? '' : `${d.getMonth() + 1}/${d.getDate()} `) + `${p(d.getHours())}:${p(d.getMinutes())}`; };
+    let txt, bg, fg;
+    if (!last) { txt = '🙈 고객님이 아직 링크를 안 여셨어요'; bg = '#FEE2E2'; fg = '#991B1B'; }
+    else if (now - last < 75000) { txt = '👀 고객님이 지금 보고 계세요'; bg = '#DCFCE7'; fg = '#065F46'; }
+    else { txt = `👀 고객님 ${t(last)} 마지막 확인` + (s.views > 1 ? ` · ${s.views}번 열어보심` : ''); bg = '#E0F2FE'; fg = '#075985'; }
+    return `<div class="kit-seen" style="text-align:center;background:${bg};color:${fg};padding:6px 10px;font-size:12.5px;font-weight:700">${txt}</div>`;
+  }
+  // 고객님이 어디까지 읽었는지: 고객님 글이 아닌 메시지 중 읽은 마지막 것 id (없으면 0)
+  function seenUpto(msgs, s){
+    if (!s || !s.read) return 0; let id = 0;
+    (msgs || []).forEach(m => { const mx = Math.max(...(m.ids || [m.id])); if (m.who !== 'cust' && mx <= s.read) id = m.id; });
+    return id;
+  }
+  const SEEN_TAG = '<span style="color:#0284C7;font-weight:700">고객님 읽음</span>';
+  window.EPKit = {shrink, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();

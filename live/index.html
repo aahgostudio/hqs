@@ -222,6 +222,9 @@ async function chatTick(){ if (document.visibilityState !== 'visible' || !CH.ok)
   setInterval(async () => { if (document.visibilityState !== 'visible' || !D || D.state !== 'live' || $('#pop')) return;
     const n = (D.photos||[]).length; try { await load(); if ((D.photos||[]).length !== n || D.state !== 'live') { render(); if ((D.photos||[]).length > n) toast('새 사진이 올라왔어요'); } } catch(_){} }, 30000);
   if (D.state !== 'closed') setInterval(chatTick, 5000);
+  // 👀 고객님이 보고 있다고 현장팀에 알림 (열어둔 동안 30초마다)
+  const ping = () => { if (document.visibilityState === 'visible') sb.rpc('live_ping', {p_code: CODE}).then(() => {}, () => {}); };
+  ping(); setInterval(ping, 30000); document.addEventListener('visibilitychange', ping);
 })();
 })();
 </script>

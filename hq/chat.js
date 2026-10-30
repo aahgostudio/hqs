@@ -73,7 +73,8 @@ function roomHtml(){
   if (!C.room) return `<div class="ch-empty"><div style="font-size:40px">💬</div><b>왼쪽에서 방을 고르세요</b><p class="note">대화·사진은 3년 보관 · 직원이 수정·삭제해도 원문이 여기 남아요</p></div>`;
   const r = C.home.rooms.find(x => x.id === C.cur) || {}, R = C.room.room;
   let last = '', out = ''; const names = memNames(); const sec = OWN() && C.room.room.kind === 'dm';   // 1:1 방: 계좌·통장 옮기기 버튼
-  K.group(C.msgs, m => m.mine ? '\u0000me' : m.name).forEach(m => {   // 연달아 보낸 사진은 한 묶음
+  const GM = K.group(C.msgs, m => m.mine ? '\u0000me' : m.name), cUp = R.kind === 'cust' ? K.seenUpto(GM, C.seen) : 0;   // 고객님이 여기까지 읽음
+  GM.forEach(m => {   // 연달아 보낸 사진은 한 묶음
     if (new Date(m.at).toDateString() !== last) { last = new Date(m.at).toDateString(); out += K.day(day(m.at)); }
     if (C.mark != null && (m.ids || [m.id]).includes(C.mark)) out += K.READ;
     const u = Math.max(...(m.ids || [m.id]).map(id => C.unread[id] || 0));
@@ -81,10 +82,10 @@ function roomHtml(){
     out += `<div class="ch-m ${m.mine?'mine':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine?'':`<span class="ch-nm">${esc(m.name)}</span>`}
       <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}"${m.photos?' style="padding:3px"':''}>${m.photos?K.grid(m.photos, pub, {sec: sec && !m.mine}):m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
-      <span class="ch-meta">${u?`<i>${u}</i>`:''}${tm(m.at)}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
+      <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?`<i>${u}</i>`:''}${tm(m.at)}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
-  return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div></div>
+  return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div>${R.kind === 'cust' && C.seen ? `<div style="margin-top:4px;border-radius:8px;overflow:hidden">${K.seenLine(C.seen)}</div>` : ''}</div>
       <button class="ch-more" data-a="chMore" aria-label="방 설정">⋯</button><div class="ch-ra">${OWN() ? `${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}<button class="btn sm ghost" data-a="chIcon">🙂 아이콘</button>
         ${H.S.needV6?'':`<button class="btn sm ghost" data-a="chMgr" title="관리자(HQS)도 이 방을 보고 대화">${r.mgr?'👥 관리자 참여 중':'👥 관리자 빼고'}</button>`}
         <button class="btn sm ghost" data-a="chKeep" title="기간이 지나도 정리하지 않아요">${r.keep?'📌 고정 해제':'📌 보관 고정'}</button>
@@ -162,18 +163,25 @@ function paint(keep){
 async function openRoom(id){
   const rr = C.home && C.home.rooms.find(x => x.id === id); if (!OWN() && rr && !(rr.mgr && !rr.closed && rr.live)) { C.cur = null; C.room = null; return paint(); }
   const was = rr ? rr.unread || 0 : 0;
-  C.cur = id; C.room = await rpc('chat_admin_load', {p_room: id, p_after: 0, p_before: null, p_limit: 300});
+  C.cur = id; C.seen = null; C.room = await rpc('chat_admin_load', {p_room: id, p_after: 0, p_before: null, p_limit: 300});
   C.msgs = C.room.msgs; C.unread = C.room.unread || {};
   C.mark = K.firstUnread(C.msgs, was);   // '여기까지 읽으셨습니다' — 이 방에 있는 동안 유지
   const r = C.home.rooms.find(x => x.id === id); if (r) r.unread = 0;
   paint(); K.jump(document.getElementById('chMsgs')); poll();
+  if (C.room.room.kind === 'cust') custSeen().then(() => paint(true));
+}
+// 👀 고객님이 링크를 봤는지 (SQL v26 전이면 조용히 건너뜀)
+async function custSeen(){
+  if (!C.cur || !C.room || C.room.room.kind !== 'cust' || H.S.needV26) return;
+  try { const id = C.cur, s = await rpc('chat_admin_cust_seen', {p_room: id}); if (id === C.cur) C.seen = s; } catch(_){}
 }
 async function tick(){
   if (H.cur() !== 'chat' || document.hidden) return;
   try {
     if (C.cur) { const real = C.msgs.filter(m => typeof m.id === 'number'), last = real.length ? real[real.length-1].id : 0;
       const d = await rpc('chat_admin_load', {p_room: C.cur, p_after: last, p_before: null, p_limit: 300});
-      Object.assign(C.unread, d.unread || {}); if (d.msgs.length) C.msgs = C.msgs.concat(d.msgs); }
+      Object.assign(C.unread, d.unread || {}); if (d.msgs.length) C.msgs = C.msgs.concat(d.msgs);
+      if ((C.tk = (C.tk || 0) + 1) % 3 === 0) await custSeen(); }
     await loadHome(); paint(true);
   } catch(_){}
 }
@@ -224,7 +232,8 @@ async function sendPhoto(f){
     } catch(e){ H.fail(/mime|type/i.test(e.message || '') ? new Error('문서 보내기는 SQL 업데이트(v16)가 필요해요') : e); } return; }
   const vid = kd === 'vid';
   if (vid && f.size > 50*1024*1024) return H.toast('동영상은 50MB(약 30초~1분)까지 올릴 수 있어요');
-  if (!vid && f.size > 15*1024*1024) return H.toast('15MB 이하 사진만 올릴 수 있어요');
+  if (!vid) f = await K.shrink(f);   // 15MB 넘는 사진은 줄여서 올림
+  if (!vid && f.size > 50*1024*1024) return H.toast('사진이 너무 커요 (50MB 넘음)');
   try { const path = `boss/${C.cur}/${Date.now()}.${extOf(f)}`; if (vid) H.toast('동영상 올리는 중…');
     const {error} = await H.sb.storage.from('chat').upload(path, f, {contentType: f.type || (vid ? 'video/mp4' : 'image/jpeg')}); if (error) throw error;
     await rpc('chat_admin_send', {p_room: C.cur, p_body: null, p_photo: path}); await tick();
