@@ -1,0 +1,105 @@
+-- ============================================================
+--  어닝플레이스 HQ 업데이트 v27 (2026-10-30)
+--  어닝톡 푸시: 사진 묶음 = 알림 한 번
+--   · 사진을 여러 장 한꺼번에 보내면 첫 장만 '📷 사진' 알림, 나머지는 조용히
+--   · 같은 방에서 1분 안에 이어서 올라온 사진은 묶음으로 봄 (글·멘션은 그대로 바로 알림)
+--   · 안 읽으면 30분 뒤 알림톡 한 번 — 이건 그대로
+-- ============================================================
+create table if not exists private.push_log (
+  room_id bigint not null, who text not null, at timestamptz not null default now(),
+  primary key (room_id, who));
+revoke all on private.push_log from public, anon, authenticated;
+
+create or replace function private.on_chat_msg() returns trigger
+language plpgsql security definer set search_path = public, extensions, private as $$
+declare r public.chat_rooms; c jsonb := private.cfg(); cool interval; sender text; title text; prev text; pv text;
+        msgs jsonb := '[]'::jsonb; pushes jsonb := '[]'::jsonb; s public.staff; body text; mn boolean; mall boolean; subs jsonb; burst boolean; base text := 'https://team.earningplace.kr';
+begin
+  if new.deleted_at is not null then return null; end if;
+  select * into r from public.chat_rooms where id = new.room_id;
+  if r.id is null or r.closed_at is not null then return null; end if;
+  cool := make_interval(mins => coalesce((c->>'cool_min')::int, 3));
+  sender := case when new.cust then '고객님' when new.staff_id is null then '대표' else coalesce((select name from public.staff where id = new.staff_id), '직원') end;
+  title := public._chat_title(r);
+  body := coalesce(new.body, '');
+  mall := new.staff_id is null and position('@all' in body) > 0;
+  prev := private.cut(replace(replace(coalesce(nullif(trim(new.body), ''), case when new.photo ~* '\.(mov|mp4|m4v|webm|3gp)$' then '🎬 동영상' when new.photo is not null then '📷 사진' else '' end), E'\n', ' '), E'\r', ''), 40);
+
+  for s in select st.* from public.staff st
+            where st.id in (select public._chat_members(r))
+              and st.id is distinct from new.staff_id
+              and public._chat_on(st)
+              and (r.kind <> 'site' or exists (select 1 from public.jobs j where j.id = r.job_id and public._chat_site_live(j)))
+  loop
+    if private.here(r.id, s.id::text) then continue; end if;   -- 지금 이 방 보고 있음 → 알림 안 보냄 (v18)
+    mn := mall or position('@' || s.name in body) > 0;
+    pv := case when mn then private.cut('📣 ' || prev, 40) else prev end;
+    select jsonb_agg(p.sub) into subs from public.push_subs p where p.who = s.id::text;
+    if subs is not null then
+      -- 📲 푸시 (무료) + 30분 뒤 안 읽었으면 알림톡
+      -- v27: 사진을 묶음으로 보내면 첫 장만 알림 (같은 방 1분 안의 사진은 조용히, 멘션은 예외)
+      burst := new.photo is not null and not mn
+               and exists (select 1 from private.push_log l where l.room_id = r.id and l.who = s.id::text and l.at > now() - interval '1 minute');
+      insert into private.push_log (room_id, who, at) values (r.id, s.id::text, now()) on conflict (room_id, who) do update set at = excluded.at;
+      if not burst then
+      pushes := pushes || jsonb_build_array(jsonb_build_object('subs', subs,
+                  'title', case when r.kind = 'dm' then '대표님' else title end,
+                  'body', case when r.kind = 'dm' then pv else sender || ': ' || pv end,
+                  'tag', 'room-' || r.id,
+                  'url', base || '/talk/?app=chat&k=' || private.code(s, r.id)));
+      end if;
+      insert into private.push_wait (room_id, who, msg_id) values (r.id, s.id::text, new.id) on conflict (room_id, who) do update set msg_id = excluded.msg_id, at = now()
+        where coalesce((select cr.last_id from public.chat_reads cr where cr.room_id = push_wait.room_id and cr.who = push_wait.who), 0) >= push_wait.msg_id;   -- 이미 읽은 건 새 글 기준으로 다시 30분
+      continue;
+    end if;
+    -- 💬 알림톡 (기존 규칙: 같은 방 3분에 한 번, 멘션은 바로)
+    if private.digits(s.phone) is null then continue; end if;
+    if not mn and exists (select 1 from private.notify_log l where l.room_id = r.id and l.who = s.id::text and l.at > now() - cool) then continue; end if;
+    insert into private.notify_log (room_id, who, at) values (r.id, s.id::text, now())
+      on conflict (room_id, who) do update set at = excluded.at;
+    if r.kind = 'dm' and new.staff_id is null then
+      msgs := msgs || jsonb_build_array(jsonb_build_object('to', s.phone, 'tpl', c->>'tpl_dm',
+                'vars', jsonb_build_object('#{미리보기}', pv, '#{코드}', private.code(s, r.id))));
+    else
+      msgs := msgs || jsonb_build_array(jsonb_build_object('to', s.phone, 'tpl', c->>'tpl_team',
+                'vars', jsonb_build_object('#{방이름}', title, '#{보낸사람}', sender, '#{미리보기}', pv, '#{코드}', private.code(s, r.id))));
+    end if;
+  end loop;
+
+  -- 직원이 쓴 글 → 대표님께도
+  if (new.staff_id is not null or new.cust) and coalesce((c->>'boss_chat')::boolean, true) and not private.here(r.id, 'boss') then   -- 대표님이 이 방 보고 있으면 알림 안 보냄 (v18)
+    select jsonb_agg(p.sub) into subs from public.push_subs p where p.who = 'boss';
+    if subs is not null then
+      burst := new.photo is not null and position('@대표' in body) = 0
+               and exists (select 1 from private.push_log l where l.room_id = r.id and l.who = 'boss' and l.at > now() - interval '1 minute');
+      insert into private.push_log (room_id, who, at) values (r.id, 'boss', now()) on conflict (room_id, who) do update set at = excluded.at;
+      if not burst then
+      pushes := pushes || jsonb_build_array(jsonb_build_object('subs', subs,
+                  'title', case when r.kind = 'dm' then sender || '님' else title end,
+                  'body', case when r.kind = 'dm' then prev else sender || ': ' || prev end,
+                  'tag', 'room-' || r.id, 'url', base || '/hq/?app=chat#chat/' || r.id));
+      end if;
+      insert into private.push_wait (room_id, who, msg_id) values (r.id, 'boss', new.id) on conflict (room_id, who) do update set msg_id = excluded.msg_id, at = now()
+        where coalesce((select cr.last_id from public.chat_reads cr where cr.room_id = push_wait.room_id and cr.who = push_wait.who), 0) >= push_wait.msg_id;   -- 이미 읽은 건 새 글 기준으로 다시 30분
+    elsif private.digits(c->>'boss_phone') is not null
+       and (position('@대표' in body) > 0 or not exists (select 1 from private.notify_log l where l.room_id = r.id and l.who = 'boss' and l.at > now() - cool)) then
+      insert into private.notify_log (room_id, who, at) values (r.id, 'boss', now())
+        on conflict (room_id, who) do update set at = excluded.at;
+      msgs := msgs || jsonb_build_array(jsonb_build_object('to', c->>'boss_phone', 'tpl', c->>'tpl_team',
+                'vars', jsonb_build_object('#{방이름}', case when r.kind = 'dm' then sender || '님 1:1' else title end,
+                                           '#{보낸사람}', sender, '#{미리보기}', prev, '#{코드}', 'hq.' || r.id)));
+    end if;
+  end if;
+
+  perform private.send(msgs);
+  perform private.push_send(pushes);
+  return null;
+exception when others then
+  return null;   -- 알림이 실패해도 대화 저장은 그대로
+end $$;
+
+
+create or replace function public.hq_schema_version() returns int
+language sql stable as $$ select greatest(27, 0) $$;
+
+select '업데이트 완료 (v27)' as result;
