@@ -17,7 +17,7 @@
   let ICONS = null;   // 대표가 고른 방 아이콘 {방번호: 이모지}
   const APP = new URLSearchParams(location.search).get('app') === 'chat';   // 홈 화면 '어닝톡' 앱 모드: 대화만
   let opt = {token:'', demo:false, accent:'#16347A', onState:()=>{}};
-  let home = null, room = null, cseen = null, msgs = [], unreadMap = {}, view = null, pollT = null, homeT = null, busy = false, editing = null;
+  let home = null, room = null, cseen = null, msgs = [], unreadMap = {}, view = null, pollT = null, homeT = null, busy = false, editing = null, showDone = false;
 
   async function rpc(fn, args){
     const r = await fetch(`${URL_}/rest/v1/rpc/${fn}`, {method:'POST', headers:Object.assign({'content-type':'application/json'}, H), body:JSON.stringify(args)});
@@ -140,14 +140,18 @@
     const ord = (ICONS && ICONS._order) || [], ix = id => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };   // 대표가 정한 방 순서
     const g = k => rs.filter(r => k.includes(r.kind)).map((r, i) => [r, i]).sort((a, b) => ix(a[0].id) - ix(b[0].id) || a[1] - b[1]).map(x => x[0]);
     const P = (ICONS && ICONS._parent) || {};
+    // 작업 끝난 현장은 맨 아래 접힌 묶음으로 (새 글이 있으면 '내 현장'에 그대로)
+    const sites = g(['cust','site']).sort((a,b)=>(b.job_date||'').localeCompare(a.job_date||''));
+    const live = sites.filter(r => !r.job_done || r.unread), done = sites.filter(r => r.job_done && !r.unread);
     const gt = k => { const a = g(k), ids = new Set(a.map(r => r.id)), out = [];   // 하위 방은 윗방 바로 밑에
       a.forEach(r => { const p = P[r.id]; if (p && ids.has(+p) && !P[p]) return; out.push(r); a.filter(x => +P[x.id] === r.id).forEach(x => out.push(Object.assign({}, x, {_kid: true}))); }); return out; };
     w.innerHTML = `<div class="epc-h">${APP ? '' : '<button class="epc-back" data-close="1" aria-label="닫기">←</button>'}<span class="sp"><b>${APP ? '어닝톡' : '대화'}</b>${total ? `<small>안 읽음 ${total}</small>` : ''}</span>${APP ? '' : '<button class="epc-back" data-appadd="1" aria-label="홈 화면에 대화 앱 추가" style="width:auto;padding:0 10px;font-size:13px;font-weight:700">📲 앱으로</button>'}</div>
       <div class="epc-list">
-        ${g(['cust','site']).length ? `<div class="epc-sec">내 현장</div>${g(['cust','site']).sort((a,b)=>(b.job_date||'').localeCompare(a.job_date||'')).map(row).join('')}` : ''}
+        ${live.length ? `<div class="epc-sec">내 현장</div>${live.map(row).join('')}` : ''}
         ${g(['dm']).length ? `<div class="epc-sec">1:1</div>${g(['dm']).map(row).join('')}` : ''}
         ${g(['all','team','custom']).length ? `<div class="epc-sec">함께하는 방</div>${gt(['all','team','custom']).map(row).join('')}` : ''}
         ${pushReady && K().needPush() ? '<button class="epc-row" data-pushok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>알림 받기</b><p>눌러서 [허용] 한 번 · 새 메시지가 바로 와요</p></span></button>' : K().needBadgeOk() ? '<button class="epc-row" data-badgeok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>아이콘에 안 읽은 숫자 보이기</b><p>눌러서 [허용]을 한 번만 눌러주세요</p></span></button>' : ''}
+        ${done.length ? `<button class="epc-row" data-showdone="1" style="justify-content:center;color:var(--epc-mute);font-weight:700;font-size:13px">✅ 작업 끝난 현장 ${done.length}개 ${showDone ? '▴ 접기' : '▾ 보기'}</button>${showDone ? done.map(row).join('') : ''}` : ''}
         <p class="epc-note">🔒 내가 속한 방만 보여요.${g(['cust','site']).length ? ' 현장 방은 작업 끝 7일 뒤 목록에서 빠져요 · 초록 = 작업 중, 빨강 = 작업 끝' : ''}<br>대화와 사진은 업무 기록으로 보관돼요.</p>
       </div>`;
   }
@@ -369,6 +373,7 @@
     if (b.dataset.badgeok) return K().badgeOk().then(() => { drawList(); loadHome(); });
     if (b.dataset.pushok) return K().pushOn(pushKey, pushSave, true).then(r => { if (r !== 'ok') alert(r === 'denied' ? '알림이 꺼져 있어요. 폰 설정 → 알림 → 어닝톡에서 켜주세요' : '이 폰에서는 알림을 켤 수 없어요. 카톡 알림으로 계속 받아요'); drawList(); loadHome(); });
     if (b.dataset.list) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }
+    if (b.dataset.showdone) { showDone = !showDone; return drawList(); }
     if (b.dataset.room) return openRoom(+b.dataset.room);
     if (b.dataset.cdone) return custConfirm(+b.dataset.cdone);
     if (b.dataset.send) return send();

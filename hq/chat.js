@@ -6,6 +6,7 @@ const ordOf = () => ((((H.S.settings||{}).chat_icons)||{})._order) || [];
 // 현장 방 상태: 작업 끝 = 빨강, 작업 날(오늘 이후 아님)·진행 중 = 초록
 const jst = r => !r.job_id && !r.job_date ? '' : r.job_done ? ' jdone' : (r.job_date && r.job_date <= new Date(Date.now() + 9*36e5).toISOString().slice(0,10)) ? ' jon' : '';
 // 현장: 오늘 → 다가오는 날(가까운 순) → 지난 날(최근 순)
+const isDone = r => !!r.job_done && !r.unread;
 const byJobDay = arr => { const t = new Date(Date.now() + 9*36e5).toISOString().slice(0,10); const k = r => { const d = r.job_date || ''; return d === t ? [0, ''] : d > t ? [1, d] : [2, String.fromCharCode(65535) + d]; };
   return arr.slice().sort((a, b) => { const x = k(a), y = k(b); return x[0] - y[0] || (x[0] === 2 ? (b.job_date||'').localeCompare(a.job_date||'') : x[1].localeCompare(y[1])); }); };
 const byOrd = arr => { const o = ordOf(); const ix = id => { const i = o.indexOf(id); return i < 0 ? 1e6 : i; }; return arr.map((r, i) => [r, i]).sort((a, b) => ix(a[0].id) - ix(b[0].id) || a[1] - b[1]).map(x => x[0]); };   // 대표가 끌어서 정한 방 순서
@@ -27,7 +28,7 @@ const ICON_SETS = [
 const KIND = {all:'전체', team:'팀', site:'현장', dm:'1:1', custom:'대표가 만든 방', cust:'고객님 방 (고객도 봄)'};
 const URL_ = (window.EP_CONFIG||{}).SUPABASE_URL;
 const pub = p => `${URL_}/storage/v1/object/public/chat/${p}`;
-const C = {fold: {}, home:null, cur:null, room:null, msgs:[], unread:{}, t:null, q:'', showClosed:false};
+const C = {fold: {}, home:null, cur:null, room:null, msgs:[], unread:{}, t:null, q:'', showClosed:false, showDone:false};
 const tm = iso => { const d = new Date(iso); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
 const dt = iso => { const d = new Date(iso); return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${tm(iso)}`; };
 const day = iso => { const d = new Date(iso); return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`; };
@@ -60,11 +61,14 @@ function listHtml(){
     <span class="t"><b>${esc(r.title)}${r.kind==='dm'&&C.pushWho&&C.pushWho.has(r.staff_id)?' <small title="어닝톡 푸시로 받아요">📲</small>':''}${r.keep?' 📌':''}${r.left_at?' <small class="ch-tag">퇴사</small>':''}${r.kind==='site'&&!r.live&&!r.closed?' <small class="ch-tag">직원 목록에서 빠짐</small>':''}</b><small>${r.last?esc(r.last.name+': '+r.last.body):'아직 대화 없음'}</small></span>
     <span class="r">${r.last?short(r.last.at):''}${r.unread?`<i class="ch-bd">${r.unread}</i>`:''}${r._kids?`<i class="ch-fold" data-fold="${r.id}" title="하위 방 접기/펴기">${C.fold[r.id]?'▸':'▾'} ${r._kids}</i>`:''}</span></button>`;
   const nClosed = rs.filter(r => r.closed).length;
+  // 작업 끝난 현장은 맨 아래 '작업 끝' 묶음으로 (고객님·직원 새 글이 있으면 위에 그대로 — 놓치지 않게)
+  const dn = vis.filter(r => ['cust','site'].includes(r.kind) && isDone(r)).sort((a, b) => (b.job_date||'').localeCompare(a.job_date||''));
   const due = !OWN() ? [] : rs.filter(r => r.kind === 'dm' && r.left_at && !r.keep && (Date.now() - new Date(r.left_at)) > 365*864e5);
   const dueHtml = due.map(r => `<div class="ch-due">⏳ <b>${esc(r.title)}</b> 퇴사 1년 지남 · 1:1 대화 ${r.count}건<span><button class="btn sm" data-a="chKeepId" data-id="${r.id}">장기 보관</button><button class="btn sm ghost" data-a="chPurge" data-id="${r.id}">정리</button></span></div>`).join('');
   return `${OWN() && C.pushReady && K.needPush() ? '<button class="ch-due" data-a="chPushOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>알림 받기</b> · 눌러서 [허용] 한 번 · 앱을 닫아도 새 메시지가 바로 와요</button>' : ''}${K.needBadgeOk() && !(OWN() && C.pushReady && K.needPush()) ? '<button class="ch-due" data-a="chBadgeOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>아이콘에 안 읽은 숫자 보이기</b> · 눌러서 [허용] 한 번</button>' : ''}${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
     ${C.showClosed ? `<div class="ch-sec">보관함 (닫은 방) <button class="link" data-a="chClosed">← 돌아가기</button></div>${vis.map(row).join('') || '<p class="note" style="padding:10px">닫은 방이 없어요</p>'}`
-      : grp.map(([l, f]) => { const a = l === '1:1' ? recent(vis.filter(f)) : l === '현장' ? byJobDay(vis.filter(f)) : tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
+      : grp.map(([l, f]) => { const a = l === '1:1' ? recent(vis.filter(f)) : l === '현장' ? byJobDay(vis.filter(f).filter(r => !isDone(r))) : tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
+        + (dn.length ? `<button class="ch-closed" data-a="chDone" style="margin-top:14px">✅ 작업 끝난 현장 ${dn.length}개 ${C.showDone ? '▴ 접기' : '▾ 보기'}</button>${C.showDone ? dn.map(row).join('') : ''}` : '')
         + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')
         + `<p class="note" style="text-align:center;font-size:11px;opacity:.5;margin:10px 0 4px">버전 ${esc(window.EP_VER || '')}</p>`}`;
 }
@@ -264,6 +268,7 @@ H.ACT.chPurge = async el => { const r = C.home.rooms.find(x => x.id === +el.data
   if (!confirm(`${r.title}님과의 1:1 대화 ${r.count}건을 완전히 지울까요?\n되돌릴 수 없어요. 필요하면 먼저 [내보내기]로 PDF를 받아두세요.`)) return;
   await rpc('chat_admin_purge', {p_id: r.id}); if (C.cur === r.id) { C.cur = null; C.room = null; } await loadHome(); paint(); H.toast('정리했어요'); };
 H.ACT.chClosed = () => { C.showClosed = !C.showClosed; paint(true); };
+H.ACT.chDone = () => { C.showDone = !C.showDone; paint(true); };
 H.ACT.chSend = async () => {
   const t = document.getElementById('chT'); const v = (t && t.value || '').trim(); if (!v || !C.cur) return;
   t.value = ''; K.sync(t); t.focus(); C.mark = null;
