@@ -88,6 +88,8 @@
 .epc-line{display:flex;align-items:flex-end;gap:5px}
 .epc-m.mine .epc-line{flex-direction:row-reverse}
 .epc-b{max-width:min(68vw,460px);width:max-content;background:var(--epc-other);border:1px solid var(--epc-line);padding:9px 12px;border-radius:4px 16px 16px 16px;font-size:14.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.epc-b{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.epc-copied{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:rgba(17,24,39,.9);color:#fff;padding:9px 16px;border-radius:20px;font-size:14px;z-index:9999;pointer-events:none}
 .epc-m.mine .epc-b{background:var(--epc-me);color:var(--epc-me-ink);border-color:transparent;border-radius:16px 4px 16px 16px}
 .epc-b.del{background:transparent;color:var(--epc-mute);font-style:italic;border-style:dashed}
 .epc-b img{display:block;max-width:220px;max-height:280px;border-radius:10px;margin:-3px -5px}
@@ -192,7 +194,7 @@
       const prev = GM[i-1], cont = prev && prev.who === m.who && dayKey(prev.at) === dayKey(m.at) && (new Date(m.at) - new Date(prev.at)) < 180000;
       const u = Math.max(...(m.ids || [m.id]).map(id => unreadMap[id] || 0));
       const body = m.photos ? `<div class="epc-b" style="padding:3px">${K().grid(m.photos, pub, {own: m.mine})}</div>` : m.deleted ? `<div class="epc-b del">삭제된 메시지예요</div>`
-        : `<div class="epc-b" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
+        : `<div class="epc-b" data-mid="${m.id}" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
       out += `<div class="epc-m ${m.mine ? 'mine' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
         <div class="epc-col">${!m.mine && !cont ? `<span class="epc-nm">${esc(m.name)}</span>` : ''}
         <div class="epc-line">${body}<span class="epc-meta">${cUp && m.id === cUp ? K().SEEN_TAG : ''}${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}<span>${tm(m.at)}</span></span></div></div></div>`;
@@ -238,19 +240,26 @@
     // 사진·동영상이 늦게 불러와지면 높이가 바뀜 → 맨 아래 보고 있었으면 다시 맨 아래로
     box.addEventListener('scroll', () => { box._nearB = box.scrollHeight - box.scrollTop - box.clientHeight < 120; });
     const fix = () => { if (box._nearB !== false) box.scrollTop = box.scrollHeight; }; box.addEventListener('load', fix, true); box.addEventListener('loadedmetadata', fix, true);
-    let pressT; box.addEventListener('pointerdown', e => { const b = e.target.closest('[data-own]'); if (!b) return; pressT = setTimeout(() => menu(+b.dataset.own), 450); });
+    // 말풍선 길게 누르기 → 메뉴 (내 글: 복사·수정·삭제 / 남의 글: 복사)
+    const pick = e => { const b = e.target.closest('[data-own],[data-mid]'); return b ? {id: +(b.dataset.own || b.dataset.mid), own: !!b.dataset.own} : null; };
+    let pressT, px = 0, py = 0; box.addEventListener('pointerdown', e => { const b = pick(e); if (!b) return; px = e.clientX; py = e.clientY; pressT = setTimeout(() => menu(b.id, b.own), 450); });
+    box.addEventListener('pointermove', e => { if (Math.abs(e.clientX - px) + Math.abs(e.clientY - py) > 10) clearTimeout(pressT); });
     ['pointerup','pointerleave','pointercancel'].forEach(ev => box.addEventListener(ev, () => clearTimeout(pressT)));
-    box.addEventListener('contextmenu', e => { const b = e.target.closest('[data-own]'); if (b) { e.preventDefault(); menu(+b.dataset.own); } });
+    box.addEventListener('contextmenu', e => { const b = pick(e); if (b) { e.preventDefault(); clearTimeout(pressT); menu(b.id, b.own); } });
   }
 
-  function menu(id){
-    const m = msgs.find(x => x.id === id); if (!m) return;
+  function menu(id, own = true){
+    const m = msgs.find(x => x.id === id); if (!m || m.deleted || document.querySelector('.epc-menu')) return;
+    if (!own && !m.body) return;
     const d = document.createElement('div'); d.className = 'epc-menu';
-    d.innerHTML = `<div>${m.body ? '<button data-a="copy">📋 복사</button><button data-a="edit">✏️ 수정</button>' : ''}<button data-a="del" class="warn">🗑 삭제</button>
-      <p>수정·삭제하면 '수정됨', '삭제된 메시지'로 표시돼요.</p><button data-a="x">닫기</button></div>`;
+    d.innerHTML = own ? `<div>${m.body ? '<button data-a="copy">📋 복사</button><button data-a="edit">✏️ 수정</button>' : ''}<button data-a="del" class="warn">🗑 삭제</button>
+      <p>수정·삭제하면 '수정됨', '삭제된 메시지'로 표시돼요.</p><button data-a="x">닫기</button></div>`
+      : `<div><button data-a="copy">📋 복사</button><button data-a="x">닫기</button></div>`;
     document.body.appendChild(d);
     d.onclick = async e => { e.stopPropagation(); const a = e.target.closest('[data-a]'); if (e.target !== d && !a) return; d.remove(); if (!a) return;
-      if (a.dataset.a === 'copy') { try { await navigator.clipboard.writeText(m.body); } catch(_){} }
+      if (a.dataset.a === 'copy') { let ok = false; try { await navigator.clipboard.writeText(m.body); ok = true; } catch(_){
+          const t = document.createElement('textarea'); t.value = m.body; t.setAttribute('readonly',''); t.style.cssText = 'position:fixed;top:0;opacity:0'; document.body.appendChild(t); t.select(); t.setSelectionRange(0, 99999); try { ok = document.execCommand('copy'); } catch(_){} t.remove(); }
+        const n = document.createElement('div'); n.className = 'epc-copied'; n.textContent = ok ? '복사했어요' : '복사하지 못했어요'; document.body.appendChild(n); setTimeout(() => n.remove(), 1400); }
       if (a.dataset.a === 'edit') { editing = m; drawRoom(true); }
       if (a.dataset.a === 'del') { if (!confirm('이 메시지를 삭제할까요?')) return;
         if (opt.demo) { m.deleted = true; return drawRoom(true); }
