@@ -45,8 +45,8 @@ body{background:var(--bg)}
 .cal .grid button.today b{background:var(--ink);color:#fff;border-radius:999px;width:24px;height:24px;display:grid;place-items:center}
 .cal .grid button[aria-pressed=true]{background:var(--infob)}
 .cal .grid b{font-weight:500;font-size:14px;width:24px;height:24px;display:grid;place-items:center}
-.dots{display:flex;gap:2px}
-.dots i{width:6px;height:6px;border-radius:50%;background:var(--info)}
+.dots{display:flex;flex-direction:column;gap:2px;width:62%}
+.dots i{width:100%;height:3px;border-radius:2px;background:var(--info)}
 .dots i.mine{background:var(--ok)}
 .dots i.wait{background:var(--wait)}
 /* week strip */
@@ -282,7 +282,7 @@ function evCard(e){
     ${e.memo?`<div class="note">${esc(e.memo)}</div>`:''}<div class="row2"><span>${e.show_boss?'대표님 일정판에 보임':'나만 보기'}${e.gcal?' · 구글 캘린더':''}</span></div></article>`;
 }
 const avTag = s => { const k = D.avail[s]; return k === 'ok' ? '<span class="av ok">가능</span>' : k === 'no' ? '<span class="av no">불가</span>' : ''; };
-const dots = s => { const js = jobsOn(s), es = evsOn(s); return `<span class="dots">${js.slice(0,3).map(j=>`<i class="${j.my_status==='approved'?'mine':j.my_status==='applied'?'wait':''}"></i>`).join('')}${es.slice(0,2).map(()=>'<i class="ev"></i>').join('')}</span>`; };
+const dots = s => { const js = jobsOn(s), es = evsOn(s); return `<span class="dots">${js.slice(0,4).map(j=>`<i class="${j.my_status==='approved'?'mine':j.my_status==='applied'?'wait':''}"></i>`).join('')}${es.slice(0,Math.max(0,4-js.length)).map(()=>'<i class="ev"></i>').join('')}</span>`; };
 
 function weekStrip(){
   const p = parse(pick); const start = addDays(p, -p.getDay());
