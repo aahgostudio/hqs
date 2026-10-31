@@ -166,12 +166,12 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1031e"></script>
+<script src="../status.js?v=1031f"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1031e'</script>
-<script src="../chatkit.js?v=1031e"></script>
-<script src="../chat.js?v=1031e"></script>
+<script>window.EP_VER='1031f'</script>
+<script src="../chatkit.js?v=1031f"></script>
+<script src="../chat.js?v=1031f"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -310,7 +310,7 @@ function boardView(){
     : `<div class="bar"><div class="mnav"><button data-wnav="-7" aria-label="이전 주">${I('left')}</button><b>${p.getMonth()+1}월 ${Math.ceil((p.getDate()+new Date(p.getFullYear(),p.getMonth(),1).getDay())/7)}주</b><button data-wnav="7" aria-label="다음 주">${I('right')}</button></div><button class="btn ghost sm" data-day="${ymd(today)}">오늘</button></div>`;
   const list = jobsOn(pick), evs = evsOn(pick);
   const av = D.avail[pick];
-  const avBox = V2() && !isRES() && pick >= ymd(today) ? `<div class="bar" style="margin:4px 2px 0"><span style="font-size:12.5px;color:var(--sub)">이날 나는: ${av==='ok'?'<b style="color:var(--ok)">일할 수 있어요</b>':av==='no'?'<b style="color:var(--warn)">안 돼요</b>':'표시 안 함'}</span>
+  const avBox = V2() && pick >= ymd(today) ? `<div class="bar" style="margin:4px 2px 0"><span style="font-size:12.5px;color:var(--sub)">이날 나는: ${av==='ok'?`<b style="color:var(--ok)">${isRES()?'출근 가능':'일할 수 있어요'}</b>`:av==='no'?'<b style="color:var(--warn)">안 돼요</b>':'표시 안 함'}</span>
       <span class="segs"><button data-av1="ok" aria-pressed="${av==='ok'}">✓ 가능</button><button data-av1="no" aria-pressed="${av==='no'}">✕ 불가</button>${av?'<button data-av1="clear">지우기</button>':''}</span></div>` : '';
   return head + nav + (view==='month' ? monthGrid() : weekStrip()) + avBox +
     `<div class="dayh">${p.getMonth()+1}월 ${p.getDate()}일 ${DOW[p.getDay()]}요일 · ${list.length + evs.length}건</div>` +
@@ -381,7 +381,7 @@ function closeSheet(){ const d = document.getElementById('sheetbg'); if (d) d.re
 function plusMenu(){
   const todayShoot = D.jobs.find(j => j.my_status === 'approved' && j.date === ymd(today) && j.status !== 'cancelled');
   sheet(`<h3>무엇을 넣을까요?</h3><div class="menu">
-    ${!isRES()?`<button data-paint="1">🗓<span>일할 수 있는 날 알려주기<small>가능·불가일을 한 번에 칠해요</small></span></button>`:''}
+    <button data-paint="1">🗓<span>${isRES()?'출근 가능·불가일 알려주기':'일할 수 있는 날 알려주기'}<small>가능·불가일을 한 번에 칠해요</small></span></button>
     <button data-evnew="1">📌<span>내 일정 추가<small>${isRES()?'계약 · 잔금 · 안내 · 기타 (매물번호 연결)':isAGO()?'촬영 · 라이브 · 미팅 · 교육 · 기타':'개인 일정 · 메모'}</small></span></button>
     ${todayShoot?`<button data-shoot="${todayShoot.id}">📷<span>${W('오늘 현장 사진 올리기','오늘 촬영 사진 올리기')}<small>${esc(todayShoot.title)}</small></span></button>`:''}
     <button data-tab="report">📝<span>${W('현장 보고','작업 공유')}<small>${W('한 줄 보고 · 사진','진행 상황 · 결과물 · 메모')}</small></span></button></div>`);
@@ -393,7 +393,7 @@ function paintView(){
   for (let i=0;i<42;i++){ const d = addDays(start,i), s = ymd(d); if (i===35 && d.getMonth()!==p.month.getMonth()) break;
     const k = p.marks[s]; g += `<button type="button" data-pd="${s}" class="${d.getMonth()!==p.month.getMonth()?'out':''} ${s<t?'past':''} ${k||''}" ${s<t?'disabled':''}>${d.getDate()}</button>`; }
   const okN = Object.values(p.marks).filter(v=>v==='ok').length, noN = Object.values(p.marks).filter(v=>v==='no').length;
-  return `<div class="bar"><h3>일할 수 있는 날 알려주기</h3><button class="btn ghost sm" data-tab="board">닫기</button></div>
+  return `<div class="bar"><h3>${isRES()?'출근 가능·불가일':'일할 수 있는 날 알려주기'}</h3><button class="btn ghost sm" data-tab="board">닫기</button></div>
     <p style="font-size:13px;color:var(--sub);margin:0 4px 10px">날짜를 눌러서 바꿔요 · 초록 = 가능, 빨강 = 불가, 빈칸 = 미정</p>
     <div class="segs" style="margin-bottom:10px"><button data-pmode="ok" aria-pressed="${p.mode==='ok'}">✓ 가능으로 칠하기</button><button data-pmode="no" aria-pressed="${p.mode==='no'}">✕ 불가로 칠하기</button><button data-pmode="clear" aria-pressed="${p.mode==='clear'}">지우기</button></div>
     <div class="bar"><div class="mnav"><button data-pmon="-1" aria-label="이전 달">${I('left')}</button><b>${p.month.getFullYear()}.${pad(p.month.getMonth()+1)}</b><button data-pmon="1" aria-label="다음 달">${I('right')}</button></div></div>
