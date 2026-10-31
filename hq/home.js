@@ -11,6 +11,8 @@ H.view('home', {label:'홈',
       H.q(H.sb.from('deals').select('*').gte('deal_date', H.ymd(m0)).lte('deal_date', H.ymd(m1)))
     ]);
     H.S.puWait = pu; H.S.dealsMonth = dl;
+    // 1:1 대화로 보낸 입금 기록 (정산 화면과 같은 기준으로 '입금 완료' 판단)
+    H.S.payouts14 = H.S.owner && !H.S.needV9 ? await H.q(H.sb.from('payouts').select('staff_id,amount,paid_on').gte('paid_on', H.ymd(H.addDays(H.today(), -15))).eq('void', false)).catch(() => []) : [];
   },
   render(){
     const S = H.S, T = H.today(), today = H.ymd(T), wk = H.ymd(H.addDays(T,6)), ym = today.slice(0,7);
@@ -35,6 +37,11 @@ H.view('home', {label:'홈',
     // 끝난 현장인데 아직 [입금 완료] 안 누른 직원 (지난 14일, 클린)
     const unpaidPay = new Set(), unpaidRows = []; past14.filter(j => j.job_date < today && (j.work_done_at || j.done_at || j.status === 'done'))
       .forEach(j => appr(j).forEach(a => { const s = H.P(a.staff_id); if (!a.paid && s.team !== 'RES' && s.pay_type !== 'salary') { unpaidPay.add(a.staff_id); unpaidRows.push({j, s}); } }));
+    // 정산 화면처럼: 그날 보낸 입금 기록이 보낼 돈 이상이면 완료로 봄
+    if (H.paySummary && unpaidRows.length) { const sentOf = (sid, d) => (S.payouts14||[]).filter(x => x.staff_id === sid && x.paid_on === d).reduce((n,x) => n + (+x.amount||0), 0);
+      const dayLeft = {}; [...new Set(unpaidRows.map(r => r.j.job_date))].forEach(d => { dayLeft[d] = {}; H.paySummary(jobs.filter(j => j.job_date === d)).left.forEach(p => { dayLeft[d][p.s.id] = p.net; }); });
+      for (let i = unpaidRows.length - 1; i >= 0; i--) { const {j, s:st} = unpaidRows[i], net = dayLeft[j.job_date][st.id]; if (net != null && sentOf(st.id, j.job_date) >= net) unpaidRows.splice(i, 1); }
+      unpaidPay.clear(); unpaidRows.forEach(r => unpaidPay.add(r.s.id)); }
     unpaidRows.sort((a,b) => a.j.job_date.localeCompare(b.j.job_date));
 
     const alerts = [
