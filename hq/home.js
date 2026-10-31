@@ -19,7 +19,7 @@ H.view('home', {label:'홈',
     const todayJ = jobs.filter(j=>j.job_date===today);
     const weekJ = jobs.filter(j=>j.job_date>=today && j.job_date<=wk);
     const short = jobs.filter(j=>j.job_date>=today && j.job_date<=wk && j.status==='open' && appr(j).length<j.headcount);
-    const waiting = jobs.filter(j=>j.job_date>=today).flatMap(j=>(j.assignments||[]).filter(a=>a.status==='applied'));
+    const waiting = jobs.filter(j=>j.job_date>=today).flatMap(j=>(j.assignments||[]).filter(a=>a.status==='applied').map(a=>({a, j}))).sort((x,y)=>(x.j.job_date+(x.j.start_time||'')).localeCompare(y.j.job_date+(y.j.start_time||'')));
     const unseen = jobs.filter(j=>j.job_date>=today).reduce((n,j)=>n+appr(j).filter(a=>!a.seen_at||new Date(a.seen_at)<new Date(j.changed_at)).length,0);
     const notClosed = jobs.filter(j=>j.job_date<today && (j.status==='open'||j.status==='full'));
     const quotes = S.jobs.filter(j=>j.status==='quote');
@@ -33,12 +33,12 @@ H.view('home', {label:'홈',
     const serLast = {}; S.jobs.forEach(j => { if (j.series_id && (!serLast[j.series_id] || j.job_date > serLast[j.series_id])) serLast[j.series_id] = j.job_date; });
     const repEnding = Object.values(serLast).filter(d => d >= today && d <= H.ymd(H.addDays(T,14)));
     // 끝난 현장인데 아직 [입금 완료] 안 누른 직원 (지난 14일, 클린)
-    const unpaidPay = new Set(); past14.filter(j => j.job_date < today && (j.work_done_at || j.done_at || j.status === 'done'))
-      .forEach(j => appr(j).forEach(a => { const s = H.P(a.staff_id); if (!a.paid && s.team !== 'RES' && s.pay_type !== 'salary') unpaidPay.add(a.staff_id); }));
+    const unpaidPay = new Set(), unpaidRows = []; past14.filter(j => j.job_date < today && (j.work_done_at || j.done_at || j.status === 'done'))
+      .forEach(j => appr(j).forEach(a => { const s = H.P(a.staff_id); if (!a.paid && s.team !== 'RES' && s.pay_type !== 'salary') { unpaidPay.add(a.staff_id); unpaidRows.push({j, s}); } }));
+    unpaidRows.sort((a,b) => a.j.job_date.localeCompare(b.j.job_date));
 
     const alerts = [
       short.length && ['warn', `인원 미달 ${short.length}건 (7일 안)`, 'sched'],
-      waiting.length && ['wait', `신청 승인 대기 ${waiting.length}명`, 'sched'],
       unseen && ['warn', `확정됐는데 아직 안 본 직원 ${unseen}명 (연락 필요)`, 'sched'],
       quotes.length && ['info', `오더 접수함 견적 중 ${quotes.length}건`, 'ops/order'],
       notClosed.length && ['wait', `지난 현장 미마감 ${notClosed.length}건 (금액 기입)`, 'ops/money'],
@@ -47,7 +47,6 @@ H.view('home', {label:'홈',
       needRcpt && ['warn', `현금영수증 발행 필요 ${needRcpt}건 (이번 달)`, S.owner?'money':'ops/money'],
       puOld.length && ['warn', `외주 세금계산서 요청 7일 넘음 ${puOld.length}건`, 'ops/buy'],
       unpaidCollect.length && ['wait', `현장 잔금 미수 ${unpaidCollect.length}건`, 'ops/money'],
-      S.owner && unpaidPay.size && ['warn', `입금 완료 안 누른 직원 ${unpaidPay.size}명 (지난 현장)`, 'pay'],
       repEnding.length && ['wait', `정기 일정 2주 안에 끝남 ${repEnding.length}곳 (연장하기)`, 'sched'],
       S.owner && T.getDate() <= 10 && [T.getDate() >= 8 ? 'warn' : 'info', `부동산 ${T.getMonth() || 12}월 정산 · ${T.getMonth()+1}/10 지급${T.getDate() === 10 ? ' (오늘!)' : ` (D-${10 - T.getDate()})`}`, 'money']
     ].filter(Boolean);
@@ -104,6 +103,12 @@ H.view('home', {label:'홈',
     ${S.needV27 && !S.needV10 && S.isOwner ? `<section class="box"><div class="banner warn v3bar"><b>업데이트 1개 (${S.needV19?'v19':S.needV22?'v22':S.needV23?'v23':S.needV24?'v24':S.needV25?'v25':S.needV26?'v26':'v27'})</b> ${S.needV19?'현장에 고객 이름·전화 칸 (수금 담당만 보임)':S.needV22?'고객님 방 (고객님 방 링크 = 사진+대화 한 흐름, 작업 끝은 수금 담당)':S.needV23?'고객님 방 이름·보관함 정리 + 현장을 지워도 사진·대화 기록 보관':S.needV24?'[작업 끝]은 수금 담당만 · 현장 대화방 하나로 · 작업 중 초록/끝 빨강':S.needV25?'고객님 방 사진이 자동으로 사진함·홍보 재료로':S.needV26?'고객님 방에 고객님 확인 여부(👀) 표시':'사진 묶음은 알림 한 번만'} — SQL 한 번만 실행해 주세요<span style="margin-left:auto;display:flex;gap:6px"><button class="btn sm" data-a="copyV19">SQL 복사</button><a class="btn sm ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></span></div></section>` : ''}
     ${(S.needV3||S.needV10) && S.isOwner ? `<section class="box"><div class="banner warn v3bar"><b>업데이트 1개 (${S.needV3?'v3':S.needV5?'v5':S.needV6?'v6':S.needV7?'v7':S.needV9?'v9':'v10'})</b> ${S.needV3?'프로필 사진 · 정기 반복 일정 · 문나원 퇴사 정리':S.needV5?'팀 대화 + 대표님 현장 → 직원 화면 상태 자동 (카카오워크 졸업)':S.needV6?'대화: 관리자(HQS)도 참여 · 방 관리는 대표만':S.needV7?'인사카드 대표 전용 칸':S.needV9?'인사카드 주민번호·계좌 칸 + 1:1 대화 입금 자동 기록':"이름 '청소' → '클린' (팀·대화방)"} — SQL 한 번만 실행해 주세요<span style="margin-left:auto;display:flex;gap:6px"><button class="btn sm" data-a="copyV3">SQL 복사</button><a class="btn sm ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></span></div></section>` : ''}
     ${H.teamStrip ? H.teamStrip() : ''}
+    ${waiting.length?`<section class="box"><div class="bh"><h3>✋ 승인 기다리는 신청 ${waiting.length}명</h3><span class="sub">여기서 바로 승인</span></div>
+      ${waiting.map(({a,j})=>`<div class="hm-row"><div><b>${esc(H.P(a.staff_id).name)}</b><small>${md(j.job_date)} ${j.start_time?j.start_time.slice(0,5):''} · ${esc(j.title)} · ${appr(j).length}/${j.headcount}명</small></div>
+        <span class="hm-btns"><button class="btn sm" data-a="approve" data-j="${j.id}" data-s="${a.staff_id}">승인</button><button class="btn sm ghost" data-a="reject" data-j="${j.id}" data-s="${a.staff_id}">거절</button></span></div>`).join('')}</section>`:''}
+    ${S.owner && unpaidRows.length?`<section class="box"><div class="bh"><h3>💸 입금 완료 안 누른 지난 현장</h3><span class="sub">누르면 그날 정산으로</span></div>
+      ${unpaidRows.map(({j,s})=>`<div class="hm-row"><div><b>${esc(s.name)}</b><small>${md(j.job_date)} · ${esc(j.title)}</small></div>
+        <span class="hm-btns"><button class="btn sm" data-a="payDay" data-d="${j.job_date}">${md(j.job_date)} 정산 열기 →</button></span></div>`).join('')}</section>`:''}
     ${alerts.length?`<section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">누르면 해당 화면으로 가요</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${alerts.map(([c,t,go])=>`<a class="banner ${c==='warn'?'warn':'info'}" href="#${go}" style="text-decoration:none;padding:8px 12px">${esc(t)} →</a>`).join('')}</div></section>`:''}
     <div class="g2">
@@ -124,6 +129,7 @@ H.view('home', {label:'홈',
 
 H.ACT.copyV19 = async () => { const t = await (await fetch(H.S.needV19 ? 'update_v19.sql' : H.S.needV22 ? 'update_v22.sql' : H.S.needV23 ? 'update_v23.sql' : H.S.needV24 ? 'update_v24.sql' : H.S.needV25 ? 'update_v25.sql' : H.S.needV26 ? 'update_v26.sql' : 'update_v27.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL을 복사했어요 · SQL Editor에 붙여넣고 Run → 새로고침'); };
 H.ACT.copyV3 = async () => { const t = await (await fetch(H.S.needV3 ? 'update_v3.sql' : H.S.needV5 ? 'update_v5.sql' : H.S.needV6 ? 'update_v6.sql' : H.S.needV7 ? 'update_v7.sql' : H.S.needV9 ? 'update_v9.sql' : 'update_v10.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL을 복사했어요 · SQL Editor에 붙여넣고 Run → 새로고침'); };
+H.ACT.payDay = el => { if (H.payDate) H.payDate(el.dataset.d); H.go('pay'); };
 H.ACT.bossIcs = () => { const k = H.S.settings.ics_key; H.copy(`${H.MAEMUL_API}?ics=${encodeURIComponent(typeof k === 'string' ? k : String(k))}&boss=1`, '구독 주소를 복사했어요 · 반영까지 몇 시간 걸릴 수 있어요'); };
 // 매물노트 연결 (대표 링크 붙여넣기)
 H.ACT.mmLink = () => H.open(`<form data-f="mmLink"><h3>매물노트 연결</h3><p class="note">대표님 매물노트 개인 링크를 붙여넣어 주세요. 예) team.earningplace.kr/maemul/?k=…</p>

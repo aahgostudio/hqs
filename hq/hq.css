@@ -366,3 +366,10 @@ html.chatapp .fab{display:none}
 .croom-ln{border:1px dashed #93A9E0;background:#EEF2FF;color:var(--navy);border-radius:12px;padding:8px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
 .croom-go small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.croom-go>span:nth-child(2){min-width:0}
 .croom-ln small{display:block;font-size:11px;font-weight:500;opacity:.8}
+
+/* 홈: 바로 처리 줄 */
+.hm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #EEF0F4}
+.hm-row:first-of-type{border-top:0}
+.hm-row b{font-size:15px}
+.hm-row small{display:block;color:#6B7280;font-size:12.5px;margin-top:2px}
+.hm-btns{display:flex;gap:6px;flex-shrink:0}

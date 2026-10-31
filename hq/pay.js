@@ -41,6 +41,7 @@ H.paySummary = jobs => { const by = {};
   const ps = Object.values(by).map(p => Object.assign(p, {net: p.g - (p.s.pay_type === 'salary' ? 0 : H.deduct(p.s.pay_type, p.g, 1))}));
   return {n: ps.length, left: ps.filter(p => !p.paid), net: ps.filter(p => !p.paid).reduce((a,p) => a + p.net, 0), notDone: ps.filter(p => !p.done).length, paidN: ps.filter(p => p.paid).length};
 };
+H.payDate = d => { P.d = d; };
 H.view('pay', {label:'정산', owner:true,
   async load(){ await load(P.d || H.ymd(new Date())); },
   render(){
