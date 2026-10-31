@@ -89,7 +89,7 @@ function roomHtml(){
       <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?`<i>${u}</i>`:''}${tm(m.at)}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
-  return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div>${R.kind === 'cust' && C.seen ? `<div style="margin-top:4px;border-radius:8px;overflow:hidden">${K.seenLine(C.seen)}</div>` : ''}</div>
+  return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div>${R.kind === 'cust' && C.seen ? `<div data-a="chLive" role="button" title="고객님 방 링크·안내 멘트" style="margin-top:4px;border-radius:8px;overflow:hidden;cursor:pointer">${K.seenLine(C.seen)}</div>` : ''}</div>
       <button class="ch-more" data-a="chMore" aria-label="방 설정">⋯</button><div class="ch-ra">${OWN() ? `${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}<button class="btn sm ghost" data-a="chIcon">🙂 아이콘</button>
         ${H.S.needV6?'':`<button class="btn sm ghost" data-a="chMgr" title="관리자(HQS)도 이 방을 보고 대화">${r.mgr?'👥 관리자 참여 중':'👥 관리자 빼고'}</button>`}
         <button class="btn sm ghost" data-a="chKeep" title="기간이 지나도 정리하지 않아요">${r.keep?'📌 고정 해제':'📌 보관 고정'}</button>
@@ -341,6 +341,11 @@ H.ACT.chMgr = async () => { const r = C.home.rooms.find(x => x.id === C.cur); aw
 H.ACT.chPay = async () => { const R = C.room.room, nm = (R.members||[])[0] ? (R.members[0].name.length >= 3 ? R.members[0].name.slice(1) : R.members[0].name) : '';
   const v = prompt(`${nm}님께 입금 알림 (만원 단위 숫자, 예: 7)`); if (!v) return; const n = String(v).trim();
   await rpc('chat_admin_send', {p_room: C.cur, p_body: `${nm}님 ${n} 넣었어요\n고맙습니다`, p_photo: null}); await tick(); H.toast('입금 알림을 보내고 기록했어요'); };
+// 고객님 확인 줄 누르면 → 고객님 방 링크·안내 멘트 창
+H.ACT.chLive = async () => { const r = (C.home.rooms||[]).find(x => x.id === C.cur); if (!r || !r.job_id) return H.toast('연결된 현장을 찾지 못했어요');
+  if (!(H.S.jobs||[]).some(j => j.id == r.job_id)) { const d = await H.q(H.sb.from('jobs').select('*, assignments(*)').eq('id', r.job_id)); if (!d || !d.length) return H.toast('현장을 불러오지 못했어요'); (H.S.jobs = H.S.jobs || []).push(d[0]); }
+  if (!H.ACT.liveSheet) return H.toast('잠시 후 다시 눌러주세요');
+  H.ACT.liveSheet({dataset: {j: String(r.job_id)}}); };
 H.ACT.chKeep = async () => { const r = C.home.rooms.find(x => x.id === C.cur); await rpc('chat_admin_room_flag', {p_id: C.cur, p_closed: null, p_keep: !r.keep}); await loadHome(); paint(true); H.toast(r.keep ? '보관 고정을 풀었어요' : '보관 고정 · 기간이 지나도 정리하지 않아요'); };
 H.ACT.chClose = async () => { const r = C.home.rooms.find(x => x.id === C.cur);
   if (!r.closed && !confirm(`'${r.title}' 방을 닫을까요?\n직원 목록에서 사라지고, 대화 기록은 보관함에 남아요.`)) return;
