@@ -9,6 +9,12 @@
   try { k = localStorage.getItem('ep_k') || ''; where = 'clean'; if (!k) { k = localStorage.getItem('ritz_k') || ''; where = 'maemul'; } } catch(e){}
   if (k === 'hq') { location.replace('../hq/#' + (to === 'chat' ? 'chat' : 'sched')); return; }   // 대표님 폰 → HQ
   if (k) { location.replace('../' + where + '/?k=' + encodeURIComponent(k) + (to === 'chat' ? '&chat=list' : '')); return; }
+  // 카톡 안 브라우저는 저장 공간이 따로라 링크를 못 찾음 → 폰 기본 브라우저(크롬·삼성)로 넘겨서 다시 찾기
+  var inKakao = /KAKAOTALK/i.test(navigator.userAgent), ext = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
+  if (inKakao && !q.get('x')) {
+    document.getElementById('c').innerHTML = '<img src="../logo.svg" alt=""><h2>브라우저로 여는 중…</h2><p>안 넘어가면 아래 버튼을 눌러주세요.</p><p><a href="' + ext + '" style="display:inline-block;margin-top:6px;background:#16347A;color:#fff;padding:12px 20px;border-radius:12px;text-decoration:none;font-weight:700">브라우저로 열기</a></p>';
+    location.href = ext; return;
+  }
   document.getElementById('c').innerHTML = '<img src="../logo.svg" alt=""><h2>처음 한 번만 해주세요</h2><p>대표님께 받은 <b>개인 링크</b>를 이 폰에서 한 번 열어주세요.<br>그다음부터는 이 버튼으로 바로 열려요.</p>';
 })();
 </script></body></html>
