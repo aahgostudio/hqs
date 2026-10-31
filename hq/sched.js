@@ -45,7 +45,7 @@ H.view('sched', {label:'일정',
 });
 
 function jobEv(j){
-  const ap = (j.assignments||[]).filter(a=>a.status==='approved').length;
+  const ap = H.crewN(j);   // 확정 직원 + 대표 + 외부지원
   const today = ymd(H.today());
   let cls = j.status==='quote' ? 'quote' : H.isPartner(j) ? 'prt' : (j.status==='open' && ap < j.headcount) ? 'open' : '';
   if (j.status === 'cancelled') cls += ' cancelled'; if (j.status === 'done') cls += ' done';
@@ -90,7 +90,8 @@ function jobCard(j){
   const ap = (j.assignments||[]).filter(a => a.status === 'approved');
   const wait = (j.assignments||[]).filter(a => a.status === 'applied');
   const boss = !!j.boss_on && !H.S.needV4;   // 대표님도 이 현장에 감 → 한 자리로 셈
-  const left = Math.max(0, j.headcount - ap.length - (boss ? 1 : 0));
+  const hp = H.helpers(j);                     // 외부지원(일용직) — 이 현장에만 붙는 인원
+  const left = Math.max(0, j.headcount - ap.length - (boss ? 1 : 0) - hp.length);
   const pill = j.status==='cancelled' ? '<span class="pill p-mute">취소</span>' : j.status==='quote' ? '<span class="pill p-info">견적 중</span>'
     : j.status==='done' ? '<span class="pill p-mute">마감 완료</span>'
     : left===0 ? '<span class="pill p-ok">인원 완료</span>' : `<span class="pill p-warn">${left}자리 남음</span>`;
@@ -99,7 +100,9 @@ function jobCard(j){
   const bossChip = boss ? `<span class="who ok">✓ ${esc(H.S.owner ? (H.S.name||'대표') : '대표님')}${active?`<button class="x" data-a="bossOn" data-j="${j.id}" aria-label="배정 빼기">✕</button>`:''}</span>` : '';   // 대표님도 직원처럼
   const people = bossChip + ap.map(a => `<span class="who ok ${seen(a)?'':'unseen'}" title="${seen(a)?'확인함 '+H.ago(a.seen_at):'아직 안 봤어요'}">${seen(a)?'✓':'!'} ${esc(H.P(a.staff_id).name)}${active?`<button class="x" data-a="unassign" data-j="${j.id}" data-s="${a.staff_id}" aria-label="배정 빼기">✕</button>`:''}</span>`).join('')
     + wait.map(a => `<span class="who wait">${esc(H.P(a.staff_id).name)} 신청<button data-a="approve" data-j="${j.id}" data-s="${a.staff_id}">승인</button><button class="no" data-a="reject" data-j="${j.id}" data-s="${a.staff_id}">거절</button></span>`).join('')
-    + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '');
+    + hp.map(x => `<span class="who ext" title="외부지원${x.src?' · '+esc(x.src):''}">외부 · ${esc(x.name)}${active?`<button class="x" data-a="helperDel" data-j="${j.id}" data-h="${x.id}" aria-label="외부지원 빼기">✕</button>`:''}</span>`).join('')
+    + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '')
+    + (active && j.status!=='quote' && !H.S.needV29 ? `<button class="btn ghost sm" data-a="helperAdd" data-j="${j.id}">+ 외부지원</button>` : '');
   const tc = H.isPartner(j) ? 'var(--prt)' : j.status==='open' && left ? 'var(--cleanl)' : 'var(--clean)';
   const phs = H.photosOf(j.id).length;
   const live = j.live_code ? `<span class="who" style="background:#EEF2FF;color:var(--navy);border-color:transparent" data-a="liveSheet" data-j="${j.id}" role="button">🔗 고객님 방 링크${j.live_views?' · '+j.live_views+'번 봄':''}</span>` : '';
@@ -190,17 +193,17 @@ const J = id => (H.S.jobs||[]).find(j => j.id == id);
 H.J = J;
 H.ACT.approve = async el => { const j = J(el.dataset.j), sid = el.dataset.s;
   await H.q(sb.from('assignments').update({status:'approved', decided_at:new Date().toISOString()}).match({job_id:j.id, staff_id:sid}));
-  const n = j.assignments.filter(a=>a.status==='approved').length + 1;
+  const n = H.crewN(j) + 1;
   if (n >= j.headcount) await H.q(sb.from('jobs').update({status:'full'}).eq('id', j.id));
   H.toast(`${H.P(sid).name}님 확정 · 카톡으로 알려주세요`); H.refresh(); };
 H.ACT.reject = async el => { await H.q(sb.from('assignments').update({status:'rejected', decided_at:new Date().toISOString()}).match({job_id:+el.dataset.j, staff_id:el.dataset.s})); H.toast('거절했어요'); H.refresh(); };
 H.ACT.unassign = async el => { const sid = el.dataset.s; if (!confirm(`${H.P(sid).name}님을 이 일정에서 뺄까요?`)) return;
   await H.q(sb.from('assignments').update({status:'cancelled', decided_at:new Date().toISOString()}).match({job_id:+el.dataset.j, staff_id:sid}));
-  await sb.from('jobs').update({status:'open'}).eq('id', +el.dataset.j).eq('status','full'); H.refresh(); };
+  const jj = J(el.dataset.j); if (!jj || H.crewN(jj) - 1 < jj.headcount) await sb.from('jobs').update({status:'open'}).eq('id', +el.dataset.j).eq('status','full'); H.refresh(); };
 
 // 👔 나도 가요 / 빼기: 대표님도 한 자리로 셈 → 자리가 다 차면 직원 신청 마감, 빼면 다시 열림
 H.ACT.bossOn = async el => { const j = (H.S.jobs||[]).find(x => x.id === +el.dataset.j); if (!j) return;
-  const on = !j.boss_on, ap = (j.assignments||[]).filter(a => a.status === 'approved').length, full = ap + (on ? 1 : 0) >= j.headcount;
+  const on = !j.boss_on, ap = (j.assignments||[]).filter(a => a.status === 'approved').length, full = ap + (on ? 1 : 0) + H.helpers(j).length >= j.headcount;
   if (!on && !confirm(`${H.S.owner ? (H.S.name||'대표') + '님' : '대표님'}을 이 일정에서 뺄까요?`)) return;
   const row = {boss_on: on}; if (on && full && j.status === 'open') row.status = 'full'; if (!on && !full && j.status === 'full') row.status = 'open';
   await H.q(sb.from('jobs').update(row).eq('id', j.id)); H.toast(on ? '배정했어요' : '배정에서 뺐어요'); await H.refresh();
@@ -424,9 +427,30 @@ H.FORM.assign = async v => { const id = +v.get('id'); const ids = v.getAll('s'),
   const now = new Date().toISOString();
   if (ids.length) await H.q(sb.from('assignments').upsert(ids.map(s=>({job_id:id, staff_id:s, status:'approved', decided_at:now})), {onConflict:'job_id,staff_id'}));
   if (me) await H.q(sb.from('jobs').update({boss_on: true}).eq('id', id));   // 대표님도 한 자리
-  const j = J(id); const n = new Set([...j.assignments.filter(a=>a.status==='approved').map(a=>a.staff_id), ...ids]).size + ((me || j.boss_on) ? 1 : 0);
+  const j = J(id); const n = new Set([...j.assignments.filter(a=>a.status==='approved').map(a=>a.staff_id), ...ids]).size + ((me || j.boss_on) ? 1 : 0) + H.helpers(j).length;
   if (n >= j.headcount) await H.q(sb.from('jobs').update({status:'full'}).eq('id', id));
   H.close(); H.toast('배정했어요 · 카톡으로 알려주세요'); H.refresh(); };
+
+/* 외부지원 (일용직) — 직원 명단엔 안 넣고 이 현장에만 붙임 · 정산은 공제 없이 */
+const recentHelpers = () => { const seen = {}, out = [];
+  (H.S.jobs||[]).slice().sort((a,b) => (b.job_date||'').localeCompare(a.job_date||'')).forEach(j => H.helpers(j).forEach(x => { const k = x.name + '|' + (x.phone||''); if (!seen[k]) { seen[k] = 1; out.push(x); } }));
+  return out.slice(0, 8); };
+H.ACT.helperAdd = el => { const j = J(el.dataset.j), rc = recentHelpers().filter(x => !H.helpers(j).some(y => y.name === x.name && (y.phone||'') === (x.phone||'')));
+  H.open(`<form data-f="helper"><h3>외부지원 추가</h3><p class="note" style="margin:-6px 0 10px">${esc(j.title)} · ${md(j.job_date)}<br>직원 명단엔 안 들어가요 · 이 현장 인원·마감·정산에만 잡혀요</p>
+    ${rc.length ? `<p class="note" style="margin:0 0 6px">최근 외부지원 · 누르면 바로 추가</p><div class="chips" style="margin-bottom:10px">${rc.map(x => `<button type="button" class="pchip" data-a="helperQuick" data-j="${j.id}" data-n="${esc(x.name)}" data-p="${esc(x.phone||'')}" data-r="${esc(x.src||'')}">${esc(x.name)}${x.src?' · '+esc(x.src):''}</button>`).join('')}</div>` : ''}
+    <div class="fg"><div class="field"><label>이름</label><input name="name" required placeholder="예: 홍길동 (모르면 외부1)"></div>
+    <div class="field"><label>연락처 (선택)</label><input name="phone" inputmode="tel" placeholder="010-"></div>
+    <div class="field full"><label>어디서 왔나요 (선택)</label><input name="src" placeholder="예: 인력사무소 · OO팀장 소개"></div></div>
+    ${H.sacts('추가')}<input type="hidden" name="id" value="${j.id}"></form>`); };
+async function helperPush(id, x){ const j = J(id); const list = H.helpers(j).concat([Object.assign({id: H.rnd(6), pay: null, extra: null, memo: null, paid: false}, x)]);
+  const up = {helpers: list}; if (H.crewN(j) + 1 >= j.headcount && j.status === 'open') up.status = 'full';
+  await H.q(sb.from('jobs').update(up).eq('id', id)); H.close(); H.toast(`외부지원 ${x.name}님 추가했어요`); H.refresh(); }
+H.FORM.helper = async v => helperPush(+v.get('id'), {name: v.get('name').trim(), phone: H.nn(v.get('phone')), src: H.nn(v.get('src'))});
+H.ACT.helperQuick = el => helperPush(+el.dataset.j, {name: el.dataset.n, phone: el.dataset.p || null, src: el.dataset.r || null});
+H.ACT.helperDel = async el => { const j = J(el.dataset.j), x = H.helpers(j).find(y => y.id === el.dataset.h); if (!x) return;
+  if (!confirm(`외부지원 ${x.name}님을 이 현장에서 뺄까요?`)) return;
+  const up = {helpers: H.helpers(j).filter(y => y.id !== x.id)}; if (j.status === 'full' && H.crewN(j) - 1 < j.headcount) up.status = 'open';
+  await H.q(sb.from('jobs').update(up).eq('id', j.id)); H.toast('외부지원을 뺐어요'); H.refresh(); };
 
 /* 당일 마감 · 지급액 */
 H.ACT.payClose = el => { const j = J(el.dataset.j);
@@ -438,11 +462,19 @@ H.ACT.payClose = el => { const j = J(el.dataset.j);
       <input class="in num" type="text" inputmode="numeric" name="extra_${a.staff_id}" value="${a.extra_amount!=null?Number(a.extra_amount).toLocaleString():''}" placeholder="추가수당" data-c="payFmt"></div>
       ${presets.length?`<div class="chips" style="margin:6px 0 0 78px">${presets.map(p=>`<button type="button" class="pchip" data-a="payPick" data-s="${a.staff_id}" data-v="${p}">${(p/10000).toLocaleString()}만</button>`).join('')}</div>`:''}
       <div class="note" id="net_${a.staff_id}" style="margin:4px 0 0 78px">${payNet(a.staff_id, a.pay_amount, a.extra_amount)}</div>
-      <input class="in" style="margin:4px 0 6px" name="memo_${a.staff_id}" value="${esc(a.pay_memo||'')}" placeholder="${esc(H.P(a.staff_id).name)} 메모 (추가작업 내용 등)">`).join('') || '<p class="empty">확정된 사람이 없어요</p>'}
+      <input class="in" style="margin:4px 0 6px" name="memo_${a.staff_id}" value="${esc(a.pay_memo||'')}" placeholder="${esc(H.P(a.staff_id).name)} 메모 (추가작업 내용 등)">`).join('') || (H.helpers(j).length ? '' : '<p class="empty">확정된 사람이 없어요</p>')}
+    ${H.helpers(j).map(x => `<div style="display:grid;grid-template-columns:72px 1fr 1fr;gap:6px;align-items:center;padding:8px 0 2px;border-top:1px solid var(--line)"><b>${esc(x.name)}<small class="note" style="display:block;font-weight:400">외부지원</small></b>
+      <input class="in num" type="text" inputmode="numeric" name="pay_h_${x.id}" value="${x.pay!=null?Number(x.pay).toLocaleString():''}" placeholder="금액 직접 입력" data-c="payFmt">
+      <input class="in num" type="text" inputmode="numeric" name="extra_h_${x.id}" value="${x.extra!=null?Number(x.extra).toLocaleString():''}" placeholder="추가수당" data-c="payFmt"></div>
+      <div class="chips" style="margin:6px 0 0 78px">${presets.map(p=>`<button type="button" class="pchip" data-a="payPick" data-s="h_${x.id}" data-v="${p}">${(p/10000).toLocaleString()}만</button>`).join('')}</div>
+      <div class="note" id="net_h_${x.id}" style="margin:4px 0 0 78px">${payNet('h_'+x.id, x.pay, x.extra)}</div>
+      <input class="in" style="margin:4px 0 6px" name="memo_h_${x.id}" value="${esc(x.memo||'')}" placeholder="${esc(x.name)} 메모 (소속·추가작업 등)">`).join('')}
     ${j.boss_on ? `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(H.S.name||'대표')}</b><span class="note">대표 · 지급 없음</span></div>` : ''}
     ${H.sacts('마감 저장')}<input type="hidden" name="id" value="${j.id}"></form>`); };
 // 실지급액 (직원 지급 방식대로 공제 — 직원 '내 돈'에 보이는 금액과 같음)
-function payNet(sid, pay, extra){ const st = H.P(sid), g = (+pay||0) + (+extra||0); if (!g) return '';
+function payNet(sid, pay, extra){ const g = (+pay||0) + (+extra||0); if (!g) return '';
+  if (String(sid).startsWith('h_')) return `💸 실제 보낼 돈 <b>${H.won(g)}원</b> <span>(외부지원 · 공제 없음)</span>`;
+  const st = H.P(sid);
   const ded = st.pay_type === 'salary' ? 0 : H.deduct(st.pay_type, g, 1), t = H.PT[st.pay_type] || '공제 없음';
   return `💸 실제 보낼 돈 <b>${H.won(g - ded)}원</b> <span>(${ded ? t + ' −' + H.won(ded) + '원' : t})</span>`; }
 function payNetUpd(sid){ const f = document.querySelector('#sheet form[data-f="pay"]'), o = document.getElementById('net_' + sid); if (!f || !o) return;
@@ -452,7 +484,9 @@ H.CHANGE.payFmt = el => { const n = H.nnum(el.value); if (n != null && !isNaN(n)
 H.FORM.pay = async v => { const id = +v.get('id'); const j = J(id);
   for (const a of j.assignments.filter(a=>a.status==='approved'))
     await H.q(sb.from('assignments').update({pay_amount:H.nnum(v.get('pay_'+a.staff_id)), extra_amount:H.nnum(v.get('extra_'+a.staff_id)), pay_memo:H.nn(v.get('memo_'+a.staff_id))}).match({job_id:id, staff_id:a.staff_id}));
-  await H.q(sb.from('jobs').update({status:'done'}).eq('id', id));
+  const up = {status:'done'};
+  if (H.helpers(j).length) up.helpers = H.helpers(j).map(x => Object.assign({}, x, {pay:H.nnum(v.get('pay_h_'+x.id)), extra:H.nnum(v.get('extra_h_'+x.id)), memo:H.nn(v.get('memo_h_'+x.id))}));
+  await H.q(sb.from('jobs').update(up).eq('id', id));
   H.close(); H.toast('마감 저장 · 직원들이 자기 금액을 볼 수 있어요'); H.refresh(); };
 
 /* 내 일정 (대표) */

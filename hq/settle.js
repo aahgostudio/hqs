@@ -22,7 +22,12 @@ function calc(D){
     const g = (+a.pay_amount||0) + (+a.extra_amount||0); p.gross += g; p.n++; p.items.push({j, g}); }));
   const rows = Object.values(by).map(p => { const ded = p.s.pay_type === 'salary' ? 0 : H.deduct(p.s.pay_type, p.gross, 1);
     const paid = D.pays.filter(x => x.staff_id === p.s.id).reduce((a,x) => a + x.amount, 0);
-    return Object.assign(p, {ded, net: p.gross - ded, paid}); }).sort((a,b) => b.net - a.net);
+    return Object.assign(p, {ded, net: p.gross - ded, paid}); });
+  // 외부지원(일용직): 현장마다 한 줄 · 공제 없이 그대로
+  D.jobs.forEach(j => H.helpers(j).forEach(x => { const g = (+x.pay||0) + (+x.extra||0);
+    if (x.pay == null && x.extra == null) miss.push({j, s: {name: x.name + '(외부)'}});
+    rows.push({s: {id: `h_${j.id}_${x.id}`, name: x.name, ext: true}, hj: j, hx: x, gross: g, n: 1, items: [{j, g}], ded: 0, net: g, paid: x.paid ? g : 0}); }));
+  rows.sort((a,b) => b.net - a.net);
   const sites = D.jobs.map(j => { const rev = H.jobRevenue(j), dep = +j.deposit_amount||0, bal = j.balance_amount != null ? +j.balance_amount : Math.max(0, rev - dep);
     return {j, rev, dep, bal, got: !!j.collected_at || !bal, who: j.collector_id ? H.P(j.collector_id).name : '대표'}; });
   return {rows, sites, miss, rev: sites.reduce((a,x) => a + x.rev, 0), balGot: sites.filter(x => x.got).reduce((a,x) => a + x.bal, 0),
@@ -49,8 +54,8 @@ function draw(){
     </tbody></table></div>
     <div class="ptitle">직원 지급</div>
     <div class="tbl"><table><thead><tr><th>직원</th><th class="num">지급액</th><th>방식</th><th class="num">공제</th><th class="num">보낼 돈</th><th>계좌</th><th></th></tr></thead><tbody>
-      ${C.rows.map(r => `<tr><td><b>${esc(r.s.name)}</b><div class="note">${r.items.map(i => esc(i.j.title||'')).join(' · ')}</div></td><td class="num">${won(r.gross)}</td><td class="note">${H.PT[r.s.pay_type]||''}</td><td class="num">${won(r.ded)}</td><td class="num"><b>${won(r.net)}</b></td>
-        <td>${H.acctHtml ? H.acctHtml(r.s.id) : ''}</td>
+      ${C.rows.map(r => `<tr><td><b>${esc(r.s.name)}</b>${r.s.ext ? ' <span class="who ext" style="font-size:11px">외부</span>' : ''}<div class="note">${r.items.map(i => esc(i.j.title||'')).join(' · ')}</div></td><td class="num">${won(r.gross)}</td><td class="note">${r.s.ext ? '외부지원' : H.PT[r.s.pay_type]||''}</td><td class="num">${won(r.ded)}</td><td class="num"><b>${won(r.net)}</b></td>
+        <td>${r.s.ext ? (r.hx.phone ? esc(r.hx.phone) : '') : H.acctHtml ? H.acctHtml(r.s.id) : ''}</td>
         <td style="white-space:nowrap">${!on ? '' : r.paid >= r.net && r.net ? `<span class="pill p-ok">입금 ✓</span>` : `<button class="btn sm" data-a="stlPaid" data-s="${r.s.id}" data-n="${r.net}">입금 완료</button>`}${on && r.paid && r.paid < r.net ? `<div class="note">기록 ${won(r.paid)}</div>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">지급할 직원이 없어요</td></tr>'}
     </tbody></table></div>
     <p class="note">공제: 3.3% = 지급액×3.3% · 일용직 = 하루 15만원 넘는 부분만 · 급여 = 월급에서 정산 (세무사 확인)${on ? ' · [입금 완료] = 입금 기록 + (대화 열린 뒤엔) 1:1에 "OO님 7 넣었어요" 자동 전송' : ''}</p>
@@ -59,6 +64,12 @@ function draw(){
 H.ACT.daySettle = async el => { const d = (el && el.dataset && el.dataset.d) || H.ymd(new Date()); H.open('<div class="spin"></div>', true); SD = await load(d); draw(); };
 H.CHANGE.stlDate = async el => { SD = await load(el.value); draw(); };
 H.ACT.stlPaid = async el => {
+  if (el.dataset.s.startsWith('h_')) {   // 외부지원: 현장 기록에 지급 완료만
+    const r = calc(SD).rows.find(x => x.s.id === el.dataset.s); if (!r) return;
+    if (!confirm(`외부지원 ${r.s.name}님께 ${won(r.net)}원 입금하셨어요?`)) return;
+    await H.q(sb.from('jobs').update({helpers: H.helpers(r.hj).map(x => x.id === r.hx.id ? Object.assign({}, x, {paid: true, paid_at: new Date().toISOString()}) : x)}).eq('id', r.hj.id));
+    H.toast(`외부지원 ${r.s.name}님 입금 기록 완료`); SD = await load(SD.d); draw(); return;
+  }
   const s = H.P(el.dataset.s), n = +el.dataset.n;
   if (!confirm(`${s.name}님께 ${won(n)}원 입금하셨어요?\n입금 기록으로 남겨요.`)) return;
   const chatOn = await sb.from('settings').select('value').eq('key', 'chat_on').maybeSingle();
@@ -72,7 +83,7 @@ H.ACT.stlPaid = async el => {
 };
 H.ACT.stlCopy = () => { const C = calc(SD);
   const t = [`[${md(SD.d)} 정산] 현장 ${C.sites.length}곳 · 매출 ${won(C.rev)} · 잔금 수금 ${won(C.balGot)}${C.balWait ? ` (대기 ${won(C.balWait)})` : ''}`,
-    ...C.rows.map(r => { const a = (H.S.accts||{})[r.s.id] || {}; return `${r.s.name} ${won(r.gross)}${r.ded ? ` - ${H.PT[r.s.pay_type]} ${won(r.ded)}` : ''} = ${won(r.net)}원${a.acct ? ` / ${a.bank||''} ${a.acct} ${a.holder||''}` : ''}`; }),
+    ...C.rows.map(r => { if (r.s.ext) return `${r.s.name}(외부) ${won(r.net)}원`; const a = (H.S.accts||{})[r.s.id] || {}; return `${r.s.name} ${won(r.gross)}${r.ded ? ` - ${H.PT[r.s.pay_type]} ${won(r.ded)}` : ''} = ${won(r.net)}원${a.acct ? ` / ${a.bank||''} ${a.acct} ${a.holder||''}` : ''}`; }),
     `합계 보낼 돈 ${won(C.net)}원`].join('\n');
   H.copy(t, '정산 내용을 복사했어요'); };
 

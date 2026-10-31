@@ -27,18 +27,27 @@ function people(){
     const p = by[a.staff_id] = by[a.staff_id] || {s, items: [], base: 0, extra: 0, paid: true};
     const b = baseOf(s, a), x = +a.extra_amount || 0;
     p.items.push({j, a, b, x}); p.base += b; p.extra += x; if (!a.paid) p.paid = false; }));
-  return Object.values(by).map(p => { const gross = p.base + p.extra, ded = p.s.pay_type === 'salary' ? 0 : H.deduct(p.s.pay_type, gross, 1);
+  const st = Object.values(by).map(p => { const gross = p.base + p.extra, ded = p.s.pay_type === 'salary' ? 0 : H.deduct(p.s.pay_type, gross, 1);
     const sent = P.pays.filter(x => x.staff_id === p.s.id).reduce((a,x) => a + x.amount, 0);
-    return Object.assign(p, {gross, ded, net: gross - ded, sent, done: p.paid || (sent && sent >= gross - ded)}); })
+    return Object.assign(p, {gross, ded, net: gross - ded, sent, done: p.paid || (sent && sent >= gross - ded)}); });
+  return st.concat(extPeople())
     .sort((a,b) => a.done - b.done || b.net - a.net);
 }
 
+// 외부지원(일용직): 현장마다 따로 한 줄 · 공제 없이 그대로 · 입금 완료는 현장 기록(helpers.paid)에 남김
+function extPeople(){ const out = [];
+  P.jobs.forEach(j => H.helpers(j).forEach(x => { const b = +x.pay || 0, e = +x.extra || 0;
+    out.push({s: {id: `h_${j.id}_${x.id}`, name: x.name, ext: true, src: x.src, phone: x.phone}, hj: j, hx: x, items: [{j, b, x: e}], base: b, extra: e,
+      gross: b + e, ded: 0, net: b + e, sent: 0, paid: !!x.paid, done: !!x.paid, miss: x.pay == null}); }));
+  return out; }
 // 홈 요약용: 그 날 현장 직원별 보낼 돈 (jobs = assignments 포함)
 H.paySummary = jobs => { const by = {};
   (jobs||[]).filter(j => j.status !== 'cancelled' && j.status !== 'quote').forEach(j => (j.assignments||[]).filter(a => a.status === 'approved').forEach(a => {
     const s = H.P(a.staff_id); if (s.team === 'RES') return; const p = by[a.staff_id] = by[a.staff_id] || {s, g: 0, paid: true, done: true};
     p.g += baseOf(s, a) + (+a.extra_amount || 0); if (!a.paid) p.paid = false; if (!(j.work_done_at || j.done_at || j.status === 'done')) p.done = false; }));
-  const ps = Object.values(by).map(p => Object.assign(p, {net: p.g - (p.s.pay_type === 'salary' ? 0 : H.deduct(p.s.pay_type, p.g, 1))}));
+  (jobs||[]).filter(j => j.status !== 'cancelled' && j.status !== 'quote').forEach(j => H.helpers(j).forEach(x => {
+    by['h_' + j.id + '_' + x.id] = {s: {name: x.name, ext: true}, g: (+x.pay||0) + (+x.extra||0), ext: true, paid: !!x.paid, done: !!(j.work_done_at || j.done_at || j.status === 'done')}; }));
+  const ps = Object.values(by).map(p => Object.assign(p, {net: p.ext ? p.g : p.g - (p.s.pay_type === 'salary' ? 0 : H.deduct(p.s.pay_type, p.g, 1))}));
   return {n: ps.length, left: ps.filter(p => !p.paid), net: ps.filter(p => !p.paid).reduce((a,p) => a + p.net, 0), notDone: ps.filter(p => !p.done).length, paidN: ps.filter(p => p.paid).length};
 };
 H.payDate = d => { P.d = d; };
@@ -54,14 +63,14 @@ H.view('pay', {label:'정산', owner:true,
       ${wait.length ? `<div class="pay-warn">수금 대기: ${wait.map(x => esc(x.j.title||'')).join(', ')}</div>` : ''}
       ${ps.map(p => { const a = (H.S.accts||{})[p.s.id] || {}, op = P.open[p.s.id];
         return `<div class="pay-card ${p.done?'done':''}">
-          <div class="pay-h"><div><b>${esc(p.s.name)}</b> <small>${esc(lvOf(p.s) || p.s.role || '')}</small><div class="pay-sub">${p.items.map(i => esc(i.j.title||'현장')).join(' · ')}</div></div>
-            <div class="pay-net"><b>${won(p.net)}</b><small>${p.ded ? `${H.PT[p.s.pay_type]} −${won(p.ded)}` : '공제 없음'}</small></div></div>
+          <div class="pay-h"><div><b>${esc(p.s.name)}</b> <small>${p.s.ext ? `<span class="who ext" style="font-size:11px">외부지원</span>${p.s.src ? ' ' + esc(p.s.src) : ''}` : esc(lvOf(p.s) || p.s.role || '')}</small><div class="pay-sub">${p.items.map(i => esc(i.j.title||'현장')).join(' · ')}</div></div>
+            <div class="pay-net"><b>${won(p.net)}</b><small>${p.miss ? '<span style="color:#B91C1C">금액 미입력</span>' : p.ded ? `${H.PT[p.s.pay_type]} −${won(p.ded)}` : '공제 없음'}</small></div></div>
           <div class="pay-line"><span>기본 ${won(p.base)}${p.extra ? ` · <b style="color:#15803D">+α ${won(p.extra)}</b>` : ''}</span>
-            ${p.done ? '' : `<span class="pay-alpha">${[5000,10000,20000].map(v => `<button data-a="pyAlpha" data-s="${p.s.id}" data-v="${v}">+${v/10000}만</button>`).join('')}<button data-a="pyAlpha" data-s="${p.s.id}" data-v="ask">직접</button>${p.extra ? `<button data-a="pyAlpha" data-s="${p.s.id}" data-v="0">α 0</button>` : ''}</span>`}</div>
-          <div class="pay-act">${a.acct ? `<button class="btn ghost" data-a="acctCopy" data-s="${p.s.id}">📋 ${esc(a.bank||'')} ${esc(String(a.acct).slice(-4))}</button>` : '<span class="note">계좌 미입력 · 인사카드에서 넣기</span>'}
+            ${p.done || p.s.ext ? '' : `<span class="pay-alpha">${[5000,10000,20000].map(v => `<button data-a="pyAlpha" data-s="${p.s.id}" data-v="${v}">+${v/10000}만</button>`).join('')}<button data-a="pyAlpha" data-s="${p.s.id}" data-v="ask">직접</button>${p.extra ? `<button data-a="pyAlpha" data-s="${p.s.id}" data-v="0">α 0</button>` : ''}</span>`}</div>
+          <div class="pay-act">${p.s.ext ? (p.miss ? '<span class="note">일정판 › 현장 › 당일 마감에서 금액 넣기</span>' : p.s.phone ? `<a class="btn ghost" href="tel:${esc(String(p.s.phone).replace(/[^0-9]/g,''))}">📞 ${esc(p.s.phone)}</a>` : '<span class="note">외부지원 · 계좌는 직접</span>') : a.acct ? `<button class="btn ghost" data-a="acctCopy" data-s="${p.s.id}">📋 ${esc(a.bank||'')} ${esc(String(a.acct).slice(-4))}</button>` : '<span class="note">계좌 미입력 · 인사카드에서 넣기</span>'}
             ${p.done ? `<span class="pill p-ok">입금 완료${p.sent ? ' ' + won(p.sent) : ''}</span>` : `<button class="btn" data-a="pyDone" data-s="${p.s.id}">입금 완료</button>`}</div>
-          ${op ? `<div class="pay-det">${p.items.map(i => `<div><span>${esc(i.j.title||'')}</span><span>${won(i.b)}${i.x ? ' +' + won(i.x) : ''} <button class="link" data-a="pyBase" data-s="${p.s.id}" data-j="${i.j.id}">기본 수정</button></span></div>`).join('')}</div>` : ''}
-          <button class="pay-more" data-a="pyOpen" data-s="${p.s.id}">${op ? '접기 ▴' : '현장별 ▾'}</button></div>`; }).join('') || '<p class="empty">이날 지급할 직원이 없어요</p>'}
+          ${op && !p.s.ext ? `<div class="pay-det">${p.items.map(i => `<div><span>${esc(i.j.title||'')}</span><span>${won(i.b)}${i.x ? ' +' + won(i.x) : ''} <button class="link" data-a="pyBase" data-s="${p.s.id}" data-j="${i.j.id}">기본 수정</button></span></div>`).join('')}</div>` : ''}
+          ${p.s.ext ? '' : `<button class="pay-more" data-a="pyOpen" data-s="${p.s.id}">${op ? '접기 ▴' : '현장별 ▾'}</button>`}</div>`; }).join('') || '<p class="empty">이날 지급할 직원이 없어요</p>'}
       <p class="note" style="margin-top:12px">기본 = 지급액을 넣었으면 그 금액, 안 넣었으면 레벨 금액 · 공제는 지급 방식대로 (3.3% · 일용직은 세무사 확인) · <a href="#" data-a="pyLevels">레벨 금액표</a></p></div>`;
   }
 });
@@ -86,6 +95,11 @@ H.ACT.pyBase = async el => {
 H.ACT.pyDone = async el => {
   const p = people().find(x => x.s.id === el.dataset.s); if (!p) return;
   if (!confirm(`${p.s.name}님께 ${won(p.net)}원 입금하셨어요?`)) return;
+  if (p.s.ext) {   // 외부지원: 현장 기록에 '지급 완료'만 남김 (직원 1:1·입금 기록 없음)
+    const j = p.hj, list = H.helpers(j).map(x => x.id === p.hx.id ? Object.assign({}, x, {pay: p.base, paid: true, paid_at: new Date().toISOString()}) : x);
+    await H.q(sb.from('jobs').update({helpers: list}).eq('id', j.id));
+    H._dirty = Date.now(); H.toast(`외부지원 ${p.s.name}님 입금 완료 기록`); await load(P.d); H.render(); return;
+  }
   for (const i of p.items) await H.q(sb.from('assignments').update({pay_amount: i.b, paid: true}).match({job_id: i.j.id, staff_id: p.s.id}));
   if (!H.S.needV9) {
     let sentViaChat = false;
