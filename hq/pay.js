@@ -75,13 +75,13 @@ H.ACT.pyAlpha = async el => {
   if (v === 'ask') { const t = prompt('추가 금액 (원, 예: 15000 · 만원 단위면 1.5)'); if (!t) return; v = +String(t).replace(/[^0-9.]/g,''); if (v < 1000) v = Math.round(v * 10000); }
   const nx = v === '0' ? 0 : (+a.extra_amount || 0) + (+v);
   await H.q(sb.from('assignments').update({extra_amount: nx}).match({job_id: j.id, staff_id: el.dataset.s}));
-  a.extra_amount = nx; H.render();
+  a.extra_amount = nx; H._dirty = Date.now(); H.render();
 };
 H.ACT.pyBase = async el => {
   const {j, a} = findA(el.dataset.s, el.dataset.j); if (!a) return;
   const t = prompt('이 현장 기본 지급액 (원)', baseOf(H.P(el.dataset.s), a)); if (t == null) return;
   const v = +String(t).replace(/[^0-9]/g,''); await H.q(sb.from('assignments').update({pay_amount: v}).match({job_id: j.id, staff_id: el.dataset.s}));
-  a.pay_amount = v; H.render();
+  a.pay_amount = v; H._dirty = Date.now(); H.render();
 };
 H.ACT.pyDone = async el => {
   const p = people().find(x => x.s.id === el.dataset.s); if (!p) return;
@@ -96,6 +96,7 @@ H.ACT.pyDone = async el => {
           const {error} = await sb.rpc('chat_admin_send', {p_room: dm.data.id, p_body: `${nick(p.s)}님 ${n} 넣었어요\n고맙습니다`, p_photo: null}); if (!error) sentViaChat = true; } } } catch(_){}
     if (!sentViaChat) await H.q(sb.from('payouts').insert({staff_id: p.s.id, amount: p.net, paid_on: P.d, source: 'manual', body: `${md(P.d)} 정산`}));
   }
+  H._dirty = Date.now();   // 홈·다른 화면이 예전 데이터로 '안 눌렀다'고 뜨지 않게
   H.toast(`${p.s.name}님 입금 완료 기록`); await load(P.d); H.render();
 };
 H.ACT.pyLevels = el => { const lp = levelPay();
