@@ -74,6 +74,13 @@ body{background:var(--bg)}
 .addr a{color:inherit}
 .money{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--waitb);color:#7C2D12;border-radius:10px;padding:9px 11px;margin-top:8px;font-size:13.5px}
 .money b{font-size:16px}
+.xtra{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.xrow{display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:10px;padding:8px 11px;font-size:13.5px}
+.xrow b{margin-left:auto}
+.xform{display:flex;flex-direction:column;gap:8px;background:var(--soft);border-radius:10px;padding:10px}
+.xform input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:15px;background:var(--card);color:var(--ink)}
+.xform .chips{display:flex;flex-wrap:wrap;gap:6px}
+.xform .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13.5px}
 .acts{display:flex;gap:8px;margin-top:12px}
 .acts .btn{flex:1}
 .ack{background:var(--warnb);color:var(--warn);border-radius:10px;padding:9px 11px;margin-top:10px;font-size:13.5px;font-weight:500;display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -169,7 +176,7 @@ body{background:var(--bg)}
 <script src="../status.js?v=1101a"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1101a'</script>
+<script>window.EP_VER='1101b'</script>
 <script src="../chatkit.js?v=1101a"></script>
 <script src="../chat.js?v=1101a"></script>
 <script src="../mymoney.js"></script>
@@ -239,6 +246,7 @@ async function load(){
 /* ---------- views ---------- */
 function jobsOn(day){ return D.jobs.filter(j => j.date === day && (scope === 'team' || ['applied','approved'].includes(j.my_status))); }
 const evsOn = day => D.events.filter(e => e.date === day);
+let xOpen = null;
 const mineOK = () => D.jobs.filter(j => j.my_status === 'approved');
 
 function statusPill(j){
@@ -258,8 +266,13 @@ function card(j){
   else if (j.my_status === 'approved') btn = `<div class="acts"><button class="btn ghost sm" data-cancel="${j.id}">못 가게 됐어요 (취소)</button></div>`;
   else if (j.my_status === 'applied') btn = `<div class="acts"><button class="btn wait" data-cancel="${j.id}">승인 기다리는 중 · 취소</button></div>`;
   else if (canApply && j.status === 'open' && j.approved < j.headcount) btn = `<div class="acts"><button class="btn" data-apply="${j.id}">신청하기</button></div>`;
-  const shootable = V2() && j.my_status === 'approved' && j.status !== 'cancelled' && j.date >= ymd(addDays(today,-2)) && j.date <= ymd(addDays(today,1));
-  const shootBtn = shootable ? `<div class="acts">${j.cust_room ? `<button class="btn" data-croom="${j.cust_room}">💬 고객님 방 · 사진·글 올리기${j.photos?` (${j.photos}장)`:''}</button>` : `<button class="btn" data-shoot="${j.id}">${I('cam')}${W('현장 사진','촬영 사진')}${j.photos?` (${j.photos}장)`:''}</button>`}${j.work_done?'<span class="pill p-ok" style="align-self:center">작업 끝</span>':''}</div>` : '';
+  const live = j.my_status === 'approved' && j.status !== 'cancelled';
+  const shootable = V2() && live && j.date >= ymd(addDays(today,-2)) && j.date <= ymd(addDays(today,1));
+  // 고객님 방: 확정되면 날짜 상관없이 바로 들어갈 수 있게 (v30)
+  const roomBtn = V2() && live && j.cust_room ? `<button class="btn" data-croom="${j.cust_room}">💬 고객님 방 · 사진·글 올리기${j.photos?` (${j.photos}장)`:''}</button>`
+    : shootable ? `<button class="btn" data-shoot="${j.id}">${I('cam')}${W('현장 사진','촬영 사진')}${j.photos?` (${j.photos}장)`:''}</button>` : '';
+  const linkBtn = live && j.collector && j.live ? `<button class="btn ghost" data-clink="${j.id}">🔗 고객님 링크 보내기</button>` : '';
+  const shootBtn = (roomBtn || linkBtn) ? `<div class="acts">${roomBtn}${linkBtn}${j.work_done?'<span class="pill p-ok" style="align-self:center">작업 끝</span>':''}</div>` : '';
 
   const ack = j.need_ack ? `<div class="ack"><span>일정이 바뀌었어요. 확인해주세요</span><button class="btn sm" style="background:var(--warn)" data-ack="${j.id}">확인했어요</button></div>` : '';
   const addr = j.my_status === 'approved'
@@ -267,15 +280,32 @@ function card(j){
     : (j.my_status === 'applied' ? `<div class="addr lock">${I('lock')}확정되면 상세 주소가 열려요</div>` : '');
   const cust = j.collector && (j.cust_name || j.cust_phone)
     ? `<div class="money"><span>고객 <b>${esc(j.cust_name||'')}</b></span>${j.cust_phone ? `<a class="btn sm" href="tel:${esc(j.cust_phone.replace(/[^0-9+]/g,''))}">📞 ${esc(j.cust_phone)}</a>` : ''}</div>` : '';
+  const xs = j.collector ? (j.extras||[]).filter(x => x.agreed !== false) : [];
+  const xsum = xs.reduce((a,x) => a + (+x.amount||0), 0);
   const money = j.collector && j.balance != null
-    ? (j.collected_at ? `<div class="money"><span>잔금 ${won(j.balance)}</span><span class="pill p-ok">수금 완료</span></div>`
-       : `<div class="money"><span>현장 잔금 <b>${won(j.balance)}</b></span><span><button class="btn sm" data-collect="${j.id}" data-how="계좌">계좌 확인</button> <button class="btn sm ghost" data-collect="${j.id}" data-how="현금">현금</button></span></div>`) : '';
+    ? (j.collected_at ? `<div class="money"><span>잔금 ${won(j.balance)}${xsum?` + 추가 ${won(xsum)}`:''}</span><span class="pill p-ok">수금 완료</span></div>`
+       : `<div class="money"><span>현장 잔금 <b>${won(j.balance)}</b>${xsum?`<br><small>+ 추가금 ${won(xsum)} = <b>${won(j.balance+xsum)}</b></small>`:''}</span><span><button class="btn sm" data-collect="${j.id}" data-how="계좌">계좌 확인</button> <button class="btn sm ghost" data-collect="${j.id}" data-how="현금">현금</button></span></div>`) : '';
+  // 추가금 (수금 담당이 현장에서 받은 것 직접 적기, v30)
+  const xEdit = j.collector && live && j.status !== 'done' && !past;
+  const extra = j.collector && (xs.length || xEdit) ? `<div class="xtra">
+      ${xs.map((x,i) => `<div class="xrow"><span>${esc(x.name||'추가')}</span><b>+${won(x.amount)}</b>${xEdit && x.by == (D.me&&D.me.id) ? `<button class="btn sm ghost" data-xdel="${j.id}" data-i="${(j.extras||[]).indexOf(x)}">지우기</button>` : ''}</div>`).join('')}
+      ${xEdit ? (xOpen === j.id ? `<div class="xform" data-xf="${j.id}">
+          <div class="chips">${['곰팡이','베란다','가전','짐 많음','기타'].map(n=>`<button class="chip" data-xn="${n}">${n}</button>`).join('')}</div>
+          <input class="xname" placeholder="사유 (예: 곰팡이)" maxlength="40">
+          <div class="chips">${[1,2,3,5].map(m=>`<button class="chip" data-xa="${m*10000}">${m}만</button>`).join('')}</div>
+          <input class="xamt" inputmode="numeric" placeholder="받은 금액 (원)">
+          <div style="display:flex;gap:8px"><button class="btn" style="flex:1" data-xsave="${j.id}">적기</button><button class="btn ghost" data-xopen="0">닫기</button></div>
+        </div>` : `<button class="btn ghost sm" style="width:100%" data-xopen="${j.id}">＋ 추가금 받았어요</button>`) : ''}
+    </div>` : '';
+  // 집 스펙 줄 맨 앞에 평수 (제목에서 읽음, v30)
+  const py = ((j.title||'').match(/(\d+(?:\.\d+)?)\s*평/)||[])[1];
+  const spec = [py && !(j.public_note||'').includes(py+'평') ? py+'평' : '', j.public_note||''].filter(Boolean).join(' · ');
   const pay = j.my_pay != null ? `<div class="row2"><span>내 정산</span><b>${won(j.my_pay)}</b></div>` : '';
   return `<article class="card ${j.need_ack?'alert':''}">
     <div class="t1"><div><div class="when">${md(j.date)}${j.time ? ' · '+j.time : ''}${j.kind ? ' · '+esc(j.kind) : ''}</div><h4>${esc(j.title)}</h4></div>${statusPill(j)}</div>
-    ${j.public_note ? `<div class="note">${esc(j.public_note)}</div>` : ''}
+    ${spec ? `<div class="note">${esc(spec)}</div>` : ''}
     <div class="row2"><span><b>${j.approved}</b> / ${j.headcount}명 확정</span><span class="crew">${j.crew.map(n=>`<span>${esc(n)}</span>`).join('')}</span></div>
-    ${ack}${addr}${cust}${money}${pay}${shootBtn}${btn}</article>`;
+    ${ack}${addr}${cust}${money}${extra}${pay}${shootBtn}${btn}</article>`;
 }
 function evCard(e){
   return `<article class="card evc"><div class="t1"><div><div class="when">${md(e.date)}${e.time?' · '+e.time:''} · 내 일정</div><h4>${esc(e.kind)} ${e.maemul?`<span class="pill p-mute">${esc(e.maemul)}</span>`:''} ${esc(e.title)}</h4></div><button class="btn ghost sm" data-evedit="${e.id}">${I('edit')}수정</button></div>
@@ -501,6 +531,19 @@ document.addEventListener('click', async e => {
   if (d.cancel){ if (!confirm('이 일정을 취소할까요?')) return; return act('staff_cancel',{p_token:TOKEN,p_job:+d.cancel},'취소했어요'); }
   if (d.ack){ return act('staff_ack',{p_token:TOKEN,p_job:+d.ack},'확인 완료!'); }
   if (d.collect){ if (!confirm(`${d.how}으로 잔금을 받으셨나요?`)) return; return act('staff_collect',{p_token:TOKEN,p_job:+d.collect,p_how:d.how},'수금 완료로 표시했어요'); }
+  if (d.xopen !== undefined){ xOpen = +d.xopen || null; render(); return; }
+  if (d.xn){ const f = b.closest('.xform'); f.querySelector('.xname').value = d.xn === '기타' ? '' : d.xn; f.querySelector(d.xn === '기타' ? '.xname' : '.xamt').focus(); return; }
+  if (d.xa){ b.closest('.xform').querySelector('.xamt').value = d.xa; return; }
+  if (d.xsave){ const f = b.closest('.xform'); const name = f.querySelector('.xname').value.trim(), amt = +String(f.querySelector('.xamt').value).replace(/[^0-9]/g,'');
+    if (!name) return toast('사유를 적어주세요'); if (!amt) return toast('금액을 적어주세요');
+    if (!confirm(`${name} ${won(amt)} 추가로 받으셨나요?`)) return; xOpen = null;
+    return act('staff_add_extra',{p_token:TOKEN,p_job:+d.xsave,p_name:name,p_amount:amt},'추가금을 적었어요'); }
+  if (d.xdel){ if (!confirm('이 추가금을 지울까요?')) return; return act('staff_del_extra',{p_token:TOKEN,p_job:+d.xdel,p_idx:+d.i},'지웠어요'); }
+  if (d.clink){ const j = D.jobs.find(x => x.id == d.clink); const url = `${location.origin}/live/?s=${j.live}`;
+    const msg = `[리츠종합클린] 안녕하세요, 고객님 😊\n작업 사진이 실시간으로 올라오는 고객님 전용 방이에요.\n${url}`;
+    try { if (navigator.share) { await navigator.share({text: msg}); return; } } catch(_){ return; }
+    if (j.cust_phone) { location.href = `sms:${j.cust_phone.replace(/[^0-9]/g,'')}?body=${encodeURIComponent(msg)}`; return; }
+    try { await navigator.clipboard.writeText(msg); toast('링크를 복사했어요'); } catch(_){ prompt('복사해서 보내주세요', url); } return; }
   if (d.nconf){ return act('staff_notice_confirm',{p_token:TOKEN,p_id:+d.nconf},'확인했어요'); }
   if (d.rmph){ URL.revokeObjectURL(photos[+d.rmph].url); photos.splice(+d.rmph,1); keepText(()=>render()); return; }
   // 하루 가능·불가 (일정판에서 바로)

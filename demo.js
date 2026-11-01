@@ -15,6 +15,7 @@
       {id:1,date:day(0),time:'08:00',title:'수영구 광안동 아파트 이사청소',kind:'이사청소',headcount:3,public_note:'장비 사무실에서 챙겨가기',status:'full',team:'OPS',approved:3,crew:['김준호','김지원','김효정'],my_status:'approved',address:'부산 수영구 광안동 협성에코펠리스 103동',private_note:'공동현관 #1234',need_ack:true,collector:false,balance:null,collected_at:null,my_pay:null,live:'DEMO',photos:3,work_done:null},
       {id:2,date:day(2),time:'07:00',title:'해운대 센텀 사무실 정기청소',kind:'정기',headcount:2,public_note:null,status:'open',team:'OPS',approved:1,crew:['신봉진'],my_status:null,address:null,private_note:null,need_ack:false,collector:false,balance:null,collected_at:null,my_pay:null},
       {id:3,date:day(2),time:'13:00',title:'연제구 연산동 입주청소 24평',kind:'입주청소',headcount:2,public_note:null,status:'open',team:'OPS',approved:0,crew:[],my_status:'applied',address:null,private_note:null,need_ack:false,collector:false,balance:null,collected_at:null,my_pay:null},
+      {id:6,date:day(4),time:'08:00',title:'창원 성산구 포레나대원 이사청소 35평',kind:'이사청소',headcount:3,public_note:'방3·화2·베2 · 김치냉장고 포함 · 에어컨 제외',status:'open',team:'PRT',approved:1,crew:['이정모'],my_status:'approved',address:'경남 창원시 성산구 창원천로 34',private_note:null,need_ack:false,collector:true,cust_name:'고객',cust_phone:'01000000000',balance:350000,collected_at:null,my_pay:null,live:'DEMO',cust_room:null,photos:0,extras:[]},
       {id:4,date:day(4),time:'09:00',title:'남구 대연동 상가 준공청소',kind:'상가',headcount:4,public_note:'4인 현장 · 사다리 필요',status:'open',team:'OPS',approved:2,crew:['김준호','나미정'],my_status:null,address:null,private_note:null,need_ack:false,collector:false,balance:null,collected_at:null,my_pay:null},
       {id:5,date:day(-3),time:'08:00',title:'동래 온천동 헬스장 준공청소',kind:'상가',headcount:4,public_note:null,status:'done',team:'OPS',approved:4,crew:['김준호','김지원','김효정','서은호'],my_status:'approved',address:'동래구 온천동',private_note:null,need_ack:false,collector:false,balance:null,collected_at:null,my_pay:130000}
     ],
@@ -30,6 +31,8 @@
     if (fn==='staff_apply'){ j(a.p_job).my_status='applied'; return 'applied'; }
     if (fn==='staff_cancel'){ const x=j(a.p_job); if (x.my_status==='approved'){x.approved--; x.crew=x.crew.filter(n=>n!==S.me.name); x.status='open';} x.my_status='cancelled'; return 'ok'; }
     if (fn==='staff_ack'){ j(a.p_job).need_ack=false; return 'ok'; }
+    if (fn==='staff_add_extra'){ const x=j(a.p_job); x.extras=(x.extras||[]).concat([{name:a.p_name,amount:a.p_amount,notice:'site',agreed:true,by:S.me.id,by_name:S.me.name}]); return 'ok'; }
+    if (fn==='staff_del_extra'){ j(a.p_job).extras.splice(a.p_idx,1); return 'ok'; }
     if (fn==='staff_collect'){ j(a.p_job).collected_at=new Date().toISOString(); return 'ok'; }
     if (fn==='staff_notice_read'){ S.notices.forEach(n=>n.read=true); return 'ok'; }
     if (fn==='staff_notice_confirm'){ S.notices.find(n=>n.id===a.p_id).confirmed=true; return 'ok'; }
