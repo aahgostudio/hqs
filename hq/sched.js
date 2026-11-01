@@ -100,9 +100,9 @@ function jobCard(j){
   const bossChip = boss ? `<span class="who ok">✓ ${esc(H.S.owner ? (H.S.name||'대표') : '대표님')}${active?`<button class="x" data-a="bossOn" data-j="${j.id}" aria-label="배정 빼기">✕</button>`:''}</span>` : '';   // 대표님도 직원처럼
   const people = bossChip + ap.map(a => `<span class="who ok ${seen(a)?'':'unseen'}" title="${seen(a)?'확인함 '+H.ago(a.seen_at):'아직 안 봤어요'}">${seen(a)?'✓':'!'} ${esc(H.P(a.staff_id).name)}${active?`<button class="x" data-a="unassign" data-j="${j.id}" data-s="${a.staff_id}" aria-label="배정 빼기">✕</button>`:''}</span>`).join('')
     + wait.map(a => `<span class="who wait">${esc(H.P(a.staff_id).name)} 신청<button data-a="approve" data-j="${j.id}" data-s="${a.staff_id}">승인</button><button class="no" data-a="reject" data-j="${j.id}" data-s="${a.staff_id}">거절</button></span>`).join('')
-    + hp.map(x => `<span class="who ext" title="외부지원${x.src?' · '+esc(x.src):''}">외부 · ${esc(x.name)}${active?`<button class="x" data-a="helperDel" data-j="${j.id}" data-h="${x.id}" aria-label="외부지원 빼기">✕</button>`:''}</span>`).join('')
+    + hp.map(x => `<span class="who ext" title="외부지원${x.src?' · '+esc(x.src):''}">외부 · ${esc(x.name)}${j.status!=='cancelled'?`<button class="x" data-a="helperDel" data-j="${j.id}" data-h="${x.id}" aria-label="외부지원 빼기">✕</button>`:''}</span>`).join('')
     + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '')
-    + (active && j.status!=='quote' && !H.S.needV29 ? `<button class="btn ghost sm" data-a="helperAdd" data-j="${j.id}">+ 외부지원</button>` : '');
+    + (j.status!=='cancelled' && j.status!=='quote' && !H.S.needV29 ? `<button class="btn ghost sm" data-a="helperAdd" data-j="${j.id}">+ 외부지원</button>` : '');
   const tc = H.isPartner(j) ? 'var(--prt)' : j.status==='open' && left ? 'var(--cleanl)' : 'var(--clean)';
   const phs = H.photosOf(j.id).length;
   const live = j.live_code ? `<span class="who" style="background:#EEF2FF;color:var(--navy);border-color:transparent" data-a="liveSheet" data-j="${j.id}" role="button">🔗 고객님 방 링크${j.live_views?' · '+j.live_views+'번 봄':''}</span>` : '';
