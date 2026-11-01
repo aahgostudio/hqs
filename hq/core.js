@@ -70,8 +70,6 @@ H.jobRevenue = j => {
 // 외부지원(일용직): 그 현장에만 붙는 임시 인원 — jobs.helpers [{id,name,phone,src,pay,extra,memo,paid}] (v29)
 H.helpers = j => (H.S.needV29 || !j) ? [] : (j.helpers||[]);
 // 현장 인원 = 확정 직원 + 대표(가면) + 외부지원
-// 평수: 직접 넣은 값 우선, 없으면 제목의 'N평' (v30)
-H.pyOf = j => j.pyeong != null && j.pyeong !== '' ? String(+j.pyeong) : (((j.title||'').match(/(\d+(?:\.\d+)?)\s*평/)||[])[1] || '');
 H.isPrt = sid => H.P(sid).team === 'PRT';
 // 도급 사장님이 확정되면 그 팀이 인원을 다 데려오니 자리 다 찬 걸로 (v30)
 H.prtOn = j => (j.assignments||[]).some(a => a.status === 'approved' && H.isPrt(a.staff_id));
@@ -293,7 +291,7 @@ H.boot = async () => {
     if (error || !isAdmin){ await sb.auth.signOut(); return loginView('관리자 계정이 아니에요'); }
     const ver = await sb.rpc('hq_schema_version');
     if (ver.error || (ver.data||0) < 2) return setupView();
-    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4; H.S.needV5 = (ver.data||0) < 5; H.S.needV6 = (ver.data||0) < 6; H.S.needV7 = (ver.data||0) < 7; H.S.needV8 = (ver.data||0) < 8; H.S.needV9 = (ver.data||0) < 9; H.S.needV10 = (ver.data||0) < 10; H.S.needV19 = (ver.data||0) < 19; H.S.needV20 = (ver.data||0) < 20; H.S.needV21 = (ver.data||0) < 21; H.S.needV22 = (ver.data||0) < 22; H.S.needV23 = (ver.data||0) < 23; H.S.needV24 = (ver.data||0) < 24; H.S.needV25 = (ver.data||0) < 25; H.S.needV26 = (ver.data||0) < 26; H.S.needV27 = (ver.data||0) < 27; H.S.needV30 = (ver.data||0) < 30; H.S.needV29 = (ver.data||0) < 29;
+    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4; H.S.needV5 = (ver.data||0) < 5; H.S.needV6 = (ver.data||0) < 6; H.S.needV7 = (ver.data||0) < 7; H.S.needV8 = (ver.data||0) < 8; H.S.needV9 = (ver.data||0) < 9; H.S.needV10 = (ver.data||0) < 10; H.S.needV19 = (ver.data||0) < 19; H.S.needV20 = (ver.data||0) < 20; H.S.needV21 = (ver.data||0) < 21; H.S.needV22 = (ver.data||0) < 22; H.S.needV23 = (ver.data||0) < 23; H.S.needV24 = (ver.data||0) < 24; H.S.needV25 = (ver.data||0) < 25; H.S.needV26 = (ver.data||0) < 26; H.S.needV27 = (ver.data||0) < 27; H.S.needV29 = (ver.data||0) < 29;
     const own = await sb.rpc('is_owner');
     H.S.isOwner = !!own.data && (session.user.email||'').toLowerCase() === OWNER_EMAIL;
     // 대표님이 관리자(HQS) 화면을 미리 볼 수 있게: ?mode=hqs 로 들어오거나 모드 버튼을 누르면 전환

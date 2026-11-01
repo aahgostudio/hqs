@@ -26,7 +26,7 @@ H.parseOrder = (raw) => {
   let area = '';
   if (o.address) { const a = o.address.replace(/^(부산광역시|부산시|부산)\s*/,''); const g = a.match(/(\S+[구군])\s+(\S+?[동읍면리가])(?=\s|\d|$)/); area = g ? `${g[1]} ${g[2]}` : a.split(' ').slice(0,2).join(' '); }
   o.title = [area, typ, kind, py ? py + '평' : ''].filter(Boolean).join(' ');
-  if (py) { o.headcount = +py <= 20 ? 2 : +py <= 32 ? 3 : 4; o.pyeong = +py; }
+  if (py) o.headcount = +py <= 20 ? 2 : +py <= 32 ? 3 : 4;
   // 구조 → 팀 공개 메모
   const rooms = after(t, ['방 ?개수']), bath = after(t, ['화장실 ?개수']), ver = after(t, ['베란다 ?개수']);
   const pub = [rooms && rooms.replace(/\s+/g,''), bath && '화장실 ' + bath.replace(/\s+/g,''), ver && '베란다 ' + ver.replace(/\s+/g,'')].filter(Boolean);
@@ -45,7 +45,7 @@ H.parseOrder = (raw) => {
   if (memo.length) o.admin_memo = memo.join(' · ');
   return o;
 };
-const LABEL = {pyeong:'평수', job_date:'날짜', start_time:'시간', title:'현장 이름', kind:'종류', headcount:'인원', address:'주소', public_note:'구조 메모', total_amount:'계약 금액', deposit_amount:'예약금', balance_amount:'잔금', admin_memo:'메모', cust_name:'고객 이름', cust_phone:'고객 전화'};
+const LABEL = {job_date:'날짜', start_time:'시간', title:'현장 이름', kind:'종류', headcount:'인원', address:'주소', public_note:'구조 메모', total_amount:'계약 금액', deposit_amount:'예약금', balance_amount:'잔금', admin_memo:'메모', cust_name:'고객 이름', cust_phone:'고객 전화'};
 H.ACT.jobPaste = () => {
   const f = document.querySelector('#sheet form[data-f="job"]'), ta = document.getElementById('jpaste'), out = document.getElementById('jpaste-out');
   if (!f || !ta) return;

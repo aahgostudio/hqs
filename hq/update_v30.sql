@@ -6,11 +6,8 @@
 --     → HQ 금액·증빙의 추가금 줄에 '현장 추가 · 직원 입력'으로 들어감
 --   · [작업 끝]: 수금 담당이 없거나 안 가면 확정된 팀장도 누를 수 있음
 --   · 도급 사장님 확정된 현장 = 인원 완료 (자리 빔 표시 안 함)
---   · 평수 칸 (HQ 수정에서 고침 · 비우면 제목에서 읽음)
 --   · 대표님 혼자 가는 현장: HQ 고객님 방 맨 위에서 [작업 끝]
 -- ============================================================
-alter table public.jobs add column if not exists pyeong numeric;   -- 평수 (비우면 제목의 'N평')
-
 create or replace function public._chat_ensure(s public.staff) returns void
 language plpgsql security definer set search_path = public, extensions as $$
 begin
@@ -65,7 +62,6 @@ begin
           'title', j.title,
           'kind', j.kind,
           'headcount', j.headcount,
-          'pyeong', j.pyeong,
           'public_note', j.public_note,
           'status', j.status,
           'team', j.teams[1],

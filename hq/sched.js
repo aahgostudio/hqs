@@ -111,7 +111,7 @@ function jobCard(j){
   const prtMiss = H.isPartner(j) && !['cancelled','quote'].includes(j.status) && (!j.contract_mode || !(j.total_amount||j.balance_amount))
     ? `<button class="who" data-a="moneySheet" data-j="${j.id}" style="cursor:pointer;background:#FEF2F2;border-color:#FECACA;color:#B91C1C">⚠️ ${!j.contract_mode && !(j.total_amount||j.balance_amount) ? '도급 정산 방식·금액' : !j.contract_mode ? '도급 정산 방식' : '계약금액'} 안 넣음 ›</button>` : '';
   // 집 스펙 (평수 + 팀 공개 메모) — 직원·도급 화면과 같은 줄 (v30)
-  const py = H.pyOf(j);
+  const py = ((j.title||'').match(/(\d+(?:\.\d+)?)\s*평/)||[])[1];
   const spec = [py && !(j.public_note||'').includes(py+'평') ? py+'평' : '', j.public_note||''].filter(Boolean).join(' · ');
   const showPromo = j.job_date <= ymd(H.today()) && j.status !== 'cancelled' && j.status !== 'quote';
   return `<div class="card" style="--tc:${tc}">
@@ -323,7 +323,6 @@ function jobSheet(j, def){
     <div class="field full"><label>지역 · 현장 이름 <small>(팀 전체 공개)</small></label><input name="title" value="${esc(j.title||'')}" placeholder="예) 수영구 광안동 아파트 이사청소 24평" required></div>
     <div class="field"><label>종류</label><input name="kind" value="${esc(j.kind||'')}" list="kinds" placeholder="이사청소" data-c="repKind"><datalist id="kinds">${['이사청소','입주청소','퇴실청소','상가','사무실','정기','에어컨','철거','시설관리','폐기물','특수'].map(k=>`<option value="${k}">`).join('')}</datalist></div>
     <div class="field"><label>필요 인원</label><input type="number" name="headcount" min="1" max="50" value="${j.headcount}"></div>
-    ${H.S.needV30?'':`<div class="field"><label>평수 <small>(비우면 제목에서)</small></label><input type="text" inputmode="decimal" name="pyeong" value="${esc(j.pyeong!=null?String(j.pyeong):H.pyOf(j))}" placeholder="예) 35"></div>`}
     <div class="field full"><label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink)"><input type="checkbox" name="boss_on" ${j.boss_on?'checked':''} style="width:auto">🧹 대표님도 이 현장 가요 <small style="color:var(--sub)">(직원 화면 대표 상태가 시간 맞춰 '현장 근무중'으로)</small></label></div>
 ${j.id ? repScopeHtml(j) : repHtml(j)}
     <div class="field full"><label>팀 공개 메모 <small>(장비·주차 등)</small></label><input name="public_note" value="${esc(j.public_note||'')}"></div>
@@ -383,7 +382,7 @@ H.ACT.custRoom = async el => { const j = J(el.dataset.j);
 H.autoLive = () => { const c = H.setting('live'); return !c || c.auto_issue !== false; };
 H.FORM.job = async v => {
   const tms = v.getAll('teams'); if (!tms.length) return H.toast('팀을 하나 이상 골라주세요');
-  const row = { job_date:v.get('job_date'), start_time:H.nn(v.get('start_time')), title:v.get('title').trim(), kind:H.nn(v.get('kind')), headcount:+v.get('headcount')||1, teams:tms, ...(H.S.needV30 ? {} : {pyeong: (v.get('pyeong')||'').trim() === '' ? null : (+String(v.get('pyeong')).replace(/[^0-9.]/g,'') || null)}),
+  const row = { job_date:v.get('job_date'), start_time:H.nn(v.get('start_time')), title:v.get('title').trim(), kind:H.nn(v.get('kind')), headcount:+v.get('headcount')||1, teams:tms,
     target_staff: v.getAll('target').length ? v.getAll('target') : null, public_note:H.nn(v.get('public_note')), address:H.nn(v.get('address')), private_note:H.nn(v.get('private_note')),
     order_channel:H.nn(v.get('order_channel')), collector_id:H.nn(v.get('collector_id')), total_amount:H.nnum(v.get('total_amount')), deposit_amount:H.nnum(v.get('deposit_amount')),
     balance_amount:H.nnum(v.get('balance_amount')), status:v.get('status'), admin_memo:H.nn(v.get('admin_memo')), contract_mode:H.nn(v.get('contract_mode')), live_title:H.nn(v.get('live_title')) };
