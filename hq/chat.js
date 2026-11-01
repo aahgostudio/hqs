@@ -95,6 +95,9 @@ function roomHtml(){
         <button class="btn sm ghost" data-a="chKeep" title="기간이 지나도 정리하지 않아요">${r.keep?'📌 고정 해제':'📌 보관 고정'}</button>
         <button class="btn sm ghost" data-a="chExport">내보내기(PDF)</button>
         <button class="btn sm ghost" data-a="chClose">${r.closed?'다시 열기':'방 닫기'}</button>` : '<span class="note">관리자로 참여 중</span>'}</div></div>
+    ${r.job_id && ['cust','site'].includes(R.kind) && !r.closed ? (r.job_done
+      ? `<div style="margin:8px 10px 0;background:#DCFCE7;color:#065F46;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:700;text-align:center">✅ 작업 끝 · ${tm(r.job_done)}</div>`
+      : `<button data-a="chWorkDone" style="display:block;width:calc(100% - 20px);margin:8px 10px 0;border:0;border-radius:14px;background:#059669;color:#fff;padding:12px;font:inherit;font-weight:800;font-size:15px;cursor:pointer">✅ 작업 끝 누르기</button>`) : ''}
     <div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
     ${r.closed ? '<div class="ch-in note" style="justify-content:center">닫은 방이에요 · 직원 화면엔 안 보여요</div>' :
     K.bar({id:'chT', ph:`메시지를 입력해보세요.${matchMedia('(pointer:fine)').matches ? ' (Enter 전송 · Shift+Enter 줄바꿈)' : ''}`,
@@ -346,6 +349,11 @@ H.ACT.chLive = async () => { const r = (C.home.rooms||[]).find(x => x.id === C.c
   if (!(H.S.jobs||[]).some(j => j.id == r.job_id)) { const d = await H.q(H.sb.from('jobs').select('*, assignments(*)').eq('id', r.job_id)); if (!d || !d.length) return H.toast('현장을 불러오지 못했어요'); (H.S.jobs = H.S.jobs || []).push(d[0]); }
   if (!H.ACT.liveSheet) return H.toast('잠시 후 다시 눌러주세요');
   H.ACT.liveSheet({dataset: {j: String(r.job_id)}}); };
+H.ACT.chWorkDone = async () => {   // v30: 대표님·관리자가 직접 [작업 끝] (혼자 가는 현장 · 수금 담당 없는 현장)
+  const r = C.home.rooms.find(x => x.id === C.cur); if (!r || !r.job_id) return;
+  if (!confirm('작업 끝으로 할까요?\n고객님 화면이 완료 리포트로 바뀌고, 7일 뒤 방이 닫혀요.')) return;
+  try { const t = new Date().toISOString(); await H.q(H.sb.from('jobs').update({work_done_at: t}).eq('id', r.job_id).is('work_done_at', null));
+    await loadHome(); paint(true); H.toast('작업 끝으로 표시했어요'); } catch(err){ H.fail(err); } };
 H.ACT.chKeep = async () => { const r = C.home.rooms.find(x => x.id === C.cur); await rpc('chat_admin_room_flag', {p_id: C.cur, p_closed: null, p_keep: !r.keep}); await loadHome(); paint(true); H.toast(r.keep ? '보관 고정을 풀었어요' : '보관 고정 · 기간이 지나도 정리하지 않아요'); };
 H.ACT.chClose = async () => { const r = C.home.rooms.find(x => x.id === C.cur);
   if (!r.closed && !confirm(`'${r.title}' 방을 닫을까요?\n직원 목록에서 사라지고, 대화 기록은 보관함에 남아요.`)) return;

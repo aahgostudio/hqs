@@ -4,6 +4,8 @@
 --   · 고객님 방: 확정되면 바로 만들어 둠 (예전엔 작업 전날부터)
 --   · 수금 담당이 현장에서 받은 추가금을 직접 적음 (사유·금액)
 --     → HQ 금액·증빙의 추가금 줄에 '현장 추가 · 직원 입력'으로 들어감
+--   · [작업 끝]: 수금 담당이 없거나 안 가면 확정된 팀장도 누를 수 있음
+--   · 대표님 혼자 가는 현장: HQ 고객님 방 맨 위에서 [작업 끝]
 -- ============================================================
 create or replace function public._chat_ensure(s public.staff) returns void
 language plpgsql security definer set search_path = public, extensions as $$
@@ -85,7 +87,7 @@ begin
           'work_done',    case when my.status = 'approved' then j.work_done_at end,
           -- 손님방 (v21): 확정자만 · 작업 끝은 수금 담당 (없으면 확정자 누구나)
           'cust_room',    case when my.status = 'approved' then (select id from public.chat_rooms where kind = 'cust' and job_id = j.id) end,
-          'can_done',     (my.status = 'approved' and j.collector_id = s.id),   -- v24: 그날 수금 담당만
+          'can_done',     public._can_work_done(j, s),   -- v30: 수금 담당 · 수금 담당이 없거나 현장에 안 가면 확정된 팀장
           'ph_before',    case when my.status = 'approved' then (select count(*) from public.job_photos p where p.job_id = j.id and p.stage = 'before') end,
           -- v30: 수금 담당이 현장에서 받은 추가금
           'extras',       case when j.collector_id = s.id then coalesce(j.extras,'[]'::jsonb) end,
@@ -121,6 +123,46 @@ begin
   return out;
 end $$;
 grant execute on function public.staff_board(text, date, date) to anon, authenticated;
+
+-- [작업 끝] 누를 수 있는 사람 (v30)
+--  · 그날 수금 담당
+--  · 수금 담당이 없거나(대표·회사 계좌) 그 사람이 현장에 안 가면 → 확정된 팀장(수금 가능) 누구나
+create or replace function public._can_work_done(j public.jobs, s public.staff) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.assignments a where a.job_id = j.id and a.staff_id = s.id and a.status = 'approved')
+     and ( j.collector_id = s.id
+           or (s.can_collect and (j.collector_id is null
+               or not exists (select 1 from public.assignments a where a.job_id = j.id and a.staff_id = j.collector_id and a.status = 'approved'))) )
+$$;
+
+create or replace function public.staff_work_done(p_token text, p_job bigint)
+returns text language plpgsql security definer set search_path = public, extensions as $$
+declare s public.staff := public._me(p_token); j public.jobs;
+begin
+  select * into j from public.jobs where id = p_job;
+  if j.id is null or not public._can_work_done(j, s) then raise exception 'collector_only'; end if;
+  update public.jobs set work_done_at = coalesce(work_done_at, now()) where id = p_job;
+  return 'ok';
+end $$;
+grant execute on function public.staff_work_done(text, bigint) to anon, authenticated;
+
+-- 작업 끝 안내 글: 수금 담당이 없으면 누른 관리자(대표님) 이름으로 올림
+create or replace function private.on_work_done() returns trigger
+language plpgsql security definer set search_path = public, extensions, private as $$
+declare rid bigint; days int := coalesce(new.live_close_days, 7);
+begin
+  if new.work_done_at is null or old.work_done_at is not null or new.live_code is null then return null; end if;
+  insert into public.chat_rooms (kind, job_id) values ('cust', new.id) on conflict do nothing;
+  select id into rid from public.chat_rooms where kind = 'cust' and job_id = new.id;
+  -- 수금 담당 이름으로 올림 → 대표님·관리자에게 '작업 끝' 알림이 감 (고객님 화면엔 '리츠종합클린 현장팀')
+  insert into public.chat_messages (room_id, staff_id, admin_uid, body)
+    values (rid, new.collector_id, case when new.collector_id is null then auth.uid() end, '✅ 작업이 모두 끝났어요. 고생한 현장팀을 대신해 감사 인사드려요!' || E'\n' ||
+                            '위쪽 완료 리포트에서 전·후 사진과 잔금 안내를 확인해 주세요.' || E'\n' ||
+                            '불편한 곳이 있으면 이 방에 편하게 남겨주세요 (' || days || '일 뒤 이 방은 닫혀요).');
+  return null;
+exception when others then return null;
+end $$;
+
 
 -- 추가금 적기 (그날 수금 담당만, 작업 마감 전까지)
 create or replace function public.staff_add_extra(p_token text, p_job bigint, p_name text, p_amount int)
