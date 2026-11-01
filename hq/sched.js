@@ -110,10 +110,13 @@ function jobCard(j){
   // v30: 도급 현장인데 정산 방식·금액이 비어 있으면 빨간 알림 (누르면 금액·증빙)
   const prtMiss = H.isPartner(j) && !['cancelled','quote'].includes(j.status) && (!j.contract_mode || !(j.total_amount||j.balance_amount))
     ? `<button class="who" data-a="moneySheet" data-j="${j.id}" style="cursor:pointer;background:#FEF2F2;border-color:#FECACA;color:#B91C1C">⚠️ ${!j.contract_mode && !(j.total_amount||j.balance_amount) ? '도급 정산 방식·금액' : !j.contract_mode ? '도급 정산 방식' : '계약금액'} 안 넣음 ›</button>` : '';
+  // 집 스펙 (평수 + 팀 공개 메모) — 직원·도급 화면과 같은 줄 (v30)
+  const py = ((j.title||'').match(/(\d+(?:\.\d+)?)\s*평/)||[])[1];
+  const spec = [py && !(j.public_note||'').includes(py+'평') ? py+'평' : '', j.public_note||''].filter(Boolean).join(' · ');
   const showPromo = j.job_date <= ymd(H.today()) && j.status !== 'cancelled' && j.status !== 'quote';
   return `<div class="card" style="--tc:${tc}">
     <div class="t"><span style="font-variant-numeric:tabular-nums">${j.start_time?j.start_time.slice(0,5):'시간 미정'}</span>${j.series_id?'<span title="정기 반복">🔁 </span>':''}${esc(j.title)} ${(j.teams||[]).map(c=>`<span class="tag" style="background:${H.T(c).color}" title="${c}">${esc(H.T(c).name)}</span>`).join('')}${j.contract_mode?`<span class="tag" style="background:var(--prt)">도급 ${j.contract_mode}</span>`:''}${pill}</div>
-    <div class="m"><span>${j.headcount}명</span>${j.kind?`<span>${esc(j.kind)}</span>`:''}${j.order_channel?`<span>오더: ${esc(j.order_channel)}</span>`:''}${j.address?`<span>🔒 ${esc(j.address)}</span>`:''}${money}</div>
+    ${spec?`<div class="m" style="color:var(--ink);font-weight:600">${esc(spec)}</div>`:''}<div class="m"><span>${j.headcount}명</span>${j.kind?`<span>${esc(j.kind)}</span>`:''}${j.order_channel?`<span>오더: ${esc(j.order_channel)}</span>`:''}${j.address?`<span>🔒 ${esc(j.address)}</span>`:''}${money}</div>
     ${j.cust_name||j.cust_phone?`<div class="m"><span>👤 고객 ${esc(j.cust_name||'')}</span>${j.cust_phone?`<a href="tel:${esc(j.cust_phone.replace(/[^0-9]/g,''))}">${esc(j.cust_phone)}</a>`:''}</div>`:''}
     ${(()=>{ const m = (j.cust_name||j.cust_phone) ? (j.admin_memo||'').replace(/^고객\s+\S+\s+0[\d\s.\-]{8,}\d\s*(·\s*)?/, '').trim() : j.admin_memo; return m?`<div class="m">메모: ${esc(m)}</div>`:''; })()}
     <div class="people">${people}${prtMiss}${j.status!=='quote'?`<button class="who" data-a="collPick" data-j="${j.id}" style="cursor:pointer;${j.collector_id?'background:#FFF7E6;border-color:#FDE68A;color:#92400E':'background:#FEF2F2;border-color:#FECACA;color:#B91C1C'}">💰 수금 ${j.collector_id?esc(H.P(j.collector_id).name):'담당 없음'} ▾</button>`:''}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}</div>
