@@ -5,6 +5,7 @@
 --   · 수금 담당이 현장에서 받은 추가금을 직접 적음 (사유·금액)
 --     → HQ 금액·증빙의 추가금 줄에 '현장 추가 · 직원 입력'으로 들어감
 --   · [작업 끝]: 수금 담당이 없거나 안 가면 확정된 팀장도 누를 수 있음
+--   · 도급 사장님 확정된 현장 = 인원 완료 (자리 빔 표시 안 함)
 --   · 대표님 혼자 가는 현장: HQ 고객님 방 맨 위에서 [작업 끝]
 -- ============================================================
 create or replace function public._chat_ensure(s public.staff) returns void
@@ -195,6 +196,12 @@ begin
   return 'ok';
 end $$;
 grant execute on function public.staff_del_extra(text, bigint, int) to anon, authenticated;
+
+-- 도급 사장님이 확정된 현장은 인원 완료로 (지금 모집 중으로 남아 있는 것 정리)
+update public.jobs j set status = 'full'
+ where j.status = 'open'
+   and exists (select 1 from public.assignments a join public.staff st on st.id = a.staff_id
+                where a.job_id = j.id and a.status = 'approved' and st.team = 'PRT');
 
 create or replace function public.hq_schema_version() returns int
 language sql stable as $$ select greatest(30, 0) $$;

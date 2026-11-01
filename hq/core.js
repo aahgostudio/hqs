@@ -70,7 +70,10 @@ H.jobRevenue = j => {
 // 외부지원(일용직): 그 현장에만 붙는 임시 인원 — jobs.helpers [{id,name,phone,src,pay,extra,memo,paid}] (v29)
 H.helpers = j => (H.S.needV29 || !j) ? [] : (j.helpers||[]);
 // 현장 인원 = 확정 직원 + 대표(가면) + 외부지원
-H.crewN = j => (j.assignments||[]).filter(a => a.status === 'approved').length + (j.boss_on && !H.S.needV4 ? 1 : 0) + H.helpers(j).length;
+H.isPrt = sid => H.P(sid).team === 'PRT';
+// 도급 사장님이 확정되면 그 팀이 인원을 다 데려오니 자리 다 찬 걸로 (v30)
+H.prtOn = j => (j.assignments||[]).some(a => a.status === 'approved' && H.isPrt(a.staff_id));
+H.crewN = j => H.prtOn(j) ? Math.max(j.headcount||0, 1) : (j.assignments||[]).filter(a => a.status === 'approved').length + (j.boss_on && !H.S.needV4 ? 1 : 0) + H.helpers(j).length;
 H.jobLabor = j => (j.assignments||[]).filter(a => a.status === 'approved').reduce((n,a) => n + (+a.pay_amount||0) + (+a.extra_amount||0), 0)
   + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
 // 증빙 발행/미발행 나누기: 예약금 · 잔금 · 추가금 줄마다

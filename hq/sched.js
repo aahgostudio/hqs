@@ -91,7 +91,7 @@ function jobCard(j){
   const wait = (j.assignments||[]).filter(a => a.status === 'applied');
   const boss = !!j.boss_on && !H.S.needV4;   // 대표님도 이 현장에 감 → 한 자리로 셈
   const hp = H.helpers(j);                     // 외부지원(일용직) — 이 현장에만 붙는 인원
-  const left = Math.max(0, j.headcount - ap.length - (boss ? 1 : 0) - hp.length);
+  const left = H.prtOn(j) ? 0 : Math.max(0, j.headcount - ap.length - (boss ? 1 : 0) - hp.length);   // 도급 확정 = 인원 완료
   const pill = j.status==='cancelled' ? '<span class="pill p-mute">취소</span>' : j.status==='quote' ? '<span class="pill p-info">견적 중</span>'
     : j.status==='done' ? '<span class="pill p-mute">마감 완료</span>'
     : left===0 ? '<span class="pill p-ok">인원 완료</span>' : `<span class="pill p-warn">${left}자리 남음</span>`;
@@ -196,7 +196,7 @@ const J = id => (H.S.jobs||[]).find(j => j.id == id);
 H.J = J;
 H.ACT.approve = async el => { const j = J(el.dataset.j), sid = el.dataset.s;
   await H.q(sb.from('assignments').update({status:'approved', decided_at:new Date().toISOString()}).match({job_id:j.id, staff_id:sid}));
-  const n = H.crewN(j) + 1;
+  const n = H.isPrt(sid) ? j.headcount : H.crewN(j) + 1;
   if (n >= j.headcount) await H.q(sb.from('jobs').update({status:'full'}).eq('id', j.id));
   H.toast(`${H.P(sid).name}님 확정 · 카톡으로 알려주세요`); H.refresh(); };
 H.ACT.reject = async el => { await H.q(sb.from('assignments').update({status:'rejected', decided_at:new Date().toISOString()}).match({job_id:+el.dataset.j, staff_id:el.dataset.s})); H.toast('거절했어요'); H.refresh(); };
@@ -431,7 +431,7 @@ H.FORM.assign = async v => { const id = +v.get('id'); const ids = v.getAll('s'),
   if (ids.length) await H.q(sb.from('assignments').upsert(ids.map(s=>({job_id:id, staff_id:s, status:'approved', decided_at:now})), {onConflict:'job_id,staff_id'}));
   if (me) await H.q(sb.from('jobs').update({boss_on: true}).eq('id', id));   // 대표님도 한 자리
   const j = J(id); const n = new Set([...j.assignments.filter(a=>a.status==='approved').map(a=>a.staff_id), ...ids]).size + ((me || j.boss_on) ? 1 : 0) + H.helpers(j).length;
-  if (n >= j.headcount) await H.q(sb.from('jobs').update({status:'full'}).eq('id', id));
+  if (n >= j.headcount || ids.some(H.isPrt) || H.prtOn(j)) await H.q(sb.from('jobs').update({status:'full'}).eq('id', id));
   H.close(); H.toast('배정했어요 · 카톡으로 알려주세요'); H.refresh(); };
 
 /* 외부지원 (일용직) — 직원 명단엔 안 넣고 이 현장에만 붙임 · 정산은 공제 없이 */
