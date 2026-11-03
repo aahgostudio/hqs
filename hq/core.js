@@ -167,14 +167,17 @@ H.untilTxt = u => { if (!u) return ''; const d = new Date(u), p = n => String(n)
   return d.toDateString() === new Date().toDateString() ? ` ~${p(d.getHours())}:${p(d.getMinutes())}` : ` ~${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
 /* 1104G 대표 출퇴근: 상태 → 칩 (선 아이콘 + 글자) */
 H.BK = {office:['사무실','#10B981','<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10.5 21v-3h3v3"/>'],
-  out:['외근','#E08A00','<path d="M3 17v-4l2.2-5.2A2 2 0 0 1 7 6.5h10a2 2 0 0 1 1.8 1.3L21 13v4"/><path d="M3 13h18M3 17h18"/><circle cx="7" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>'],
   site:['현장','#2453C7','<path d="M3 18h18"/><path d="M5 18v-2a7 7 0 0 1 14 0v2"/><path d="M10 9.5V6.5a2 2 0 0 1 4 0v3"/>'],
-  busy:['통화불가','#DC2626','<circle cx="12" cy="12" r="9"/><path d="M7.5 12h9"/>'],
+  meet:['미팅','#0891B2','<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>'],
+  contract:['계약','#7C3AED','<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 17c1.5-2 2.5-2 3.5 0s2 2 3.5 0"/>'],
+  guide:['안내','#6D28D9','<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>'],
+  busy:['바쁨','#DC2626','<circle cx="12" cy="12" r="9"/><path d="M7.5 12h9"/>'],
+  rest:['휴무','#DB2777','<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'],
+  vac:['휴가','#EA580C','<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>'],
   off:['퇴근','#9CA3AF','<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'],
-  rest:['휴무','#DB2777','<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>']};
-H.BE = {office:'📋', site:'🦺', out:'💼', busy:'📵', off:'🌙', rest:'🌴'};   // 직원 화면과 같은 그림
-H.bIco = (k, sz=16) => `<span style="font-size:${Math.round(sz*0.95)}px;line-height:1;flex:none">${H.BE[k]}</span>`;
-H.bKind = st => ({'내근중':'office','근무중':'office','외근중':'out','견적 외근중':'out','부동산 외근중':'out','일정 중':'out','현장':'site','현장 근무중':'site','Busy':'busy','회의중':'busy','업무 종료':'off','휴가중':'rest','부재':'rest'})[st] || 'office';
+  out:['외근','#E08A00','<path d="M3 17v-4l2.2-5.2A2 2 0 0 1 7 6.5h10a2 2 0 0 1 1.8 1.3L21 13v4"/><path d="M3 13h18M3 17h18"/><circle cx="7" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>']};
+H.bIco = (k, sz=16) => `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="${H.BK[k][1]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none">${H.BK[k][2]}</svg>`;
+H.bKind = st => ({'내근중':'office','근무중':'office','외근중':'out','견적 외근중':'out','부동산 외근중':'guide','일정 중':'out','현장':'site','현장 근무중':'site','Busy':'busy','회의중':'meet','계약중':'contract','업무 종료':'off','휴가중':'vac','휴무':'rest','부재':'rest'})[st] || 'office';
 H.bossChip = () => {
   const b = H.S.boss || {state:'근무중'}, k = H.bKind(b.state);
   const until = H.untilTxt(b.until);
@@ -253,7 +256,7 @@ H.ACT.bossSheet = async () => { if (!H.S.owner) return H.toast('대표 상태는
   const b = H.S.boss || {state:'근무중'}, cur = b.punch || b.state !== '근무중' ? H.bKind(b.state) : null;
   const P = (H.S.punchToday||[]);
   const log = P.map(x => `${H.hm(x.at)} ${H.BK[x.kind][0]}`).join(' → ');
-  const K = ['office','site','out','busy','rest','off'];
+  const K = ['office','site','meet','contract','guide','busy','rest','vac','off'];
   H.open(`<h3>지금 상태</h3><p class="note" style="margin:-6px 0 10px">누르면 바로 바뀌고 시간이 기록돼요.</p>
     <div class="pk3">${K.map(k => `<button type="button" class="pkb ${cur===k?'on':''}" data-a="bossTap" data-k="${k}">${H.bIco(k,26)}<b>${H.BK[k][0]}</b></button>`).join('')}</div>
     ${log ? `<div class="pklog"><b>오늘</b> ${log}</div>` : ''}
@@ -261,20 +264,33 @@ H.ACT.bossSheet = async () => { if (!H.S.owner) return H.toast('대표 상태는
 };
 // 1104R: 상태 누르면 바로 — 사무실·현장·외근·퇴근 = 시간 기록 / 통화불가·휴무 = 오늘 끝까지 표시
 H.ACT.bossTap = async el => { const k = el.dataset.k, b = H.S.boss || {};
+  if (k === 'vac') return H.ACT.bossVac();
+  const later = h => { const u = new Date(Date.now() + h*3600e3); return u.toISOString(); };
   const eod = () => { const u = new Date(); u.setHours(23,59,0,0); return u.toISOString(); };
+  const MAN = {busy:['Busy', later(1)], rest:['휴무', eod()], meet:['회의중', later(2)], contract:['계약중', later(2)], guide:['부동산 외근중', later(2)]};
+  const PUNCH = {office:'office', site:'site', off:'off', meet:'out', contract:'out', guide:'out'};
   try {
-    if (k === 'busy' || k === 'rest') await H.q(sb.from('settings').upsert({key:'boss_status', value:{state: k === 'busy' ? 'Busy' : '휴가중', memo: b.memo||'', until: eod()}}));
-    else { await H.q(sb.from('boss_punch').insert({kind:k}));
-      if (b.state && b.state !== '근무중' && !b.punch) await H.q(sb.from('settings').upsert({key:'boss_status', value:{state:'근무중', memo:b.memo||'', until:null}})); }
+    if (PUNCH[k]) await H.q(sb.from('boss_punch').insert({kind: PUNCH[k]}));
+    if (MAN[k]) await H.q(sb.from('settings').upsert({key:'boss_status', value:{state: MAN[k][0], memo: b.memo||'', until: MAN[k][1]}}));
+    else if (b.state && b.state !== '근무중' && !b.punch) await H.q(sb.from('settings').upsert({key:'boss_status', value:{state:'근무중', memo:b.memo||'', until:null}}));
+    if (k === 'rest') { const d = H.ymd(H.today()); try { await H.q(sb.from('boss_rest').upsert({day: d})); } catch(_){} }
   } catch(e){ return H.toast('저장 못 했어요 · ' + String(e.message||e).slice(0, 80)); }
   H.close(); H.toast(k === 'off' ? '퇴근 · 오늘도 수고하셨어요' : H.BK[k][0] + ' · 직원 화면에 바로 보여요');
   await H.loadPunchToday(); H._dirty = Date.now(); await H.refresh(); };
+H.ACT.bossVac = () => { const t = H.ymd(H.addDays(H.today(), 2));
+  H.open(`<form data-f="bossVac"><h3>휴가</h3><p class="note" style="margin:-6px 0 10px">오늘부터 고른 날까지 직원 화면에 "휴가"로 보이고, 달력에 휴무 점이 찍혀요.</p>
+    <div class="fg"><div class="field"><label>시작</label><input type="date" name="s" value="${H.ymd(H.today())}" required></div><div class="field"><label>끝나는 날</label><input type="date" name="e" value="${t}" required></div></div>${H.sacts('휴가 시작')}</form>`); };
+H.FORM.bossVac = async v => { const s0 = v.get('s'), e0 = v.get('e'); if (!s0 || !e0 || e0 < s0) return H.toast('날짜를 확인해 주세요');
+  const days = []; for (let d = H.parse(s0); H.ymd(d) <= e0; d = H.addDays(d, 1)) days.push({day: H.ymd(d)});
+  await H.q(sb.from('boss_rest').upsert(days));
+  if (s0 <= H.ymd(H.today())) { const u = H.parse(e0); u.setHours(23,59,0,0); await H.q(sb.from('settings').upsert({key:'boss_status', value:{state:'휴가중', memo:(H.S.boss||{}).memo||'', until:u.toISOString()}})); }
+  H.close(); H.toast(`휴가 ${H.md(s0)} ~ ${H.md(e0)} · 잘 쉬다 오세요`); H._dirty = Date.now(); await H.refresh(); };
 H.ACT.bossMemo = () => { const b = H.S.boss || {state:'근무중'};
-  const states = ['근무중','Busy','휴가중','부재'];
+  const states = ['근무중','Busy','휴무','휴가중'];
   const u = b.until ? new Date(b.until) : null;
   const loc = u ? new Date(u.getTime() - u.getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
   H.open(`<form data-f="boss"><h3>메모·시간 정하기</h3>
-    <div class="chips" style="margin-bottom:12px">${states.map(s=>`<label><input type="radio" name="state" value="${s}" ${b.state===s?'checked':''}><span>${s==='근무중'?'자동 (찍은 대로)':s==='Busy'?'통화불가':s==='휴가중'?'휴무':s}</span></label>`).join('')}</div>
+    <div class="chips" style="margin-bottom:12px">${states.map(s=>`<label><input type="radio" name="state" value="${s}" ${b.state===s?'checked':''}><span>${s==='근무중'?'자동 (찍은 대로)':s==='Busy'?'통화불가':s==='휴가중'?'휴가':s}</span></label>`).join('')}</div>
     <div class="fg"><div class="field full"><label>한 줄 메모 (직원에게 보임)</label><input name="memo" value="${H.esc(b.memo||'')}" placeholder="예) 급한 건 전화 · 신봉진 실장에게"></div>
     <div class="field"><label>언제까지</label><input type="datetime-local" name="until" value="${loc}"></div>
     <div class="field"><label>&nbsp;</label><div class="chips">${[['1h','1시간'],['3h','3시간'],['eod','오늘 끝까지']].map(([k,l])=>`<label><input type="radio" name="quick" value="${k}"><span>${l}</span></label>`).join('')}</div></div></div>
