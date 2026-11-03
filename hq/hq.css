@@ -522,3 +522,6 @@ html.chatapp .fab{display:none}
 /* 1104R 상태 6칸 바로 누르기 */
 .pk3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .pk3 .pkb{flex-direction:column;justify-content:center;gap:6px;padding:16px 6px;text-align:center}.pk3 .pkb b{font-size:14.5px}
+
+/* 1104V 고객 전화·문자 */
+.cph{margin:0 4px 0 6px;color:#111;font-variant-numeric:tabular-nums}.cbtn{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line);border-radius:99px;padding:3px 10px;margin-left:4px;font-size:12.5px;font-weight:700;color:#111;text-decoration:none;background:#fff}
