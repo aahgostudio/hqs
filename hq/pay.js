@@ -5,13 +5,45 @@
 const {esc, sb} = H, won = H.won;
 const LEVEL_PAY_DEF = {'교육생':50000, '가정청소 팀원 (일반)':70000, '가정청소 팀원 (고정)':80000, '가정청소 팀장':90000, '상가청소 팀장':100000, '특수청소 팀장':120000};
 const ROLE_LV = {'교육생':'교육생', '팀원':'가정청소 팀원 (일반)', '고정팀원':'가정청소 팀원 (고정)', '팀장':'가정청소 팀장', '상가팀장':'상가청소 팀장', '특수팀장':'특수청소 팀장'};
-const P = {d: null, jobs: [], pays: [], open: {}}; H._payState = P;
+const P = {d: null, jobs: [], pays: [], open: {}, mOff: 0, mJobs: [], mOpen: {}}; H._payState = P;
 const levelPay = () => Object.assign({}, LEVEL_PAY_DEF, (H.S.settings||{}).level_pay || {});
 const lvOf = s => (((H.S.settings||{}).staff_hr||{})[s.id]||{}).level || ROLE_LV[s.role] || '';
 const baseOf = (s, a) => a.pay_amount != null ? +a.pay_amount : (levelPay()[lvOf(s)] || 0);
 const md = d => `${+d.slice(5,7)}/${+d.slice(8,10)}`;
 const nick = s => s.name.length >= 3 ? s.name.slice(1) : s.name;
 
+// 월별 직원 정산: 그 달 현장(오늘까지) 지급액 · 입금 완료 · 남은 돈
+async function loadMonth(){
+  const T = new Date(), m0 = new Date(T.getFullYear(), T.getMonth() + P.mOff, 1), m1 = new Date(T.getFullYear(), T.getMonth() + P.mOff + 1, 0);
+  const to = P.mOff === 0 ? T : m1;
+  P.mLabel = m0.getMonth() + 1;
+  P.mJobs = (await H.q(sb.from('jobs').select('id,job_date,title,status,helpers,assignments(*)').gte('job_date', H.ymd(m0)).lte('job_date', H.ymd(to)).order('job_date')))
+    .filter(j => j.status !== 'cancelled' && j.status !== 'quote');
+}
+function monthRows(){
+  const by = {};
+  P.mJobs.forEach(j => {
+    (j.assignments||[]).filter(a => a.status === 'approved').forEach(a => { const s = H.P(a.staff_id); if (s.team === 'RES' || s.name === '?') return;
+      const p = by[s.id] = by[s.id] || {s, items: []}; p.items.push({j, g: baseOf(s, a) + (+a.extra_amount||0), paid: !!a.paid, set: a.pay_amount != null}); });
+    H.helpers(j).forEach(x => { const k = 'h:' + x.name + (x.phone||''); const p = by[k] = by[k] || {s: {name: x.name, ext: true, pay_type: 'none'}, items: []};
+      p.items.push({j, g: (+x.pay||0) + (+x.extra||0), paid: !!x.paid, set: x.pay != null}); }); });
+  return Object.values(by).map(p => { const pt = p.s.ext ? 'none' : p.s.pay_type, D = (g, n) => pt === 'salary' ? 0 : H.deduct(pt, g, n);
+    const pg = p.items.filter(i => i.paid).reduce((a,i) => a + i.g, 0), ug = p.items.filter(i => !i.paid).reduce((a,i) => a + i.g, 0);
+    const pn = p.items.filter(i => i.paid).length, un = p.items.length - pn;
+    return Object.assign(p, {n: p.items.length, net: (pg + ug) - D(pg + ug, p.items.length), sent: pg - D(pg, pn), left: ug - D(ug, un), miss: p.items.filter(i => !i.set).length}); })
+    .sort((a,b) => (b.left > 0) - (a.left > 0) || b.net - a.net);
+}
+function monthBox(){
+  const rs = monthRows(), tot = k => rs.reduce((a,r) => a + r[k], 0), tag = s => s.ext ? '외부지원' : (lvOf(s) || s.role || '');
+  return `<section class="pay-mon"><div class="pay-top" style="margin-top:22px"><button class="btn ghost sm" data-a="pyMon" data-n="-1">‹</button><b>📒 ${P.mLabel||''}월 직원별 정산</b><button class="btn ghost sm" data-a="pyMon" data-n="1" ${P.mOff >= 0 ? 'disabled' : ''}>›</button></div>
+    <div class="pay-sum"><div><span>${P.mOff ? '지급 총액' : '이번 달 지급 총액'}</span><b>${won(tot('net'))}</b></div><div><span>입금 완료</span><b>${won(tot('sent'))}</b></div><div class="${tot('left') > 0 ? 'w' : ''}"><span>남은 돈</span><b>${won(tot('left'))}</b></div></div>
+    <div class="pm-list">${rs.map((r, i) => { const k = r.s.id || r.s.name, op = P.mOpen[k];
+      return `<div class="pm-row ${r.left > 0 ? '' : 'ok'}"><button class="pm-h" data-a="pyMonOpen" data-k="${esc(k)}"><span class="nm"><b>${esc(r.s.name)}</b><small>${esc(tag(r.s))} · ${r.n}곳</small></span>
+        <span class="am"><b>${won(r.net)}</b>${r.left > 0 ? `<em>남음 ${won(r.left)}</em>` : '<em class="ok">다 보냄</em>'}</span><i>${op ? '▴' : '▾'}</i></button>
+        ${op ? `<div class="pm-det">${r.items.map(it => `<div><span>${md(it.j.job_date)} ${esc(it.j.title||'')}</span><span>${won(it.g)}${it.set ? '' : ' <small style="color:#B45309">레벨 금액</small>'} ${it.paid ? '<b class="ok">✓</b>' : '<b class="no">·</b>'}</span></div>`).join('')}
+          ${r.s.ext ? '' : `<p class="note">공제 전 금액 · ${esc(H.PT[r.s.pay_type] || '')} 공제는 합계에서</p>`}</div>` : ''}</div>`; }).join('') || '<p class="empty">이 달 정산할 현장이 없어요</p>'}</div>
+    <p class="note">현장 지급액(안 넣었으면 레벨 금액) − 공제 기준 · 직원 폰 '나 › 내 수입'과 같은 기준이에요</p></section>`;
+}
 async function load(d){
   P.d = d;
   P.jobs = (await H.q(sb.from('jobs').select('*, assignments(*)').eq('job_date', d).order('start_time')))
@@ -52,7 +84,7 @@ H.paySummary = jobs => { const by = {};
 };
 H.payDate = d => { P.d = d; };
 H.view('pay', {label:'정산', owner:true,
-  async load(){ await load(P.d || H.ymd(new Date())); },
+  async load(){ await Promise.all([load(P.d || H.ymd(new Date())), loadMonth().catch(() => { P.mJobs = []; })]); },
   render(){
     const ps = people(), left = ps.filter(p => !p.done), d = P.d, today = d === H.ymd(new Date());
     const bal = P.jobs.map(j => { const rev = H.jobRevenue(j), dep = +j.deposit_amount||0, b = j.balance_amount != null ? +j.balance_amount : Math.max(0, rev - dep); return {j, b, got: !!j.collected_at || !b}; });
@@ -71,12 +103,15 @@ H.view('pay', {label:'정산', owner:true,
             ${p.done ? `<span class="pill p-ok">입금 완료${p.sent ? ' ' + won(p.sent) : ''}</span>` : `<button class="btn" data-a="pyDone" data-s="${p.s.id}">입금 완료</button>`}</div>
           ${op && !p.s.ext ? `<div class="pay-det">${p.items.map(i => `<div><span>${esc(i.j.title||'')}</span><span>${won(i.b)}${i.x ? ' +' + won(i.x) : ''} <button class="link" data-a="pyBase" data-s="${p.s.id}" data-j="${i.j.id}">기본 수정</button></span></div>`).join('')}</div>` : ''}
           ${p.s.ext ? '' : `<button class="pay-more" data-a="pyOpen" data-s="${p.s.id}">${op ? '접기 ▴' : '현장별 ▾'}</button>`}</div>`; }).join('') || '<p class="empty">이날 지급할 직원이 없어요</p>'}
-      <p class="note" style="margin-top:12px">기본 = 지급액을 넣었으면 그 금액, 안 넣었으면 레벨 금액 · 공제는 지급 방식대로 (3.3% · 일용직은 세무사 확인) · <a href="#" data-a="pyLevels">레벨 금액표</a></p></div>`;
+      <p class="note" style="margin-top:12px">기본 = 지급액을 넣었으면 그 금액, 안 넣었으면 레벨 금액 · 공제는 지급 방식대로 (3.3% · 일용직은 세무사 확인) · <a href="#" data-a="pyLevels">레벨 금액표</a></p>
+      ${monthBox()}</div>`;
   }
 });
 
 const findA = (sid, jid) => { for (const j of P.jobs) if (!jid || j.id == jid) for (const a of (j.assignments||[])) if (a.staff_id === sid && a.status === 'approved') return {j, a}; return {}; };
 H.ACT.pyDay = async el => { const d = new Date(P.d + 'T00:00:00'); d.setDate(d.getDate() + (+el.dataset.n)); await load(H.ymd(d)); H.render(); };
+H.ACT.pyMon = async el => { P.mOff = Math.min(0, P.mOff + (+el.dataset.n)); P.mOpen = {}; await loadMonth(); H.render(); };
+H.ACT.pyMonOpen = el => { P.mOpen[el.dataset.k] = !P.mOpen[el.dataset.k]; H.render(); };
 H.ACT.pyOpen = el => { P.open[el.dataset.s] = !P.open[el.dataset.s]; H.render(); };
 H.ACT.pyAlpha = async el => {
   const {j, a} = findA(el.dataset.s); if (!a) return;
@@ -111,7 +146,7 @@ H.ACT.pyDone = async el => {
     if (!sentViaChat) await H.q(sb.from('payouts').insert({staff_id: p.s.id, amount: p.net, paid_on: P.d, source: 'manual', body: `${md(P.d)} 정산`}));
   }
   H._dirty = Date.now();   // 홈·다른 화면이 예전 데이터로 '안 눌렀다'고 뜨지 않게
-  H.toast(`${p.s.name}님 입금 완료 기록`); await load(P.d); H.render();
+  H.toast(`${p.s.name}님 입금 완료 기록`); await load(P.d); await loadMonth().catch(() => {}); H.render();
 };
 H.ACT.pyLevels = el => { const lp = levelPay();
   H.open(`<form data-f="pyLevels"><h3>레벨별 현장당 기본 금액</h3><p class="note">현장 1건(4시간) 기준 · 지급액을 따로 넣은 현장은 그 금액이 우선</p>
