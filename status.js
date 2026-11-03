@@ -9,18 +9,18 @@
   const KAKAO = 'http://pf.kakao.com/_hZqWX/chat';
 
   const LOOK = {
-    '현장 근무중': {i:'🧹', t:'field', busy:true},
-    '내근중':      {i:'🏢', t:'ok'},
-    '근무중':      {i:'🏢', t:'ok'},
+    '현장 근무중': {i:'👷', n:'현장', t:'field', busy:true},
+    '내근중':      {i:'💻', n:'사무실', t:'ok'},
+    '근무중':      {i:'💻', n:'사무실', t:'ok'},
     '회의중':      {i:'💬', t:'busy', busy:true},
-    '견적 외근중': {i:'🚗', t:'away', busy:true},
+    '견적 외근중': {i:'🚙', n:'외근', t:'away', busy:true},
     '부동산 외근중':{i:'🏠', t:'away', busy:true},
-    '외근중':      {i:'🚗', t:'away', busy:true},
+    '외근중':      {i:'🚙', n:'외근', t:'away', busy:true},
     '일정 중':     {i:'📌', t:'away', busy:true},
     '휴가중':      {i:'🌴', t:'off', busy:true},
     '부재':        {i:'⏸', t:'off', busy:true},
-    'Busy':        {i:'⛔', t:'busy', busy:true},
-    '업무 종료':   {i:'🌙', t:'off', busy:true}
+    'Busy':        {i:'📵', n:'통화불가', t:'busy', busy:true},
+    '업무 종료':   {i:'🌙', n:'퇴근', t:'off', busy:true}
   };
   const MANUAL_NAME = {'현장':'현장 근무중'};
 
@@ -46,7 +46,7 @@
 
   function pill(){
     const c = current(), L = LOOK[c.state] || LOOK['근무중'];
-    return `<button type="button" class="epst-ic t-${L.t}" data-epst="1" title="대표님 ${esc(c.state)} · 눌러서 연락" aria-label="대표님 ${esc(c.state)}, 연락하기"><span class="em">${L.i}</span><span class="dot"></span></button>`;
+    return `<button type="button" class="epst-ic t-${L.t}" data-epst="1" title="대표님 ${esc(L.n||c.state)} · 눌러서 연락" aria-label="대표님 ${esc(L.n||c.state)}, 연락하기"><span class="em">${L.i}</span><span class="dot"></span></button>`;
   }
 
   function openSheet(){
@@ -64,7 +64,7 @@
     wrap.className = 'epst-back';
     wrap.innerHTML = `<div class="epst-sheet" role="dialog" aria-label="대표님 연락하기">
       <div class="epst-grab"></div>
-      <div class="epst-now t-${L.t}"><span class="big">${L.i}</span><div><small>대표님 지금</small><b>${esc(c.state)}${c.until?` <em>${esc(untilTxt(c.until))}</em>`:''}</b>
+      <div class="epst-now t-${L.t}"><span class="big">${L.i}</span><div><small>대표님 지금</small><b>${esc(L.n||c.state)}${c.until?` <em>${esc(untilTxt(c.until))}</em>`:''}</b>
         ${c.start && c.state !== '휴가중' ? `<p>${esc(hm(c.start))} 출근${c.state === '업무 종료' && c.since ? ' · ' + esc(hm(c.since)) + ' 퇴근' : ''}</p>` : ''}${c.memo?`<p>${esc(c.memo)}</p>`:''}${c.next?`<p class="nx">다음 · ${esc(c.next)}</p>`:''}${c.note?`<p class="nx">${esc(c.note)}</p>`:''}</div></div>
       <p class="epst-hint">${hint}</p>
       <div class="epst-btns">${L.busy ? btnKakao + btnCall : btnCall + btnKakao}${btnSms}</div>
