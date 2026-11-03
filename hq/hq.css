@@ -401,3 +401,10 @@ html.chatapp .fab{display:none}
 .ch-msgs{overflow-x:hidden}.ch-b[data-mid]{touch-action:pan-y}
 
 .tm-site .ppl i.call{cursor:pointer;text-decoration:underline;text-decoration-color:rgba(55,48,163,.35);text-underline-offset:3px}.tm-site .ppl i.call::before{content:'📞';font-size:10px;margin-right:3px}
+
+.tm-sg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.tm-sg h4{margin:0 0 8px;font-size:13.5px}.tm-sg h4 small{font-weight:500;color:var(--sub);margin-left:4px}
+.tcs{display:flex;flex-wrap:wrap;gap:5px}
+.tc{font-size:12.5px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:3px 9px}.tc b{color:var(--navy,#16347A);margin-left:2px}
+.tm-ld{padding:6px 0;border-top:1px dashed var(--line)}.tm-ld:first-of-type{border-top:0}.tm-ld small{color:var(--sub)}.tm-ld .tcs{margin-top:5px}
+@media (max-width:860px){.tm-sg{grid-template-columns:1fr}}
