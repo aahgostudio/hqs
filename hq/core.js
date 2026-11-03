@@ -177,7 +177,7 @@ H.bKind = st => ({'내근중':'office','근무중':'office','외근중':'out','�
 H.bossChip = () => {
   const b = H.S.boss || {state:'근무중'}, k = H.bKind(b.state);
   const until = H.untilTxt(b.until);
-  if (H.S.owner && b.state === '근무중' && !b.punch) return `<button class="bstat bk" data-a="bossSheet" title="눌러서 출근 찍기" style="border-color:#10B981;background:#ECFDF3">${H.bIco('office')}출근 찍기 ▾</button>`;
+  if (H.S.owner && b.state === '근무중' && !b.punch) return `<button class="bstat bk" data-a="bossSheet" title="출근 전">${H.bIco('off')}출근 전 ▾</button>`;
   return H.S.owner ? `<button class="bstat bk" data-a="bossSheet" title="직원 화면 오른쪽 위에 보여요">${H.bIco(k)}${H.BK[k][0]}${H.esc(until)} ▾</button>`
     : `<span class="bstat bk" title="대표님 상태">${H.bIco(k)}대표님 ${H.BK[k][0]}${H.esc(until)}</span>`;
 };
@@ -207,6 +207,8 @@ H.ACT.modeSwap = () => { try { if (H.S.owner) localStorage.setItem('hq_preview_m
 // 폰: 어느 화면에서든 [＋] → 바로 올리기
 H.ACT.quickAdd = () => { const S = H.S;
   H.open(`<h3>무엇을 올릴까요?</h3><div class="qadd">
+    ${S.owner ? `<button class="qa" data-a="bossSheet"><b>🕘 출근 · 퇴근 찍기</b><small>사무실 · 현장 · 외근 · 퇴근</small></button>
+    <button class="qa" data-a="bossPast"><b>🗓 지난 출퇴근 넣기</b><small>깜빡한 날 시간 직접 넣기</small></button>` : ''}
     <button class="qa" data-a="jobNew" data-paste="1"><b>🧹 클린 현장</b><small>예약글 붙여넣으면 자동으로 채워져요</small></button>
     <button class="qa" data-a="evNew"><b>📅 내 일정</b><small>계약 · 잔금 · 안내 · 미팅 · 견적</small></button>
     ${S.owner && S.mcode ? `<a class="qa" href="../maemul/?k=${encodeURIComponent(S.mcode)}&new=1"><b>🏠 매물 등록</b><small>매물노트에서 캡처·글로 자동 채우기</small></a>` : ''}

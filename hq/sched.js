@@ -129,8 +129,6 @@ function bossDay(day){
 function bossBox(day){
   const b = bossDay(day), on = st().open === 'boss';
   const restBtn = `<button class="btn ghost sm" data-a="bossRest" data-d="${day}">${b && b.rest ? '휴무 표시 빼기' : '이날 대표 휴무로 표시'}</button>`;
-  if (!b && day === ymd(H.today()) && !H.S.noV36) return `<div class="dbx boss" data-a="bossSheet"><div class="dt"><b>대표 · 아직 출근 안 찍음</b><em>눌러서 찍기</em></div><div class="ds">사무실·현장·외근·퇴근을 찍으면 내 출근부에 쌓여요</div></div>`;
-  if (!b && day < ymd(H.today()) && !H.S.noV36) return `<div class="dbx boss" data-a="bossFix" data-d="${day}" style="opacity:.75"><div class="dt"><b>대표 · 기록 없음</b><em>눌러서 넣기</em></div><div class="ds">지난 날 출근·퇴근 시간을 직접 넣을 수 있어요</div></div>`;
   if (!b) return '';
   if (!b.p.length) return `<div class="dbx brest"><div class="dt"><b>대표 휴무</b></div><div class="ds">직원 달력에 분홍 점으로 보여요</div></div>`;
   const parts = [['office','사무실'],['site','현장'],['out','외근']].filter(([k]) => b.seg[k]).map(([k,l]) => l + ' ' + hmM(b.seg[k]));
@@ -299,7 +297,13 @@ H.ACT.addMenu = () => H.open(`<h3>무엇을 올릴까요?</h3><div style="displa
   <button class="btn" data-a="jobNew" data-d="${st().sel}">클린 현장 (일정)</button>
   <button class="btn ghost" data-a="quoteNew">오더 접수 (견적 중)</button>
   <button class="btn ghost" data-a="evNew" data-d="${st().sel}">내 일정 (사업 꼬리표)</button>
-  <button class="btn ghost" data-a="ntcGo">공지</button></div>`);
+  <button class="btn ghost" data-a="ntcGo">공지</button>
+  ${H.S.owner ? `<button class="btn ghost" data-a="bossSheet">출근 · 퇴근 찍기</button><button class="btn ghost" data-a="bossPast">지난 출퇴근 넣기</button>` : ''}</div>`);
+H.ACT.bossPast = () => { const y = ymd(addDays(H.today(), -1));
+  H.open(`<form data-f="bossPast"><h3>지난 출퇴근 넣기</h3><div class="field"><label>날짜</label><input type="date" name="d" value="${y}" max="${y}" required></div>${H.sacts('다음')}</form>`); };
+H.FORM.bossPast = async v => { const d = v.get('d'); if (!d) return;
+  const [s0, e0] = gridRange(); if (d < ymd(s0) || d > ymd(e0)) await loadPunch(addDays(parse(d), -1), addDays(parse(d), 1));
+  H.ACT.bossFix({dataset: {d}}); };
 H.ACT.ntcGo = () => { H.close(); st().side = 'ntc'; if (H.cur() !== 'sched') H.go('sched'); else H.render(); };
 H.ACT.repChk = async el => { await H.q(sb.from('reports').update({checked_at:new Date().toISOString()}).eq('id', +el.dataset.id)); H.refresh(); };
 H.ACT.ntcDel = async el => { if (!confirm('공지를 지울까요?')) return; await H.q(sb.from('notices').delete().eq('id', +el.dataset.id)); H.refresh(); };
