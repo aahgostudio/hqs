@@ -93,8 +93,9 @@
 .epc-m.mine .epc-b{background:var(--epc-me);color:var(--epc-me-ink);border-color:transparent;border-radius:16px 4px 16px 16px}
 .epc-b.del{background:transparent;color:var(--epc-mute);font-style:italic;border-style:dashed}
 .epc-b img{display:block;max-width:220px;max-height:280px;border-radius:10px;margin:-3px -5px}
-.epc-meta{flex:none;display:flex;flex-direction:column;font-size:10.5px;color:var(--epc-mute);white-space:nowrap;line-height:1.25}
+.epc-meta{flex:none;display:flex;flex-direction:row;align-items:flex-end;gap:3px;font-size:10.5px;color:var(--epc-mute);white-space:nowrap;line-height:1.25}
 .epc-m.mine .epc-meta{align-items:flex-end}
+.epc-msgs{gap:3px}.epc-m{margin-top:8px}.epc-m.cont{margin-top:0}
 .epc-meta .u{color:#D9A400;font-weight:800}
 .epc-in{display:flex;gap:8px;align-items:flex-end;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:var(--epc-card);border-top:1px solid var(--epc-line)}
 .epc-b video{display:block;max-width:240px;max-height:320px;border-radius:12px;background:#000}
@@ -193,11 +194,12 @@
       if (mark != null && (m.ids || [m.id]).includes(mark)) out += K().READ;
       const prev = GM[i-1], cont = prev && prev.who === m.who && dayKey(prev.at) === dayKey(m.at) && (new Date(m.at) - new Date(prev.at)) < 180000;
       const u = Math.max(...(m.ids || [m.id]).map(id => unreadMap[id] || 0));
+      const nx = GM[i+1], tail = !(nx && nx.who === m.who && dayKey(nx.at) === dayKey(m.at) && tm(nx.at) === tm(m.at));   // 같은 분의 마지막 글에만 시간
       const body = m.photos ? `<div class="epc-b" style="padding:3px">${K().grid(m.photos, pub, {own: m.mine})}</div>` : m.deleted ? `<div class="epc-b del">삭제된 메시지예요</div>`
         : `<div class="epc-b" data-mid="${m.id}" ${m.mine ? `data-own="${m.id}"` : ''}>${m.reply ? K().quote(m.reply) : ''}${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
-      out += `<div class="epc-m ${m.mine ? 'mine' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
+      out += `<div class="epc-m ${m.mine ? 'mine' : ''}${cont ? ' cont' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
         <div class="epc-col">${!m.mine && !cont ? `<span class="epc-nm">${esc(m.name)}</span>` : ''}
-        <div class="epc-line">${body}<span class="epc-meta">${cUp && m.id === cUp ? K().SEEN_TAG : ''}${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}<span>${tm(m.at)}</span></span></div></div></div>`;
+        <div class="epc-line">${body}<span class="epc-meta">${cUp && m.id === cUp ? K().SEEN_TAG : ''}${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}${tail ? `<span>${tm(m.at)}</span>` : ''}</span></div></div></div>`;
     });
     const n = (room.room.members || []).length + 1;
     const oldIn = w.querySelector('.kit-bar'), edKey = editing ? String(editing.id) : replying ? 'r' + replying.id : '';
@@ -249,6 +251,14 @@
     box.addEventListener('pointermove', e => { if (Math.abs(e.clientX - px) + Math.abs(e.clientY - py) > 10) clearTimeout(pressT); });
     ['pointerup','pointerleave','pointercancel'].forEach(ev => box.addEventListener(ev, () => clearTimeout(pressT)));
     box.addEventListener('contextmenu', e => { const b = pick(e); if (b) { e.preventDefault(); clearTimeout(pressT); menu(b.id, b.own); } });
+    // 말풍선 옆으로 밀기 → 답장 (카톡처럼)
+    let sx = 0, sy = 0, sw = null;
+    box.addEventListener('touchstart', e => { sw = e.target.closest('.epc-b[data-mid]'); if (!sw) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
+    box.addEventListener('touchmove', e => { if (!sw) return; const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+      if (Math.abs(dy) > 24) { sw.style.transform = ''; sw = null; return; } if (Math.abs(dx) > 8) { clearTimeout(pressT); sw.style.transform = `translateX(${Math.max(-70, Math.min(70, dx))}px)`; } }, {passive:true});
+    box.addEventListener('touchend', e => { if (!sw) return; const b = sw, dx = (e.changedTouches[0] || {}).clientX - sx; sw = null;
+      b.style.transition = 'transform .18s'; b.style.transform = ''; setTimeout(() => { b.style.transition = ''; }, 200);
+      if (Math.abs(dx) > 60) { const m = msgs.find(x => x.id === +b.dataset.mid); if (m && !m.deleted) { if (navigator.vibrate) navigator.vibrate(10); editing = null; replying = {id: m.id, name: m.mine ? '나' : m.name, body: m.body, photo: m.photo}; drawRoom(true); } } }, {passive:true});
   }
 
   function menu(id, own = true){

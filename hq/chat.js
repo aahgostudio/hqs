@@ -78,15 +78,19 @@ function roomHtml(){
   const r = C.home.rooms.find(x => x.id === C.cur) || {}, R = C.room.room;
   let last = '', out = ''; const names = memNames(); const sec = OWN() && C.room.room.kind === 'dm';   // 1:1 방: 계좌·통장 옮기기 버튼
   const GM = K.group(C.msgs, m => m.mine ? '\u0000me' : m.name), cUp = R.kind === 'cust' ? K.seenUpto(GM, C.seen) : 0;   // 고객님이 여기까지 읽음
-  GM.forEach(m => {   // 연달아 보낸 사진은 한 묶음
+  const wk = x => x && (x.mine ? '\u0000me' : x.name);
+  GM.forEach((m, gi) => {   // 연달아 보낸 사진은 한 묶음
+    const pv = GM[gi-1], nx = GM[gi+1];
+    const cont = pv && wk(pv) === wk(m) && day(pv.at) === day(m.at) && new Date(m.at) - new Date(pv.at) < 180000;   // 연달아 보낸 글: 이름·사진 생략
+    const tail = !(nx && wk(nx) === wk(m) && day(nx.at) === day(m.at) && tm(nx.at) === tm(m.at));                 // 같은 분의 마지막 글에만 시간
     if (new Date(m.at).toDateString() !== last) { last = new Date(m.at).toDateString(); out += K.day(day(m.at)); }
     if (C.mark != null && (m.ids || [m.id]).includes(C.mark)) out += K.READ;
     const u = Math.max(...(m.ids || [m.id]).map(id => C.unread[id] || 0));
     const hist = (m.history||[]).length ? `<details class="ch-hist"><summary>${m.deleted?'삭제됨':'수정됨'} · 이력 ${(m.history||[]).length}</summary>${m.history.map(h => `<div>${dt(h.at)} ${h.act==='delete'?'삭제 전':'수정 전'}: ${esc(h.body||'')}${h.photo?' [사진]':''}</div>`).join('')}</details>` : '';
-    out += `<div class="ch-m ${m.mine?'mine':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
-      <div class="ch-col">${m.mine?'':`<span class="ch-nm">${esc(m.name)}</span>`}
+    out += `<div class="ch-m ${m.mine?'mine':''}${cont?' cont':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
+      <div class="ch-col">${m.mine||cont?'':`<span class="ch-nm">${esc(m.name)}</span>`}
       <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}" data-mid="${m.id}"${m.photos?' style="padding:3px"':''}>${m.reply?K.quote(m.reply):''}${m.photos?K.grid(m.photos, pub, {sec: sec && !m.mine}):m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
-      <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?`<i>${u}</i>`:''}${tm(m.at)}${typeof m.id === 'number' && !m.deleted && !m.photos ? `<button type="button" class="ch-rp" data-a="chReply" data-id="${m.id}" title="답장">↩︎</button>` : ''}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
+      <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?`<i>${u}</i>`:''}${tail?`<span>${tm(m.at)}</span>`:''}${typeof m.id === 'number' && !m.deleted && !m.photos ? `<button type="button" class="ch-rp" data-a="chReply" data-id="${m.id}" title="답장">↩︎</button>` : ''}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
   return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div>${R.kind === 'cust' && C.seen ? `<div data-a="chLive" role="button" title="고객님 방 링크·안내 멘트" style="margin-top:4px;border-radius:8px;overflow:hidden;cursor:pointer">${K.seenLine(C.seen)}</div>` : ''}</div>
@@ -158,6 +162,14 @@ function paint(keep){
   if (box && !box._media) { box._media = true; const fix = () => { if (box._nearB !== false) box.scrollTop = box.scrollHeight; };
     box.addEventListener('scroll', () => { box._nearB = box.scrollHeight - box.scrollTop - box.clientHeight < 120; });
     box.addEventListener('load', fix, true); box.addEventListener('loadedmetadata', fix, true); }
+  // 폰: 말풍선을 옆으로 밀면 답장 (카톡처럼)
+  if (box && !box._swipe) { box._swipe = true; let sx = 0, sy = 0, el = null;
+    box.addEventListener('touchstart', e => { el = e.target.closest('.ch-b[data-mid]'); if (!el) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
+    box.addEventListener('touchmove', e => { if (!el) return; const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+      if (Math.abs(dy) > 24) { el.style.transform = ''; el = null; return; } if (Math.abs(dx) > 8) el.style.transform = `translateX(${Math.max(-70, Math.min(70, dx))}px)`; }, {passive:true});
+    box.addEventListener('touchend', e => { if (!el) return; const dx = (e.changedTouches[0] || {}).clientX - sx; const b = el; el = null;
+      b.style.transition = 'transform .18s'; b.style.transform = ''; setTimeout(() => { b.style.transition = ''; }, 200);
+      if (Math.abs(dx) > 60 && b.dataset.mid && /^\d+$/.test(b.dataset.mid)) { if (navigator.vibrate) navigator.vibrate(10); H.ACT.chReply({dataset:{id: b.dataset.mid}}); } }, {passive:true}); }
   // 입력줄: 카카오워크식 (PC는 Enter 전송 · 폰은 [↑]로 전송) · @멘션 · 이모지
   syncReply();
   K.drop(R, fs => (async () => { for (const f of fs) await sendPhoto(f); })());   // PC: 끌어다 놓기 · 붙여넣기
