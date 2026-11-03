@@ -172,7 +172,8 @@ H.BK = {office:['사무실','#10B981','<rect x="5" y="3" width="14" height="18" 
   busy:['통화불가','#DC2626','<circle cx="12" cy="12" r="9"/><path d="M7.5 12h9"/>'],
   off:['퇴근','#9CA3AF','<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'],
   rest:['휴무','#DB2777','<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>']};
-H.bIco = (k, sz=16) => `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="${H.BK[k][1]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none">${H.BK[k][2]}</svg>`;
+H.BE = {office:'📋', site:'🦺', out:'💼', busy:'📵', off:'🌙', rest:'🌴'};   // 직원 화면과 같은 그림
+H.bIco = (k, sz=16) => `<span style="font-size:${Math.round(sz*0.95)}px;line-height:1;flex:none">${H.BE[k]}</span>`;
 H.bKind = st => ({'내근중':'office','근무중':'office','외근중':'out','견적 외근중':'out','부동산 외근중':'out','일정 중':'out','현장':'site','현장 근무중':'site','Busy':'busy','회의중':'busy','업무 종료':'off','휴가중':'rest','부재':'rest'})[st] || 'office';
 H.bossChip = () => {
   const b = H.S.boss || {state:'근무중'}, k = H.bKind(b.state);
