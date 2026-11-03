@@ -33,7 +33,9 @@ function monthRows(){
     const netOf = arr => { const g = arr.reduce((a,i) => a + i.g, 0); return g - D(g, arr.length); };
     const mon = P.mKeys.map(k => { const it = p.items.filter(i => i.ym === k); return {k, n: it.length, net: netOf(it)}; });
     const ci = p.items.filter(i => i.ym === cur);
-    return Object.assign(p, {cur: ci, mon, n: ci.length, net: netOf(ci), sent: netOf(ci.filter(i => i.paid)), left: netOf(ci.filter(i => !i.paid))}); })
+    // 이번 달(진행 중)은 전월 '같은 날짜까지'와 비교 — 월초에 무조건 ▼로 나오지 않게
+    const dd = new Date().getDate(), prevSame = P.mOff === 0 ? netOf(p.items.filter(i => i.ym === P.mKeys[1] && +String(i.j.job_date).slice(8, 10) <= dd)) : mon[1].net;
+    return Object.assign(p, {prevSame, cur: ci, mon, n: ci.length, net: netOf(ci), sent: netOf(ci.filter(i => i.paid)), left: netOf(ci.filter(i => !i.paid))}); })
     .filter(p => p.mon.some(m => m.n))
     .sort((a,b) => (b.left > 0) - (a.left > 0) || b.net - a.net || b.mon[1].net - a.mon[1].net);
 }
@@ -41,20 +43,20 @@ function monthBox(){
   const rs = monthRows(), tot = k => rs.reduce((a,r) => a + r[k], 0), tag = s => s.ext ? '외부지원' : (lvOf(s) || s.role || '');
   const ml = k => +k.slice(5) + '월', man = v => v >= 10000 ? (Math.round(v / 1000) / 10).toLocaleString() + '만' : won(v);
   const totM = P.mKeys.map((k, i) => rs.reduce((a,r) => a + r.mon[i].net, 0)), diff = (a, b) => b ? Math.round((a - b) / b * 100) : null;
-  const dTot = diff(totM[2], totM[1]);
+  const dTot = diff(totM[2], rs.reduce((a,r) => a + r.prevSame, 0));
   const chg = d => d == null ? '<span class="pd z">새로</span>' : d === 0 ? '<span class="pd z">±0%</span>' : `<span class="pd ${d > 0 ? 'u' : 'd'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}%</span>`;
-  return `<section class="pm"><div class="pm-hd"><button class="pm-nav" data-a="pyMon" data-n="-1">‹</button><div><b>📒 ${P.mLabel||''}월 직원별 정산</b><small>${P.mOff ? '그 달 전체' : '오늘까지'} · 전월 대비 3개월</small></div><button class="pm-nav" data-a="pyMon" data-n="1" ${P.mOff >= 0 ? 'disabled' : ''}>›</button></div>
+  return `<section class="pm"><div class="pm-hd"><button class="pm-nav" data-a="pyMon" data-n="-1">‹</button><div><b>📒 ${P.mLabel||''}월 직원별 정산</b><small>${P.mOff ? '그 달 전체 · ▲▼ 전월 대비' : `오늘(${new Date().getDate()}일)까지 · ▲▼ 전월 같은 기간 대비`}</small></div><button class="pm-nav" data-a="pyMon" data-n="1" ${P.mOff >= 0 ? 'disabled' : ''}>›</button></div>
     <div class="pm-k"><div><span>지급 총액</span><b>${won(totM[2])}</b>${chg(dTot)}</div><div><span>입금 완료</span><b class="g">${won(tot('sent'))}</b></div><div class="${tot('left') > 0 ? 'w' : ''}"><span>남은 돈</span><b>${won(tot('left'))}</b></div></div>
-    <div class="pm-list">${rs.map(r => { const k = r.s.id || r.s.name, op = P.mOpen[k], mx = Math.max(1, ...r.mon.map(m => m.net)), d = diff(r.mon[2].net, r.mon[1].net);
+    <div class="pm-list">${rs.map(r => { const k = r.s.id || r.s.name, op = P.mOpen[k], mx = Math.max(1, ...r.mon.map(m => m.net)), d = diff(r.mon[2].net, r.prevSame);
       return `<div class="pm-c ${r.left > 0 ? 'due' : ''}">
         <button class="pm-top" data-a="pyMonOpen" data-k="${esc(k)}"><span class="av">${esc(r.s.name.length >= 3 ? r.s.name.slice(1) : r.s.name)}</span>
           <span class="nm"><b>${esc(r.s.name)}</b><small>${esc(tag(r.s))}</small></span>
-          <span class="am"><b>${won(r.net)}</b>${chg(r.mon[1].net || r.mon[2].net ? d : 0)}</span></button>
+          <span class="am"><b>${won(r.net)}</b>${chg(r.prevSame || r.mon[2].net ? d : 0)}</span></button>
         <div class="pm-3">${r.mon.map((m, i) => `<div class="${i === 2 ? 'on' : ''}"><i style="height:${Math.max(4, Math.round(m.net / mx * 100))}%"></i><b>${m.net ? man(m.net) : '-'}</b><small>${ml(m.k)} · ${m.n}곳</small></div>`).join('')}</div>
         <div class="pm-st">${r.n ? (r.left > 0 ? `<span class="due">남은 돈 ${won(r.left)}</span><span>보냄 ${won(r.sent)}</span>` : '<span class="ok">✓ 다 보냄</span>') : `<span>${ml(P.mKeys[2])} 현장 없음</span>`}<button class="lk" data-a="pyMonOpen" data-k="${esc(k)}">${op ? '접기 ▴' : '현장별 ▾'}</button></div>
         ${op ? `<div class="pm-det">${r.cur.map(it => `<div><span>${md(it.j.job_date)} ${esc(it.j.title||'')}</span><span>${won(it.g)}${it.set ? '' : ' <small>레벨</small>'} ${it.paid ? '<b class="ok">✓</b>' : '<b class="no">·</b>'}</span></div>`).join('') || '<div><span>이 달 현장 없음</span></div>'}
           ${r.s.ext ? '' : `<p>공제 전 금액 · ${esc(H.PT[r.s.pay_type] || '')} 공제는 달 합계에서</p>`}</div>` : ''}</div>`; }).join('') || '<p class="empty">이 기간 정산할 현장이 없어요</p>'}</div>
-    <p class="note">현장 지급액(안 넣었으면 레벨 금액) − 공제 · 막대 = 최근 3달 실지급 · ▲▼ = 전월 대비 · 직원 폰 '나 › 내 수입'과 같은 기준</p></section>`;
+    <p class="note">현장 지급액(안 넣었으면 레벨 금액) − 공제 · 막대 = 최근 3달 실지급 · ▲▼ = 전월 대비 (이번 달은 같은 날짜까지끼리) · 직원 폰 '나 › 내 수입'과 같은 기준</p></section>`;
 }
 async function load(d){
   P.d = d;
