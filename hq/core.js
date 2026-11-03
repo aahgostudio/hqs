@@ -165,12 +165,20 @@ H.go = k => { if (location.hash !== '#'+k) location.hash = k; else H.render(); }
 
 H.untilTxt = u => { if (!u) return ''; const d = new Date(u), p = n => String(n).padStart(2,'0');
   return d.toDateString() === new Date().toDateString() ? ` ~${p(d.getHours())}:${p(d.getMinutes())}` : ` ~${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+/* 1104G 대표 출퇴근: 상태 → 칩 (선 아이콘 + 글자) */
+H.BK = {office:['사무실','#10B981','<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10.5 21v-3h3v3"/>'],
+  out:['외근','#E08A00','<path d="M3 17v-4l2.2-5.2A2 2 0 0 1 7 6.5h10a2 2 0 0 1 1.8 1.3L21 13v4"/><path d="M3 13h18M3 17h18"/><circle cx="7" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>'],
+  site:['현장','#2453C7','<path d="M3 18h18"/><path d="M5 18v-2a7 7 0 0 1 14 0v2"/><path d="M10 9.5V6.5a2 2 0 0 1 4 0v3"/>'],
+  busy:['통화불가','#DC2626','<circle cx="12" cy="12" r="9"/><path d="M7.5 12h9"/>'],
+  off:['퇴근','#9CA3AF','<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'],
+  rest:['휴무','#DB2777','<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>']};
+H.bIco = (k, sz=16) => `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="${H.BK[k][1]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none">${H.BK[k][2]}</svg>`;
+H.bKind = st => ({'내근중':'office','근무중':'office','외근중':'out','견적 외근중':'out','부동산 외근중':'out','일정 중':'out','현장':'site','현장 근무중':'site','Busy':'busy','회의중':'busy','업무 종료':'off','휴가중':'rest','부재':'rest'})[st] || 'office';
 H.bossChip = () => {
-  const b = H.S.boss || {state:'근무중'};
-  const cls = b.state === 'Busy' ? 'busy' : b.state === '근무중' ? '' : 'away';
+  const b = H.S.boss || {state:'근무중'}, k = H.bKind(b.state);
   const until = H.untilTxt(b.until);
-  return H.S.owner ? `<button class="bstat ${cls}" data-a="bossSheet" title="직원 화면 맨 위에 보여요"><i></i>${H.esc(b.state)}${H.esc(until)} ▾</button>`
-    : `<span class="bstat ${cls}" title="대표님 상태"><i></i>대표님 ${H.esc(b.state)}${H.esc(until)}</span>`;
+  return H.S.owner ? `<button class="bstat bk" data-a="bossSheet" title="직원 화면 오른쪽 위에 보여요">${H.bIco(k)}${H.BK[k][0]}${H.esc(until)} ▾</button>`
+    : `<span class="bstat bk" title="대표님 상태">${H.bIco(k)}대표님 ${H.BK[k][0]}${H.esc(until)}</span>`;
 };
 
 H.render = async () => {
@@ -237,20 +245,37 @@ H.ACT.logout = async () => { await sb.auth.signOut(); location.reload(); };
 
 /* ---------- 대표 상태 ---------- */
 H.loadBossStatus = async () => { try { H.S.boss = await H.q(sb.rpc('boss_status')); } catch(_){} };
-H.ACT.bossSheet = () => { if (!H.S.owner) return H.toast('대표 상태는 대표님만 바꿀 수 있어요');
+H.ACT.bossSheet = async () => { if (!H.S.owner) return H.toast('대표 상태는 대표님만 바꿀 수 있어요'); await H.loadPunchToday();
   const b = H.S.boss || {state:'근무중'};
-  const states = ['근무중','외근중','현장','휴가중','부재','Busy'];
+  const states = ['근무중','Busy','휴가중','부재'];
   const u = b.until ? new Date(b.until) : null;
   const loc = u ? new Date(u.getTime() - u.getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
-  H.open(`<form data-f="boss"><h3>대표 상태</h3>
-    <p class="note" style="margin:-6px 0 12px">직원 화면 오른쪽 위에 보여요. 평소엔 '자동 (캘린더)' — 일정 보고 현장·내근·회의를 알아서 표시해요. 여기서 고르면 끝나는 시간까지 이게 먼저 보여요.</p>
-    <div class="chips" style="margin-bottom:12px">${states.map(s=>`<label><input type="radio" name="state" value="${s}" ${b.state===s?'checked':''}><span>${s==='근무중'?'자동 (캘린더)':s}</span></label>`).join('')}</div>
+  const P = (H.S.punchToday||[]);
+  const PK = [['office','사무실 출근','사무실에서 일해요'],['site','현장','청소 현장에 나가 있어요'],['out','외근','미팅·임장·볼일'],['off','퇴근','오늘 기록 마감']];
+  const lastK = P.length ? P[P.length-1].kind : null;
+  const log = P.map(x => `${H.hm(x.at)} ${H.BK[x.kind][0]}`).join(' → ');
+  H.open(`<h3>지금 어디세요?</h3><p class="note" style="margin:-6px 0 10px">누르는 대로 시간이 기록되고, 직원 화면 칩도 바로 바뀌어요.</p>
+    <div class="pk">${PK.map(([k,t,d]) => `<button type="button" class="pkb ${lastK===k?'on':''}" data-a="bossPunch" data-k="${k}">${H.bIco(k,24)}<span><b>${k==='office'&&lastK&&lastK!=='off'?'사무실':t}</b><small>${d}</small></span></button>`).join('')}</div>
+    ${log ? `<div class="pklog"><b>오늘</b> ${log}</div>` : ''}
+    <hr style="border:0;border-top:1px dashed var(--line);margin:14px 0">
+    <form data-f="boss"><h3 style="font-size:15px">직접 고르기 (통화불가·휴무 등)</h3>
+    <p class="note" style="margin:-4px 0 12px">고르면 끝나는 시간까지 이게 먼저 보여요. '자동'으로 두면 위에서 찍은 대로 보여요.</p>
+    <div class="chips" style="margin-bottom:12px">${states.map(s=>`<label><input type="radio" name="state" value="${s}" ${b.state===s?'checked':''}><span>${s==='근무중'?'자동':s==='Busy'?'통화불가':s==='휴가중'?'휴무':s}</span></label>`).join('')}</div>
     <div class="fg"><div class="field full"><label>한 줄 메모 (직원에게 보임)</label><input name="memo" value="${H.esc(b.memo||'')}" placeholder="예) 급한 건 전화 · 신봉진 실장에게"></div>
     <div class="field"><label>언제까지</label><input type="datetime-local" name="until" value="${loc}"></div>
     <div class="field"><label>&nbsp;</label><div class="chips">${[['1h','1시간'],['3h','3시간'],['eod','오늘 끝까지']].map(([k,l])=>`<label><input type="radio" name="quick" value="${k}"><span>${l}</span></label>`).join('')}</div></div></div>
-    <p class="note">Busy로 두면 직원 화면에 "Busy ~시간 · 급한 건 전화"로 보여요. 본사 홈은 잠기지 않아요.</p>
+    <p class="note">통화불가로 두면 직원 화면에 "통화불가 ~시간"으로 보여요. 본사 홈은 잠기지 않아요.</p>
     ${H.sacts('저장')}</form>`);
 };
+H.hm = t => { const d = new Date(t); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
+H.loadPunchToday = async () => { try { const d0 = new Date(); d0.setHours(0,0,0,0);
+  H.S.punchToday = await H.q(sb.from('boss_punch').select('id,at,kind').gte('at', d0.toISOString()).order('at')); } catch(_){ H.S.punchToday = []; } };
+H.ACT.bossPunch = async el => { const k = el.dataset.k;
+  try { await H.q(sb.from('boss_punch').insert({kind:k}));
+    const b = H.S.boss || {}; if (['외근중','현장','휴가중','부재'].includes(b.state)) await H.q(sb.from('settings').upsert({key:'boss_status', value:{state:'근무중', memo:b.memo||'', until:null}}));
+  } catch(e){ return H.toast(String(e.message||e).includes('boss_punch') ? 'SQL v36을 먼저 돌려주세요' : '저장 못 했어요'); }
+  H.close(); H.toast(k==='off' ? '퇴근 찍었어요 · 오늘도 수고하셨어요' : H.BK[k][0] + ' 찍었어요 · 직원 화면에 바로 보여요');
+  await H.loadPunchToday(); H._dirty = Date.now(); await H.refresh(); };
 H.FORM.boss = async v => {
   let until = v.get('until') ? new Date(v.get('until')) : null;
   const q = v.get('quick'); const now = new Date();
@@ -291,7 +316,7 @@ H.boot = async () => {
     if (error || !isAdmin){ await sb.auth.signOut(); return loginView('관리자 계정이 아니에요'); }
     const ver = await sb.rpc('hq_schema_version');
     if (ver.error || (ver.data||0) < 2) return setupView();
-    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4; H.S.needV5 = (ver.data||0) < 5; H.S.needV6 = (ver.data||0) < 6; H.S.needV7 = (ver.data||0) < 7; H.S.needV8 = (ver.data||0) < 8; H.S.needV9 = (ver.data||0) < 9; H.S.needV10 = (ver.data||0) < 10; H.S.needV19 = (ver.data||0) < 19; H.S.needV20 = (ver.data||0) < 20; H.S.needV21 = (ver.data||0) < 21; H.S.needV22 = (ver.data||0) < 22; H.S.needV23 = (ver.data||0) < 23; H.S.needV24 = (ver.data||0) < 24; H.S.needV25 = (ver.data||0) < 25; H.S.needV26 = (ver.data||0) < 26; H.S.needV27 = (ver.data||0) < 27; H.S.schemaV = ver.data||0; H.S.needV32 = (ver.data||0) < 35; H.S.needV29 = (ver.data||0) < 29;
+    H.S.needV3 = (ver.data||0) < 3; H.S.needV4 = (ver.data||0) < 4; H.S.needV5 = (ver.data||0) < 5; H.S.needV6 = (ver.data||0) < 6; H.S.needV7 = (ver.data||0) < 7; H.S.needV8 = (ver.data||0) < 8; H.S.needV9 = (ver.data||0) < 9; H.S.needV10 = (ver.data||0) < 10; H.S.needV19 = (ver.data||0) < 19; H.S.needV20 = (ver.data||0) < 20; H.S.needV21 = (ver.data||0) < 21; H.S.needV22 = (ver.data||0) < 22; H.S.needV23 = (ver.data||0) < 23; H.S.needV24 = (ver.data||0) < 24; H.S.needV25 = (ver.data||0) < 25; H.S.needV26 = (ver.data||0) < 26; H.S.needV27 = (ver.data||0) < 27; H.S.schemaV = ver.data||0; H.S.needV32 = (ver.data||0) < 36; H.S.needV29 = (ver.data||0) < 29;
     const own = await sb.rpc('is_owner');
     H.S.isOwner = !!own.data && (session.user.email||'').toLowerCase() === OWNER_EMAIL;
     // 대표님이 관리자(HQS) 화면을 미리 볼 수 있게: ?mode=hqs 로 들어오거나 모드 버튼을 누르면 전환

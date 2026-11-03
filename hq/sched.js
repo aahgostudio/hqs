@@ -7,7 +7,7 @@ const st = () => V.sched;
 const gridRange = () => { const a = st().anchor; const s = addDays(a, -a.getDay()); const last = new Date(a.getFullYear(), a.getMonth()+1, 0); const e = addDays(last, 6 - last.getDay()); return [s, e]; };
 
 H.view('sched', {label:'일정',
-  async load(){ const [s, e] = gridRange(); await Promise.all([H.loadRange(s, e), H.loadFeed()]); },
+  async load(){ const [s, e] = gridRange(); await Promise.all([H.loadRange(s, e), H.loadFeed(), H.S.owner ? loadPunch(s, e) : null]); },
   render(){
     const S = H.S, v = st(), [gs, ge] = gridRange(), today = ymd(H.today());
     const newRep = (S.reports||[]).filter(r=>!r.checked_at).length;
@@ -27,12 +27,13 @@ H.view('sched', {label:'일정',
         const ok = av.filter(a=>a.kind==='ok').length, no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').length;
         // 1104D: 칸에는 색 막대만 (카카오워크처럼) — 제목·인원은 아래 하루 목록에서
         const rw = v.f.res ? (S.avail||[]).filter(a => a.day === s && a.kind === 'work' && H.P(a.staff_id).team === 'RES') : [];
-        const bars = items;
+        const bd = H.S.owner ? bossDay(s) : null;
+        const bars = (bd ? [{cls: bd.rest && !bd.p.length ? 'brest' : 'boss'}] : []).concat(items);
         h += `<td data-a="schedPick" data-d="${s}" class="${d.getMonth()!==v.anchor.getMonth()?'out':''} ${s===today?'t':''} ${s===v.sel?'sel':''}"><span class="n">${d.getDate()}</span>${v.f.avail&&(ok||no)?`<span class="av">${ok?'○'+ok:''}${no?' <span style="color:var(--warn)">✕'+no+'</span>':''}</span>`:''}
           <div class="bars">${bars.slice(0,4).map(x=>`<i class="${x.cls}"></i>`).join('')}${bars.length>4?`<small>+${bars.length-4}</small>`:''}</div></td>`;
         if (d.getDay() === 6) h += '</tr>';
       }
-      body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:#C9CED6"></i>내 일정</span></div>`;
+      body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:#C9CED6"></i>내 일정</span>${H.S.owner ? '<span><i style="background:#10B981"></i>대표 근무</span><span><i style="background:#DB2777"></i>대표 휴무</span>' : ''}</div>`;
     } else {
       const days = {}; for (let d = new Date(v.anchor); d.getMonth() === v.anchor.getMonth(); d = addDays(d,1)) { const s = ymd(d); const its = dayItems(s); if (its.length) days[s] = its; }
       body = Object.keys(days).map(s => `<div class="ptitle" style="${s===today?'color:var(--info)':''}">${md(s)}${s===today?' · 오늘':''}</div>` + dayCards(s)).join('') || '<p class="empty">이 달 일정이 없어요</p>';
@@ -103,6 +104,72 @@ function attCard(sid, day){
     <div class="att-l"><span><i class="w"></i>출근</span><span><i class="o"></i>휴무</span><span>빈칸 = 아직 안 적음</span></div></div>`;
 }
 
+/* ---------- 1104G 대표 출퇴근부 ---------- */
+async function loadPunch(s, e){
+  try { const [p, r] = await Promise.all([
+      H.q(sb.from('boss_punch').select('id,at,kind').gte('at', s.toISOString()).lt('at', addDays(e, 1).toISOString()).order('at')),
+      H.q(sb.from('boss_rest').select('day,memo').gte('day', ymd(s)).lte('day', ymd(e)))]);
+    H.S.punch = p || []; H.S.brest = r || []; H.S.noV36 = false;
+  } catch(_){ H.S.punch = []; H.S.brest = []; H.S.noV36 = true; }
+}
+const mins = t => { const d = new Date(t); return d.getHours()*60 + d.getMinutes(); };
+const hmM = m => `${Math.floor(m/60)}시간${m%60 ? ' ' + (m%60) + '분' : ''}`;
+function bossDay(day){
+  const p = (H.S.punch||[]).filter(x => ymd(new Date(x.at)) === day);
+  const rest = (H.S.brest||[]).some(r => r.day === day);
+  if (!p.length && !rest) return null;
+  const seg = {office:0, out:0, site:0}; let open = false;
+  const now = new Date(), isToday = day === ymd(H.today());
+  p.forEach((x, i) => { if (x.kind === 'off') return; const nx = p[i+1];
+    const end = nx ? mins(nx.at) : isToday ? now.getHours()*60 + now.getMinutes() : null;
+    if (end == null) { open = true; return; } seg[x.kind] += Math.max(0, end - mins(x.at)); });
+  const offP = p.filter(x => x.kind === 'off').pop();
+  return {p, rest, seg, total: seg.office + seg.out + seg.site, from: p[0] && H.hm(p[0].at), to: offP && H.hm(offP.at), miss: !isToday && p.length && !offP, open};
+}
+function bossBox(day){
+  const b = bossDay(day), on = st().open === 'boss';
+  const restBtn = `<button class="btn ghost sm" data-a="bossRest" data-d="${day}">${b && b.rest ? '휴무 표시 빼기' : '이날 대표 휴무로 표시'}</button>`;
+  if (!b) return '';
+  if (!b.p.length) return `<div class="dbx brest"><div class="dt"><b>대표 휴무</b></div><div class="ds">직원 달력에 분홍 점으로 보여요</div></div>`;
+  const parts = [['office','사무실'],['site','현장'],['out','외근']].filter(([k]) => b.seg[k]).map(([k,l]) => l + ' ' + hmM(b.seg[k]));
+  return `<div class="dbx boss${on?' on':''}" data-a="dayOpen" data-k="boss"><div class="dt"><b>대표 ${b.from} – ${b.to || (b.miss ? '퇴근 안 찍음' : '')}</b></div><div class="ds">${parts.join(' · ') || '기록 중'}</div></div>${on ? `<div class="dbx-d">${bossCard(day)}</div>` : ''}`;
+}
+function bossCard(day){
+  const d0 = parse(day), y = d0.getFullYear(), m = d0.getMonth(), last = new Date(y, m+1, 0).getDate(), today = ymd(H.today());
+  const days = []; for (let n = 1; n <= last; n++) { const k = ymd(new Date(y, m, n)); const b = bossDay(k); if (b) days.push([k, b]); }
+  const work = days.filter(([, b]) => b.p.length), sum = {office:0, out:0, site:0, total:0};
+  work.forEach(([, b]) => { ['office','out','site'].forEach(k => sum[k] += b.seg[k]); sum.total += b.total; });
+  const h1 = mm => Math.round(mm/6)/10;
+  const b = bossDay(day), tot = b && b.total || 1;
+  let cells = ''; const pre = new Date(y, m, 1).getDay(); for (let i = 0; i < pre; i++) cells += '<i class="x"></i>';
+  for (let n = 1; n <= last; n++) { const k = ymd(new Date(y, m, n)), x = bossDay(k);
+    cells += `<i class="${x ? (x.p.length ? 'w' : 'o') : ''}${k === today ? ' t' : ''}${k === day ? ' s' : ''}">${n}</i>`; }
+  return `<div class="att bat"><div class="att-h"><b>${m+1}월 내 출근부</b></div>
+    <div class="att-k"><div><b>${work.length}</b>일<small>근무</small></div><div><b>${h1(sum.total)}</b>시간<small>총 근무</small></div><div><b>${h1(sum.office)}</b>시간<small>사무실</small></div></div>
+    <div style="display:flex;gap:14px;font-size:12px;color:var(--sub);margin:-4px 2px 10px">${[['office',sum.office],['site',sum.site],['out',sum.out]].map(([k,v]) => `<span style="display:inline-flex;gap:4px;align-items:center">${H.bIco(k,13)}${H.BK[k][0]} <b style="color:#111">${h1(v)}</b>시간</span>`).join('')}</div>
+    ${b && b.p.length ? `<div style="font-size:12px;color:var(--sub)">${md(day)} 하루</div><div class="bbar">${b.p.map((x, i) => { if (x.kind === 'off') return ''; const nx = b.p[i+1]; const e = nx ? mins(nx.at) : (day === today ? new Date().getHours()*60 + new Date().getMinutes() : mins(x.at)); return `<i style="width:${Math.max(0, e - mins(x.at))/tot*100}%;background:${H.BK[x.kind][1]}"></i>`; }).join('')}</div>
+      <div style="display:flex;gap:10px;font-size:11px;color:var(--sub);margin-bottom:6px">${['office','site','out'].map(k => `<span style="display:inline-flex;gap:4px;align-items:center">${H.bIco(k,12)}${H.BK[k][0]}</span>`).join('')}</div>` : ''}
+    <div class="att-g">${H.DOW.map(w => `<em>${w}</em>`).join('')}${cells}</div>
+    <div style="margin-top:8px">${work.slice().reverse().slice(0, 7).map(([k, x]) => `<div class="brow"><span>${md(k)}</span><span>${x.from} – ${x.to ? x.to : x.miss ? '<b class="miss">퇴근 안 찍음</b>' : '지금'} · 사무실 ${hmM(x.seg.office)}</span></div>`).join('')}</div>
+    <div class="acts" style="margin-top:8px"><button class="btn ghost sm" data-a="bossFix" data-d="${day}">시간 고치기</button></div></div>`;
+}
+H.ACT.bossRest = async el => { const d = el.dataset.d, on = (H.S.brest||[]).some(r => r.day === d);
+  try { if (on) await H.q(sb.from('boss_rest').delete().eq('day', d)); else await H.q(sb.from('boss_rest').insert({day: d})); }
+  catch(_){ return H.toast('SQL v36을 먼저 돌려주세요'); }
+  H.toast(on ? '휴무 표시를 뺐어요' : '대표 휴무로 표시했어요 · 직원 달력에 분홍 점'); H._dirty = Date.now(); H.render(); };
+H.ACT.bossFix = el => { const d = el.dataset.d, b = bossDay(d) || {p: []};
+  const row = (x, i) => `<div class="fg" style="grid-template-columns:1fr 1fr auto;align-items:end;margin-bottom:6px"><div class="field"><label>${i === 0 ? '시간' : '&nbsp;'}</label><input type="time" name="t_${x.id||'n'+i}" value="${x.at ? H.hm(x.at) : ''}"></div>
+    <div class="field"><label>${i === 0 ? '어디' : '&nbsp;'}</label><select name="k_${x.id||'n'+i}">${['office','site','out','off'].map(k => `<option value="${k}" ${x.kind===k?'selected':''}>${H.BK[k][0]}</option>`).join('')}</select></div>
+    ${x.id ? `<label style="font-size:12px;padding-bottom:10px"><input type="checkbox" name="del_${x.id}"> 지우기</label>` : '<span></span>'}</div>`;
+  H.open(`<form data-f="bossFix" data-d="${d}"><h3>${md(d)} 출퇴근 고치기</h3>${b.p.map(row).join('')}${row({kind: b.p.length ? 'off' : 'office'}, 99)}
+    <p class="note">맨 아래 줄은 새로 넣기예요 (예: 깜빡한 퇴근 19:30). 비워두면 안 넣어요.</p>${H.sacts('저장')}</form>`); };
+H.FORM.bossFix = async (v, f) => { const d = f.dataset.d, b = bossDay(d) || {p: []};
+  const at = t => { const [h, mi] = t.split(':').map(Number); const x = parse(d); x.setHours(h, mi, 0, 0); return x.toISOString(); };
+  for (const x of b.p) { if (v.get('del_' + x.id)) { await H.q(sb.from('boss_punch').delete().eq('id', x.id)); continue; }
+    const t = v.get('t_' + x.id), k = v.get('k_' + x.id); if (t && (t !== H.hm(x.at) || k !== x.kind)) await H.q(sb.from('boss_punch').update({at: at(t), kind: k}).eq('id', x.id)); }
+  const nt = v.get('t_n99'); if (nt) await H.q(sb.from('boss_punch').insert({at: at(nt), kind: v.get('k_n99')}));
+  H.close(); H.toast('고쳤어요'); H._dirty = Date.now(); H.render(); };
+
 /* ---------- 하루 패널 ---------- */
 function daySide(s){
   const S = H.S;
@@ -112,10 +179,11 @@ function daySide(s){
   const rw = av.filter(a => a.kind === 'work' && H.P(a.staff_id).team === 'RES');
   const hr = t => String(t||'').split('-').map(x => +x.split(':')[0]).join('–');
   return `<div class="dhd"><b>${md(s)}</b><span>${items.filter(x=>x.k[0]!=='w').length}개 일정</span></div>
+    ${H.S.owner ? bossBox(s) : ''}
     ${items.map(dayBox).join('')}
     ${!items.length ? '<p class="empty">이날 일정이 없어요</p>' : ''}
     ${ok.length?`<div class="avl">이날 가능: ${ok.map(esc).join(' · ')}</div>`:''}${no.length?`<div class="avl no">이날 불가: ${no.map(esc).join(' · ')}</div>`:''}
-    <div class="acts" style="margin:10px 0 0"><button class="btn sm" data-a="jobNew" data-d="${s}">+ 클린 현장</button><button class="btn sm ghost" data-a="evNew" data-d="${s}">+ 내 일정</button></div>`;
+    <div class="acts" style="margin:10px 0 0"><button class="btn sm" data-a="jobNew" data-d="${s}">+ 클린 현장</button><button class="btn sm ghost" data-a="evNew" data-d="${s}">+ 내 일정</button>${H.S.owner && !H.S.noV36 ? `<button class="btn sm ghost" data-a="bossRest" data-d="${s}">${(H.S.brest||[]).some(r => r.day === s) ? '대표 휴무 빼기' : '대표 휴무'}</button>` : ''}</div>`;
 }
 function dayCards(s){ const S = H.S, f = st().f;
   return (f.clean ? (S.jobs||[]).filter(j=>j.job_date===s).map(jobCard).join('') : '') + (S.events||[]).filter(e=>e.ev_date===s && ((e.staff_id && f.res && e.show_boss) || (!e.staff_id && f.me))).map(evCard).join(''); }

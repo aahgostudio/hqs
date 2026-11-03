@@ -160,6 +160,9 @@ body{background:var(--bg)}
 .err p{color:var(--sub)}
 .foot{font-size:11.5px;color:var(--mute);text-align:center;margin:18px 0 0}
 
+.week button b,.cal .grid button b{position:relative}.bdot{position:absolute;right:-6px;bottom:1px;width:6px;height:6px;border-radius:50%;background:#10B981}.bdot.rest{background:#DB2777}
+button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
+.bossl{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--sub);margin:6px 4px 0}.bossl .bdot{position:static}
 .boss{margin-top:10px;border-radius:12px;padding:8px 12px;font-size:13px;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA;display:flex;gap:6px;align-items:center}
 .boss.busy{background:#FEF2F2;color:#991B1B;border-color:#FECACA}
 .boss.ok{background:#F0FDF4;color:#166534;border-color:#BBF7D0}
@@ -216,13 +219,13 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1104F"></script>
+<script src="../status.js?v=1104G"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1104F'</script>
-<script src="../chatkit.js?v=1104F"></script>
-<script src="../chat.js?v=1104F"></script>
-<script src="../mymoney.js?v=1104F"></script>
+<script>window.EP_VER='1104G'</script>
+<script src="../chatkit.js?v=1104G"></script>
+<script src="../chat.js?v=1104G"></script>
+<script src="../mymoney.js?v=1104G"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -284,6 +287,8 @@ async function load(){
   D = await rpc('staff_board', {p_token: TOKEN, p_from: from < wkFrom ? from : wkFrom, p_to: to > wkTo ? to : wkTo});
   if (D.today) { today = parse(D.today); }
   D.avail = D.avail || {}; D.events = D.events || [];
+  // 1104G: 대표님 근무한 날·휴무 (작은 점) — v36 전이면 조용히 건너뜀
+  D.bossDays = {}; try { (await rpc('staff_boss_days', {p_token: TOKEN, p_from: from < wkFrom ? from : wkFrom, p_to: to > wkTo ? to : wkTo}) || []).forEach(x => D.bossDays[x.day] = x); } catch(_){}
 }
 
 /* ---------- views ---------- */
@@ -400,13 +405,15 @@ function workSheet(){
     <div class="wl">같은 시간으로 이번 주 더 넣기</div><div class="wd">${[0,1,2,3,4,5,6].map(i => { const k = ymd(addDays(st, i)); return `<button data-wd="${k}" aria-pressed="${k===pick}" ${k < ymd(today) ? 'disabled' : ''}>${DOW[i]}</button>`; }).join('')}</div>
     <button class="btn" style="width:100%;margin-top:6px" data-wsave="1">출근표 저장</button>`); }
 
+const bdot = s => { const x = D.bossDays && D.bossDays[s]; return x ? `<i class="bdot ${x.kind}"></i>` : ''; };
+const bossLine = s => { const x = D.bossDays && D.bossDays[s]; if (!x) return ''; return `<div class="bossl"><i class="bdot ${x.kind}"></i>${x.kind === 'rest' ? '대표님 휴무' : `대표님 ${x.from}${x.to ? ' – ' + x.to : s === ymd(today) ? ' 출근' : ''}`}</div>`; };
 const dots = s => { const js = jobsOn(s), es = evsOn(s); return `<span class="dots">${js.slice(0,4).map(j=>`<i class="${j.my_status==='approved'?'mine':j.my_status==='applied'?'wait':''}"></i>`).join('')}${es.slice(0,Math.max(0,4-js.length)).map(()=>'<i class="ev"></i>').join('')}</span>`; };
 
 function weekStrip(){
   const p = parse(pick); const start = addDays(p, -p.getDay());
   let h = '<div class="week" role="group" aria-label="이번 주">';
   for (let i=0;i<7;i++){ const d = addDays(start,i), s = ymd(d);
-    h += `<button data-day="${s}" class="${s===ymd(today)?'today':''}" aria-pressed="${s===pick}">${DOW[i]}<b>${d.getDate()}</b>${dots(s)}${avTag(s)}</button>`; }
+    h += `<button data-day="${s}" class="${s===ymd(today)?'today':''}" aria-pressed="${s===pick}">${DOW[i]}<b>${d.getDate()}${bdot(s)}</b>${dots(s)}${avTag(s)}</button>`; }
   return h + '</div>';
 }
 function monthGrid(){
@@ -414,7 +421,7 @@ function monthGrid(){
   let h = `<div class="cal"><div class="dow">${DOW.map(d=>`<span>${d}</span>`).join('')}</div><div class="grid">`;
   for (let i=0;i<42;i++){ const d = addDays(start,i), s = ymd(d);
     if (i===35 && d.getMonth()!==month.getMonth()) break;
-    h += `<button data-day="${s}" class="${d.getMonth()!==month.getMonth()?'out':''} ${s===ymd(today)?'today':''}" aria-pressed="${s===pick}"><b>${d.getDate()}</b>${dots(s)}${avTag(s)}</button>`; }
+    h += `<button data-day="${s}" class="${d.getMonth()!==month.getMonth()?'out':''} ${s===ymd(today)?'today':''}" aria-pressed="${s===pick}"><b>${d.getDate()}${bdot(s)}</b>${dots(s)}${avTag(s)}</button>`; }
   return h + '</div></div>';
 }
 
@@ -434,7 +441,7 @@ function boardView(){
       <span class="segs"><button data-work="1" aria-pressed="${avW}">🏢 출근</button><button data-av1="no" aria-pressed="${av==='no'}">휴무</button>${av?'<button data-av1="clear">지우기</button>':''}</span></div>`
     : `<div class="bar" style="margin:4px 2px 0"><span style="font-size:12.5px;color:var(--sub)">이날 나는: ${av==='ok'?`<b style="color:var(--ok)">${isRES()?'출근 가능':'일할 수 있어요'}</b>`:av==='no'?'<b style="color:var(--warn)">안 돼요</b>':'표시 안 함'}</span>
       <span class="segs"><button data-av1="ok" aria-pressed="${av==='ok'}">✓ 가능</button><button data-av1="no" aria-pressed="${av==='no'}">✕ 불가</button>${av?'<button data-av1="clear">지우기</button>':''}</span></div>`;
-  return head + nav + (view==='month' ? monthGrid() : weekStrip()) + (isRES() && scope==='team' ? teamWorkWeek() : '') + avBox +
+  return head + nav + (view==='month' ? monthGrid() : weekStrip()) + bossLine(pick) + (isRES() && scope==='team' ? teamWorkWeek() : '') + avBox +
     `<div class="dayh">${p.getMonth()+1}월 ${p.getDate()}일 ${DOW[p.getDay()]}요일 · ${list.length + evs.length}건</div>` +
     (evs.map(evCard).join('') + list.map(card).join('') || `<p class="empty">${scope==='mine'?'이 날 내 일정이 없어요':'이 날은 일정이 없어요'}${V2()?'<br><button class="btn ghost sm" style="margin-top:10px" data-plus="1">＋ 일정 · 가능일 넣기</button>':''}</p>`);
 }
@@ -594,8 +601,8 @@ function render(){
   const gr = EPGreet.get(isRES() ? 'maemul' : isAGO() ? 'ago' : 'clean');
   document.documentElement.dataset.biz = isRES() ? 'res' : isAGO() ? 'ago' : 'clean';
   const main = tab==='board'?boardView():tab==='mine'?mineView():tab==='report'?reportView():tab==='paint'?paintView():tab==='ev'?evForm():tab==='shoot'?shootView():noticeView();
-  app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${isAGO() ? '아고스튜디오 파트너룸' : esc(C.BRAND)+' 일정판'}${mm}</div>
-     <div class="hirow"><div style="display:flex;gap:12px;align-items:center;min-width:0">${EPProfile.av(D.me.name,46,{me:true})}<div class="hi"><b>${esc(who())}, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${isAGO() ? `${esc(D.me.team_name)} 레이블 파트너 · co-work` : `${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}`}</small></div></div>${EPStatus.pill()}</div>
+  app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${isAGO() ? '아고스튜디오 파트너룸' : esc(C.BRAND)+' 일정판'}${mm}<span style="margin-left:auto">${EPStatus.pill()}</span></div>
+     <div class="hirow"><div style="display:flex;gap:12px;align-items:center;min-width:0">${EPProfile.av(D.me.name,46,{me:true})}<div class="hi"><b>${esc(who())}, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${isAGO() ? `${esc(D.me.team_name)} 레이블 파트너 · co-work` : `${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}`}</small></div></div></div>
      ${isRES() ? resToday() : EVT() ? `<div class="summary">${EVT()?`<div><b>${evN}</b><span>다가오는 내 일정</span></div>`:`<div><b>${ok}</b><span>확정된 일정</span></div>`}<div><b style="color:var(--warn)">${EVT()?ok:open}</b><span>${isAGO()?'확정 일정':isRES()?'확정 현장':'신청 가능'}</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div>` : todayCard()}</header>
    <main class="body">${main}
    <p class="foot">${esc(C.BRAND)} · 이 링크는 ${esc(who())} 전용이에요. 다른 사람과 공유하지 마세요.</p></main>`;

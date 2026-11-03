@@ -34,6 +34,7 @@
     await new Promise(r=>setTimeout(r,120));
     const j = id => S.jobs.find(x=>x.id===id);
     if (fn==='staff_board') return JSON.parse(JSON.stringify(S));
+    if (fn==='staff_boss_days') return [[-3,'07:50','19:10'],[-2,'08:20','20:30'],[-1,'08:10','18:40'],[0,'08:05',null]].map(([n,f,t])=>({day:day(n),kind:'work',from:f,to:t})).concat([{day:day(2),kind:'rest'}]);
     if (fn==='staff_apply'){ j(a.p_job).my_status='applied'; return 'applied'; }
     if (fn==='staff_cancel'){ const x=j(a.p_job); if (x.my_status==='approved'){x.approved--; x.crew=x.crew.filter(n=>n!==S.me.name); x.status='open';} x.my_status='cancelled'; return 'ok'; }
     if (fn==='staff_ack'){ j(a.p_job).need_ack=false; return 'ok'; }

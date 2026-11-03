@@ -501,3 +501,17 @@ html.chatapp .fab{display:none}
 .att-g i{font-style:normal;font-size:12px;padding:6px 0;border-radius:8px;background:#F4F5F7;color:#9CA3AF}.att-g i.x{background:none}
 .att-g i.w{background:var(--res);color:#fff;font-weight:700}.att-g i.o{background:#FDE8E8;color:#DC2626}.att-g i.t{box-shadow:inset 0 0 0 2px #111}.att-g i.s{outline:2px solid var(--resl);outline-offset:1px}
 .att-l{display:flex;gap:12px;font-size:11px;color:var(--sub);margin-top:8px}.att-l i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--res);margin-right:4px;vertical-align:-1px}.att-l i.o{background:#FCA5A5}
+
+/* 1104G 대표 출퇴근 */
+.bstat.bk{display:inline-flex;align-items:center;gap:6px;color:#111}.bstat.bk i{display:none}
+.pk{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pkb{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:14px;padding:12px;background:#fff;cursor:pointer;text-align:left;font:inherit}
+.pkb b{display:block;font-size:15px;color:#111}.pkb small{display:block;font-size:11.5px;color:var(--sub);margin-top:1px}
+.pkb.on{border-color:var(--clean);background:#EEF2FD}
+.pklog{font-size:12.5px;background:#F8FAFC;border-radius:10px;padding:9px 11px;margin-top:10px;line-height:1.7}.pklog b{color:var(--clean)}
+.dbx.boss{background:#ECFDF3;border-left-color:#10B981}.dbx.brest{background:#FDF2F8;border-left-color:#DB2777}
+.cal td .bars i.boss{background:#10B981}.cal td .bars i.brest{background:#DB2777}
+.bat .att-k div{background:#ECFDF3}.bat .att-k b{color:#0F7A55}.bat{border-left-color:#10B981}
+.bat .att-g i.w{background:#10B981}.bat .att-g i.o{background:#FCE7F3;color:#DB2777}
+.bbar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:#F1F2F4;margin:6px 0 4px}.bbar i{display:block;height:100%}
+.brow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:7px 0;border-bottom:1px solid #F1F2F4}.brow span:last-child{color:var(--sub);text-align:right}.brow .miss{color:#DC2626;font-weight:700}
