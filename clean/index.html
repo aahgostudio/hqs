@@ -219,13 +219,13 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1104G"></script>
+<script src="../status.js?v=1104H"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1104G'</script>
-<script src="../chatkit.js?v=1104G"></script>
-<script src="../chat.js?v=1104G"></script>
-<script src="../mymoney.js?v=1104G"></script>
+<script>window.EP_VER='1104H'</script>
+<script src="../chatkit.js?v=1104H"></script>
+<script src="../chat.js?v=1104H"></script>
+<script src="../mymoney.js?v=1104H"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -601,8 +601,8 @@ function render(){
   const gr = EPGreet.get(isRES() ? 'maemul' : isAGO() ? 'ago' : 'clean');
   document.documentElement.dataset.biz = isRES() ? 'res' : isAGO() ? 'ago' : 'clean';
   const main = tab==='board'?boardView():tab==='mine'?mineView():tab==='report'?reportView():tab==='paint'?paintView():tab==='ev'?evForm():tab==='shoot'?shootView():noticeView();
-  app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${isAGO() ? '아고스튜디오 파트너룸' : esc(C.BRAND)+' 일정판'}${mm}<span style="margin-left:auto">${EPStatus.pill()}</span></div>
-     <div class="hirow"><div style="display:flex;gap:12px;align-items:center;min-width:0">${EPProfile.av(D.me.name,46,{me:true})}<div class="hi"><b>${esc(who())}, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${isAGO() ? `${esc(D.me.team_name)} 레이블 파트너 · co-work` : `${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}`}</small></div></div></div>
+  app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${isAGO() ? '아고스튜디오 파트너룸' : esc(C.BRAND)+' 일정판'}${mm}</div>
+     <div class="hirow"><div style="display:flex;gap:12px;align-items:center;min-width:0">${EPProfile.av(D.me.name,46,{me:true})}<div class="hi"><b>${esc(who())}, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${isAGO() ? `${esc(D.me.team_name)} 레이블 파트너 · co-work` : `${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}`}</small></div></div>${EPStatus.pill()}</div>
      ${isRES() ? resToday() : EVT() ? `<div class="summary">${EVT()?`<div><b>${evN}</b><span>다가오는 내 일정</span></div>`:`<div><b>${ok}</b><span>확정된 일정</span></div>`}<div><b style="color:var(--warn)">${EVT()?ok:open}</b><span>${isAGO()?'확정 일정':isRES()?'확정 현장':'신청 가능'}</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div>` : todayCard()}</header>
    <main class="body">${main}
    <p class="foot">${esc(C.BRAND)} · 이 링크는 ${esc(who())} 전용이에요. 다른 사람과 공유하지 마세요.</p></main>`;

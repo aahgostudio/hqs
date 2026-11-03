@@ -9,29 +9,19 @@
   const KAKAO = 'http://pf.kakao.com/_hZqWX/chat';
 
   const LOOK = {
-    '현장 근무중': {k:'site', busy:true},
-    '내근중':      {k:'office'},
-    '근무중':      {k:'office'},
-    '회의중':      {k:'busy', busy:true},
-    '견적 외근중': {k:'out', busy:true},
-    '부동산 외근중':{k:'out', busy:true},
-    '외근중':      {k:'out', busy:true},
-    '일정 중':     {k:'out', busy:true},
-    '휴가중':      {k:'rest', busy:true},
-    '부재':        {k:'rest', busy:true},
-    'Busy':        {k:'busy', busy:true},
-    '업무 종료':   {k:'off', busy:true}
+    '현장 근무중': {i:'🧹', t:'field', busy:true},
+    '내근중':      {i:'🏢', t:'ok'},
+    '근무중':      {i:'🏢', t:'ok'},
+    '회의중':      {i:'💬', t:'busy', busy:true},
+    '견적 외근중': {i:'🚗', t:'away', busy:true},
+    '부동산 외근중':{i:'🏠', t:'away', busy:true},
+    '외근중':      {i:'🚗', t:'away', busy:true},
+    '일정 중':     {i:'📌', t:'away', busy:true},
+    '휴가중':      {i:'🌴', t:'off', busy:true},
+    '부재':        {i:'⏸', t:'off', busy:true},
+    'Busy':        {i:'⛔', t:'busy', busy:true},
+    '업무 종료':   {i:'🌙', t:'off', busy:true}
   };
-  // 1104G: 이모티콘 대신 선 아이콘 + 두세 글자 (글자는 검정, 아이콘·테두리만 색)
-  const KIND = {
-    office:{t:'사무실', c:'#10B981', l:'#A7E3CB', say:'사무실에 계세요', svg:'<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10.5 21v-3h3v3"/>'},
-    out:   {t:'외근',   c:'#E08A00', l:'#F8D9A0', say:'외근 중이에요', svg:'<path d="M3 17v-4l2.2-5.2A2 2 0 0 1 7 6.5h10a2 2 0 0 1 1.8 1.3L21 13v4"/><path d="M3 13h18M3 17h18"/><circle cx="7" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>'},
-    site:  {t:'현장',   c:'#2453C7', l:'#BFCDF3', say:'현장에 계세요', svg:'<path d="M3 18h18"/><path d="M5 18v-2a7 7 0 0 1 14 0v2"/><path d="M10 9.5V6.5a2 2 0 0 1 4 0v3"/>'},
-    busy:  {t:'통화불가', c:'#DC2626', l:'#F6B9B9', say:'지금 통화가 어려워요', svg:'<circle cx="12" cy="12" r="9"/><path d="M7.5 12h9"/>'},
-    off:   {t:'퇴근',   c:'#9CA3AF', l:'#D1D5DB', say:'퇴근하셨어요', svg:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'},
-    rest:  {t:'휴무',   c:'#DB2777', l:'#F9C6DD', say:'쉬는 날이에요', svg:'<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'}
-  };
-  const ico = (K, sz) => `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="${K.c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${K.svg}</svg>`;
   const MANUAL_NAME = {'현장':'현장 근무중'};
 
   let auto = null, opt = {manual:()=>null, onChange:()=>{}, demo:false};
@@ -55,15 +45,15 @@
   }
 
   function pill(){
-    const c = current(), L = LOOK[c.state] || LOOK['근무중'], K = KIND[L.k];
-    return `<button type="button" class="epst-pl" data-epst="1" style="border-color:${K.l}" title="대표님 ${esc(K.t)} · 눌러서 연락" aria-label="대표님 ${esc(K.t)}, 연락하기">${ico(K, 17)}<b>${K.t}</b></button>`;
+    const c = current(), L = LOOK[c.state] || LOOK['근무중'];
+    return `<button type="button" class="epst-ic t-${L.t}" data-epst="1" title="대표님 ${esc(c.state)} · 눌러서 연락" aria-label="대표님 ${esc(c.state)}, 연락하기"><span class="em">${L.i}</span><span class="dot"></span></button>`;
   }
 
   function openSheet(){
-    const c = current(), L = LOOK[c.state] || LOOK['근무중'], K = KIND[L.k];
+    const c = current(), L = LOOK[c.state] || LOOK['근무중'];
     const tel = PHONE.replace(/-/g,'');
     const talk = !!(window.EPChat && EPChat.state.on), KT = talk ? '어닝톡' : '카톡';   // 어닝톡(팀 대화) 켜져 있으면 어닝톡 1:1로, 아니면 예전처럼 카톡 채널
-    const hint = L.k === 'off' || L.k === 'rest' ? `지금은 업무 시간이 아니에요. ${KT}으로 남겨주시면 아침에 바로 답드릴게요.`
+    const hint = c.state === '업무 종료' ? `지금은 업무 시간이 아니에요. ${KT}으로 남겨주시면 아침에 바로 답드릴게요.`
       : L.busy ? `지금은 바로 받기 어려울 수 있어요. 급하지 않으면 ${KT}으로 남겨주세요. 급하면 전화 주세요.`
       : `지금 사무실에 있어요. 편하게 전화나 ${KT} 주세요.`;
     const btnCall = `<a class="epst-btn ${L.busy?'':'pri'}" href="tel:${tel}">📞 전화하기<small>${PHONE}</small></a>`;
@@ -74,12 +64,12 @@
     wrap.className = 'epst-back';
     wrap.innerHTML = `<div class="epst-sheet" role="dialog" aria-label="대표님 연락하기">
       <div class="epst-grab"></div>
-      <div class="epst-now" style="--epc:${K.c};--eps:${K.l}33"><span class="big">${ico(K, 30)}</span><div><small>대표님 지금</small><b style="color:#111">${esc(K.say)}${c.until?` <em>${esc(untilTxt(c.until))}</em>`:''}</b>${c.start && L.k !== 'rest' ? `<p>${esc(hm(c.start))} 출근${L.k === 'off' && c.since ? ' · ' + esc(hm(c.since)) + ' 퇴근' : ''}</p>` : ''}
-        ${c.memo?`<p>${esc(c.memo)}</p>`:''}${c.next?`<p class="nx">다음 · ${esc(c.next)}</p>`:''}${c.note?`<p class="nx">${esc(c.note)}</p>`:''}</div></div>
+      <div class="epst-now t-${L.t}"><span class="big">${L.i}</span><div><small>대표님 지금</small><b>${esc(c.state)}${c.until?` <em>${esc(untilTxt(c.until))}</em>`:''}</b>
+        ${c.start && c.state !== '휴가중' ? `<p>${esc(hm(c.start))} 출근${c.state === '업무 종료' && c.since ? ' · ' + esc(hm(c.since)) + ' 퇴근' : ''}</p>` : ''}${c.memo?`<p>${esc(c.memo)}</p>`:''}${c.next?`<p class="nx">다음 · ${esc(c.next)}</p>`:''}${c.note?`<p class="nx">${esc(c.note)}</p>`:''}</div></div>
       <p class="epst-hint">${hint}</p>
       <div class="epst-btns">${L.busy ? btnKakao + btnCall : btnCall + btnKakao}${btnSms}</div>
       <button type="button" class="epst-close" data-epst-close="1">닫기</button>
-      <p class="epst-foot">대표님이 출근·외근·현장·퇴근을 찍으면 자동으로 바뀌어요.</p></div>`;
+      <p class="epst-foot">대표님이 출근·현장·외근·퇴근을 찍으면 자동으로 바뀌어요.</p></div>`;
     document.body.appendChild(wrap);
     requestAnimationFrame(() => wrap.classList.add('on'));
     const shut = () => { wrap.classList.remove('on'); setTimeout(() => wrap.remove(), 200); };
@@ -110,8 +100,6 @@
   document.addEventListener('click', e => { if (e.target.closest('[data-epst]')) { e.preventDefault(); e.stopPropagation(); openSheet(); } }, true);
 
   const css = `
-.epst-pl{display:inline-flex;align-items:center;justify-content:center;gap:5px;width:96px;height:32px;border:1.5px solid;border-radius:99px;background:#fff;color:#111;font:inherit;font-size:13px;cursor:pointer;flex-shrink:0;padding:0}.epst-pl b{font-weight:700;color:#111;white-space:nowrap}.epst-pl svg{flex:none}
-.epst-now .big svg{display:block}
 .epst-ic{position:relative;width:30px;height:30px;border-radius:50%;border:2px solid var(--epc);background:var(--epbg);display:inline-grid;place-items:center;padding:0;cursor:pointer;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .epst-ic .em{font-size:15px;line-height:1}
 .epst-ic .dot{position:absolute;right:-3px;bottom:-3px;width:10px;height:10px;border-radius:50%;background:var(--epc);border:2px solid var(--epbg)}
