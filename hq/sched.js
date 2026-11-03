@@ -153,16 +153,22 @@ function bossCard(day){
       <div style="display:flex;gap:10px;font-size:11px;color:var(--sub);margin-bottom:6px">${['office','site','out'].map(k => `<span style="display:inline-flex;gap:4px;align-items:center">${H.bIco(k,12)}${H.BK[k][0]}</span>`).join('')}</div>` : ''}
     <div class="att-g">${H.DOW.map(w => `<em>${w}</em>`).join('')}${cells}</div>
     <div style="margin-top:8px">${work.slice().reverse().slice(0, 7).map(([k, x]) => `<div class="brow"><span>${md(k)}</span><span>${x.from} – ${x.to ? x.to : x.miss ? '<b class="miss">퇴근 안 찍음</b>' : '지금'} · 사무실 ${hmM(x.seg.office)}</span></div>`).join('')}</div>
-    <div class="acts" style="margin-top:8px"><button class="btn ghost sm" data-a="bossFix" data-d="${day}">시간 고치기</button></div></div>`;
+    <div class="acts" style="margin-top:8px"><button class="btn ghost sm" data-a="bossFix" data-d="${day}">시간 고치기</button>${b && b.p.length ? `<button class="btn ghost sm" style="color:#DC2626;border-color:#FECACA" data-a="bossDelDay" data-d="${day}">${md(day)} 기록 삭제</button>` : ''}</div></div>`;
 }
 H.ACT.bossRest = async el => { const d = el.dataset.d, on = (H.S.brest||[]).some(r => r.day === d);
   try { if (on) await H.q(sb.from('boss_rest').delete().eq('day', d)); else await H.q(sb.from('boss_rest').insert({day: d})); }
   catch(_){ return H.toast('SQL v36을 먼저 돌려주세요'); }
   H.toast(on ? '휴무 표시를 뺐어요' : '대표 휴무로 표시했어요 · 직원 달력에 분홍 점'); H._dirty = Date.now(); H.render(); };
+H.ACT.bossDelDay = el => { const d = el.dataset.d, n = (bossDay(d) || {p: []}).p.length;
+  H.open(`<h3>${md(d)} 출퇴근 기록 삭제</h3><p class="note">이날 찍은 기록 ${n}개를 모두 지워요. 직원 달력의 점도 같이 없어져요.</p>
+    <div class="sacts"><button type="button" class="btn ghost" data-a="close">취소</button><button type="button" class="btn" style="background:#DC2626" data-a="bossDelDayOk" data-d="${d}">삭제</button></div>`); };
+H.ACT.bossDelDayOk = async el => { const d = el.dataset.d, ids = (bossDay(d) || {p: []}).p.map(x => x.id);
+  if (ids.length) await H.q(sb.from('boss_punch').delete().in('id', ids));
+  H.close(); H.toast('삭제했어요'); st().open = null; await H.loadBossStatus(); H._dirty = Date.now(); H.render(); };
 H.ACT.bossFix = el => { const d = el.dataset.d, b = bossDay(d) || {p: []};
   const row = (x, i) => `<div class="fg" style="grid-template-columns:1fr 1fr auto;align-items:end;margin-bottom:6px"><div class="field"><label>${i === 0 ? '시간' : '&nbsp;'}</label><input type="time" name="t_${x.id||'n'+i}" value="${x.at ? H.hm(x.at) : ''}"></div>
     <div class="field"><label>${i === 0 ? '어디' : '&nbsp;'}</label><select name="k_${x.id||'n'+i}">${['office','site','out','off'].map(k => `<option value="${k}" ${x.kind===k?'selected':''}>${H.BK[k][0]}</option>`).join('')}</select></div>
-    ${x.id ? `<label style="font-size:12px;padding-bottom:10px"><input type="checkbox" name="del_${x.id}"> 지우기</label>` : '<span></span>'}</div>`;
+    ${x.id ? `<label style="font-size:12.5px;padding-bottom:10px;color:#DC2626;font-weight:700;white-space:nowrap"><input type="checkbox" name="del_${x.id}"> 삭제</label>` : '<span></span>'}</div>`;
   H.open(`<form data-f="bossFix" data-d="${d}"><h3>${md(d)} 출퇴근 고치기</h3>${b.p.map(row).join('')}${b.p.length ? '' : row({kind:'office'}, 98)}${row({kind: 'off'}, 99)}
     <p class="note">빈 줄은 새로 넣기예요 (예: 출근 08:00 · 퇴근 19:30). 중간에 현장 간 시간도 넣으려면 저장 후 한 번 더 열어 추가하세요. 비워두면 안 넣어요.</p>${H.sacts('저장')}</form>`); };
 H.FORM.bossFix = async (v, f) => { const d = f.dataset.d, b = bossDay(d) || {p: []};
@@ -170,7 +176,7 @@ H.FORM.bossFix = async (v, f) => { const d = f.dataset.d, b = bossDay(d) || {p: 
   for (const x of b.p) { if (v.get('del_' + x.id)) { await H.q(sb.from('boss_punch').delete().eq('id', x.id)); continue; }
     const t = v.get('t_' + x.id), k = v.get('k_' + x.id); if (t && (t !== H.hm(x.at) || k !== x.kind)) await H.q(sb.from('boss_punch').update({at: at(t), kind: k}).eq('id', x.id)); }
   for (const n of ['n98','n99']) { const nt = v.get('t_' + n); if (nt) await H.q(sb.from('boss_punch').insert({at: at(nt), kind: v.get('k_' + n)})); }
-  H.close(); H.toast('고쳤어요'); H._dirty = Date.now(); H.render(); };
+  H.close(); H.toast('고쳤어요'); await H.loadBossStatus(); H._dirty = Date.now(); H.render(); };
 
 /* ---------- 하루 패널 ---------- */
 function daySide(s){
