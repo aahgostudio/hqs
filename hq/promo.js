@@ -75,7 +75,7 @@ H.view('promo', {label:'홍보',
         <div class="tbl"><table><thead><tr><th>현장</th>${CH.map(c=>`<th>${c[1]}</th>`).join('')}<th>링크</th><th></th></tr></thead><tbody>
         ${st.map(([j,p])=>`<tr><td><b>${md(j.job_date)} ${esc(j.title)}</b><div class="note">${esc(j.kind||'')}${H.photosOf(j.id).length?' · 사진 '+H.photosOf(j.id).length+'장':''}</div></td>${CH.map(([k])=>`<td>${cell(j,p,k)}</td>`).join('')}
           <td><button class="btn sm ghost" data-a="promoLink" data-j="${j.id}">${(j.promo_links||[]).length||'+'}</button></td>
-          <td style="white-space:nowrap">${p.done?'<span class="pill p-ok">완료</span>':!(p.photo>0)?`<button class="btn sm ghost" data-a="photoAsk" data-j="${j.id}">사진 요청 문구</button>`:`<button class="btn sm ghost" data-a="promoAll" data-j="${j.id}">전체 완료</button>`}${H.photosOf(j.id).length?` <button class="btn sm ghost" data-a="photosSheet" data-j="${j.id}">사진</button>`:''}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">최근 45일 끝난 현장이 없어요</td></tr>'}
+          <td style="white-space:nowrap">${p.done?'<span class="pill p-ok">완료</span>':!(p.photo>0)?`<button class="btn sm ghost" data-a="photoAsk" data-j="${j.id}">📷 사진 요청</button>`:`<button class="btn sm ghost" data-a="promoAll" data-j="${j.id}">전체 완료</button>`}${H.photosOf(j.id).length?` <button class="btn sm ghost" data-a="photosSheet" data-j="${j.id}">사진</button>`:''}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">최근 45일 끝난 현장이 없어요</td></tr>'}
         </tbody></table></div></section>
       <section class="box"><div class="bh"><h3>할 일</h3><span class="sub">자동으로 모아요</span></div>
         ${todo.slice(0,10).map(t=>`<div class="rw"><span>${t}</span></div>`).join('') || '<div class="note">밀린 홍보가 없어요 👍</div>'}
@@ -87,8 +87,22 @@ H.view('promo', {label:'홍보',
       <div class="links">${pl.map(l=>`<div class="lk"><b>${esc(l.name)}</b><span>${esc(l.sub||l.url)}</span><a href="${esc(l.url)}" target="_blank" rel="noopener">열기</a></div>`).join('')}</div></section>`;
   }
 });
-H.ACT.photoAsk = el => { const j = findJ(el.dataset.j); const crew = (j.assignments||[]).filter(a=>a.status==='approved').map(a=>H.P(a.staff_id).name);
-  H.copy(`${crew.length?crew.join('·')+'님, ':''}${md(j.job_date)} ${j.title} 현장 사진(작업 전·후) 현장노트에 올려주세요 🙏 홍보에 써요!`, '사진 요청 문구 복사했어요 · 카톡에 붙여넣으세요'); };
+// 📷 사진 요청: 현장 책임자(수금 담당)에게 1:1 대화로 알림 — 필요하면 같이 간 사람도 체크 · 대표님 본인은 빠짐
+H.ACT.photoAsk = el => { const j = findJ(el.dataset.j);
+  const crew = (j.assignments||[]).filter(a => a.status === 'approved').map(a => H.P(a.staff_id)).filter(p => p && p.id);
+  const lead = crew.find(p => p.id === j.collector_id) || crew.find(p => /팀장|실장/.test(p.role||'')) || crew[0];
+  if (!crew.length) return H.toast('대표님만 간 현장이라 보낼 사람이 없어요 · 고객님 방에 직접 올려주세요');
+  const msg = `${md(j.job_date)} ${j.title} 현장 사진(작업 전·후)을 고객님 방에 올려주세요 🙏\n홍보에 써요. 이미 올렸으면 이 메시지는 넘겨도 돼요!`;
+  H.open(`<form data-f="photoAsk"><h3>📷 사진 요청</h3><p class="note" style="margin:-6px 0 10px">${esc(j.title)} · ${md(j.job_date)}<br>체크한 사람에게 1:1 대화로 보내요 (폰 알림 가요)</p>
+    <input type="hidden" name="id" value="${j.id}">
+    <div class="chips">${crew.map(p => `<label><input type="checkbox" name="s" value="${p.id}" ${p === lead ? 'checked' : ''}><span>${esc(p.name)}${p === lead ? ' · 현장 책임자' : ''}</span></label>`).join('')}</div>
+    <div class="field full" style="margin-top:10px"><label>보낼 말</label><textarea class="in" name="body" rows="3">${esc(msg)}</textarea></div>
+    ${H.sacts('보내기')}</form>`); };
+H.FORM.photoAsk = async v => { const ids = v.getAll('s'), body = String(v.get('body')||'').trim(); if (!ids.length || !body) return H.toast('받을 사람과 내용을 확인해주세요');
+  let ok = 0;
+  for (const sid of ids) { const r = await H.sb.from('chat_rooms').select('id').eq('kind', 'dm').eq('staff_id', sid).maybeSingle();
+    if (!r.data) continue; const {error} = await H.sb.rpc('chat_admin_send', {p_room: r.data.id, p_body: body, p_photo: null}); if (!error) ok++; }
+  H.close(); H.toast(ok ? `${ok}명에게 사진 요청을 보냈어요` : '보내지 못했어요 · 그 직원 1:1 대화방이 아직 없어요'); };
 H.ACT.plEdit = () => { const pl = H.S.settings.promo_links || [];
   H.open(`<form data-f="plEdit"><h3>홍보 채널 바로가기</h3><p class="note">한 줄에 하나: 이름 | 주소 | 설명</p>
     <textarea class="in" name="t" rows="9">${esc(pl.map(l=>[l.name,l.url,l.sub||''].join(' | ')).join('\n'))}</textarea>${H.sacts('저장')}</form>`); };
