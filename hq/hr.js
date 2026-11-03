@@ -53,7 +53,9 @@ H.ACT.stCard = async el => {
         return `<div><span>이번 달 계약</span><b>${c('계약')}</b><small>잔금 ${c('잔금')}</small></div><div><span>이번 달 안내</span><b>${c('안내')}</b><small>일정 ${m.length}건</small></div><div><span>누적 일정</span><b>${e.length}</b><small>계약 ${e.filter(x=>x.kind==='계약').length}</small></div>`; })()
       : `<div><span>이번 달 현장</span><b>${nThis}</b><small>지난달 ${nLast}</small></div>
       <div><span>누적 현장</span><b>${ok.length}</b><small>예정 ${upcoming}</small></div>
-      ${own?`<div><span>이번 달 지급</span><b>${H.won(payThis)}</b><small>누적 ${H.won(payAll)}원</small></div>`:''}
+      ${own?(() => { const dThis = done.filter(a => inM(a, thisM)), miss = dThis.filter(a => !pay(a)).length;
+        return `<div><span>${now.getMonth()+1}월 지급액</span><b>${H.won(payThis)}</b><small>마감 ${dThis.length}곳 기준${miss?` · <b style="color:#B45309">금액 안 넣은 곳 ${miss}</b>`:''}</small></div>
+        <div><span>입사 후 누적 지급액</span><b>${H.won(payAll)}</b><small>마감 ${done.length}곳 전체</small></div>`; })():''}
       <div><span>이번 달 가능일</span><b>${avOk}</b><small>불가 ${avNo}</small></div>`}
       <div><span>공지</span><b>${nRead}</b><small>읽음 · 확인 ${nConf}</small></div>
       <div><span>서류</span><b>${docN}/${DOCS.length}</b><small>체크</small></div>
