@@ -255,10 +255,11 @@
     let sx = 0, sy = 0, sw = null;
     box.addEventListener('touchstart', e => { sw = e.target.closest('.epc-b[data-mid]'); if (!sw) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
     box.addEventListener('touchmove', e => { if (!sw) return; const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
-      if (Math.abs(dy) > 24) { sw.style.transform = ''; sw = null; return; } if (Math.abs(dx) > 8) { clearTimeout(pressT); sw.style.transform = `translateX(${Math.max(-70, Math.min(70, dx))}px)`; } }, {passive:true});
+      if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) { sw.style.transform = ''; sw = null; return; } if (Math.abs(dx) > 8) { clearTimeout(pressT); sw.style.transform = `translateX(${Math.max(-70, Math.min(70, dx))}px)`; } }, {passive:true});
+    box.addEventListener('touchcancel', () => { if (sw) { sw.style.transform = ''; sw = null; } }, {passive:true});
     box.addEventListener('touchend', e => { if (!sw) return; const b = sw, dx = (e.changedTouches[0] || {}).clientX - sx; sw = null;
       b.style.transition = 'transform .18s'; b.style.transform = ''; setTimeout(() => { b.style.transition = ''; }, 200);
-      if (Math.abs(dx) > 60) { const m = msgs.find(x => x.id === +b.dataset.mid); if (m && !m.deleted) { if (navigator.vibrate) navigator.vibrate(10); editing = null; replying = {id: m.id, name: m.mine ? '나' : m.name, body: m.body, photo: m.photo}; drawRoom(true); } } }, {passive:true});
+      if (Math.abs(dx) > 45) { const m = msgs.find(x => x.id === +b.dataset.mid); if (m && !m.deleted) { if (navigator.vibrate) navigator.vibrate(10); editing = null; replying = {id: m.id, name: m.mine ? '나' : m.name, body: m.body, photo: m.photo}; drawRoom(true); } } }, {passive:true});
   }
 
   function menu(id, own = true){

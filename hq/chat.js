@@ -166,10 +166,11 @@ function paint(keep){
   if (box && !box._swipe) { box._swipe = true; let sx = 0, sy = 0, el = null;
     box.addEventListener('touchstart', e => { el = e.target.closest('.ch-b[data-mid]'); if (!el) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
     box.addEventListener('touchmove', e => { if (!el) return; const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
-      if (Math.abs(dy) > 24) { el.style.transform = ''; el = null; return; } if (Math.abs(dx) > 8) el.style.transform = `translateX(${Math.max(-70, Math.min(70, dx))}px)`; }, {passive:true});
+      if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) { el.style.transform = ''; el = null; return; } if (Math.abs(dx) > 8) el.style.transform = `translateX(${Math.max(-70, Math.min(70, dx))}px)`; }, {passive:true});
+    box.addEventListener('touchcancel', () => { if (el) { el.style.transform = ''; el = null; } }, {passive:true});
     box.addEventListener('touchend', e => { if (!el) return; const dx = (e.changedTouches[0] || {}).clientX - sx; const b = el; el = null;
       b.style.transition = 'transform .18s'; b.style.transform = ''; setTimeout(() => { b.style.transition = ''; }, 200);
-      if (Math.abs(dx) > 60 && b.dataset.mid && /^\d+$/.test(b.dataset.mid)) { if (navigator.vibrate) navigator.vibrate(10); H.ACT.chReply({dataset:{id: b.dataset.mid}}); } }, {passive:true}); }
+      if (Math.abs(dx) > 45 && b.dataset.mid && /^\d+$/.test(b.dataset.mid)) { if (navigator.vibrate) navigator.vibrate(10); H.ACT.chReply({dataset:{id: b.dataset.mid}}); } }, {passive:true}); }
   // 입력줄: 카카오워크식 (PC는 Enter 전송 · 폰은 [↑]로 전송) · @멘션 · 이모지
   syncReply();
   K.drop(R, fs => (async () => { for (const f of fs) await sendPhoto(f); })());   // PC: 끌어다 놓기 · 붙여넣기
