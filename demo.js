@@ -24,6 +24,12 @@
       {id:2,title:null,body:'토요일 현장은 6시 정각 출발이에요.',important:false,team:'OPS',at:new Date(Date.now()-86400000*2).toISOString(),read:true,confirmed:false}
     ]
   };
+  if (new URLSearchParams(location.search).get('demo') === 'res') {   // 부동산 직원 미리보기
+    S.me = {id:'me',name:'조원경',team:'RES',team_name:'리츠부동산',role:'소장',can_collect:true,pay_type:'none'};
+    S.jobs = []; S.avail = {[day(0)]:'work:09:00-18:00',[day(1)]:'work:13:00-18:00',[day(2)]:'work:09:00-18:00',[day(3)]:'no'};
+    S.events = [{id:1,date:day(0),time:'13:00',kind:'안내',maemul:'2610-투001',title:'연산동 투룸',memo:null,show_boss:true,gcal:false},{id:2,date:day(0),time:'16:00',kind:'계약',maemul:null,title:'양정동 원룸 계약서 작성',memo:null,show_boss:true,gcal:false}];
+    S.team_work = [[0,'조원경','work','09:00-18:00'],[0,'김윤미','work','13:00-18:00'],[0,'조수광','no',null],[1,'조원경','work','13:00-18:00'],[1,'조수광','work','09:00-18:00'],[2,'조원경','work','09:00-18:00'],[2,'김윤미','work','09:00-18:00'],[2,'조수광','work','10:00-19:00'],[3,'조원경','no',null]].map(([d,name,kind,memo]) => ({day:day(d),name,kind,memo}));
+  }
   window.EP_DEMO = { rpc: async (fn, a) => {
     await new Promise(r=>setTimeout(r,120));
     const j = id => S.jobs.find(x=>x.id===id);
@@ -33,12 +39,12 @@
     if (fn==='staff_ack'){ j(a.p_job).need_ack=false; return 'ok'; }
     if (fn==='staff_add_extra'){ const x=j(a.p_job); x.extras=(x.extras||[]).concat([{name:a.p_name,amount:a.p_amount,notice:'site',agreed:true,by:S.me.id,by_name:S.me.name}]); return 'ok'; }
     if (fn==='staff_del_extra'){ j(a.p_job).extras.splice(a.p_idx,1); return 'ok'; }
+    if (fn==='staff_set_avail'){ a.p_days.forEach(d => { if (a.p_kind==='clear') delete S.avail[d]; else S.avail[d] = a.p_kind==='work' ? 'work:'+a.p_memo : a.p_kind; }); return 'ok'; }
     if (fn==='staff_collect'){ j(a.p_job).collected_at=new Date().toISOString(); return 'ok'; }
     if (fn==='staff_notice_read'){ S.notices.forEach(n=>n.read=true); return 'ok'; }
     if (fn==='staff_notice_confirm'){ S.notices.find(n=>n.id===a.p_id).confirmed=true; return 'ok'; }
     if (fn==='staff_report') return 1;
     if (fn==='staff_pay') return {pay_type:'freelance33', items:[{date:day(-3),title:'동래 온천동 헬스장 준공청소',base:120000,extra:10000,amount:130000,memo:null,paid:false}]};
-    if (fn==='staff_set_avail'){ a.p_days.forEach(d=>{ if (a.p_kind==='clear') delete S.avail[d]; else S.avail[d]=a.p_kind; }); return 'ok'; }
     if (fn==='staff_event_save'){ const e={id:a.p_id||Date.now(),date:a.p_date,time:a.p_time,kind:a.p_kind,maemul:a.p_maemul,title:a.p_title,memo:a.p_memo,show_boss:a.p_show_boss,gcal:a.p_gcal}; S.events=S.events.filter(x=>x.id!==e.id).concat(e); return e.id; }
     if (fn==='staff_event_delete'){ S.events=S.events.filter(x=>x.id!==a.p_id); return 'ok'; }
     if (fn==='staff_live_target') return 'DEMO';

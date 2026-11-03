@@ -22,6 +22,13 @@ body{background:var(--bg)}
 .cheer{margin:3px 0 4px;font-size:14px;color:var(--ink,#1f2937);opacity:.8}
 .hi b{font-size:20px;font-weight:900;letter-spacing:-.02em;display:block;line-height:1.3}
 .hi small{font-size:13px;color:var(--sub)}
+.twk{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 10px;margin:8px 0}
+.tw{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:7px 4px;border-top:1px solid var(--line);font-size:12px;cursor:pointer}.tw:first-child{border-top:0}
+.tw b{width:40px;font-size:12.5px}.tw span{background:#E7F7EF;color:#0F9D6B;font-weight:700;border-radius:6px;padding:2px 7px}.tw span.off{background:var(--soft);color:var(--mute)}.tw.sel{background:var(--soft);border-radius:10px}
+.wt{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end;margin-bottom:12px}.wt label{font-size:12px;color:var(--sub);display:grid;gap:4px}.wt select{font:inherit;font-size:18px;font-weight:800;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
+.wl{font-size:12px;font-weight:800;color:var(--sub);margin:4px 0 6px}
+.wq,.wd{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}.wq button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;color:var(--ink)}
+.wd{display:grid;grid-template-columns:repeat(7,1fr)}.wd button{border:0;background:var(--soft);border-radius:9px;padding:8px 0;font:inherit;font-size:13px;color:var(--ink)}.wd button[aria-pressed=true]{background:#0F9D6B;color:#fff;font-weight:800}.wd button:disabled{opacity:.35}
 .tday{display:grid;gap:3px;width:100%;margin-top:12px;text-align:left;border:1px solid var(--line);background:var(--soft);border-radius:14px;padding:11px 36px 11px 14px;font:inherit;color:var(--ink);position:relative}
 .tday.now{background:#EAF0FF;border-color:#C7D5FB}.tday .lb{font-size:12px;color:var(--sub);font-weight:700}.tday.now .lb{color:var(--navy)}.tday .lb i{font-style:normal;background:var(--navy);color:#fff;border-radius:999px;padding:1px 7px;margin-left:4px;font-size:11px}
 .tday b{font-size:15.5px;line-height:1.35}.tday small{font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -209,13 +216,13 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1104B"></script>
+<script src="../status.js?v=1104C"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1104B'</script>
-<script src="../chatkit.js?v=1104B"></script>
-<script src="../chat.js?v=1104B"></script>
-<script src="../mymoney.js?v=1104B"></script>
+<script>window.EP_VER='1104C'</script>
+<script src="../chatkit.js?v=1104C"></script>
+<script src="../chat.js?v=1104C"></script>
+<script src="../mymoney.js?v=1104C"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -297,6 +304,12 @@ function statusPill(j){
   return `<span class="pill p-warn">${Math.max(0, j.headcount - j.approved)}자리</span>`;
 }
 
+// 부동산 첫 화면: 오늘 사무실 (v35)
+function resToday(){
+  const t = ymd(today), me = D.avail[t] || '', w = teamWorkOn(t), on = w.filter(x => x.kind === 'work'), off = w.filter(x => x.kind === 'no');
+  const ev = D.events.filter(e => e.date === t).sort((a,b) => (a.time||'').localeCompare(b.time||''))[0];
+  return `<button class="tday now" data-goday="${t}"><span class="lb">🏢 오늘 사무실${me.startsWith('work:') ? ` · 나 ${hm2(me.slice(5))}` : me === 'no' ? ' · 나 휴무' : ''}</span>
+    <b>${on.length ? on.map(x => `${esc(x.name.length>=3?x.name.slice(1):x.name)} ${hm2(x.memo)}`).join(' · ') : '아직 출근 표시한 사람이 없어요'}</b>${off.length ? `<small>${off.map(x => esc(x.name.length>=3?x.name.slice(1):x.name)).join('·')} 휴무</small>` : ''}${ev ? `<small>📌 ${ev.time ? ev.time + ' · ' : ''}${esc(ev.kind)} ${esc(ev.title)}</small>` : ''}<em>›</em></button>`; }
 // 첫 화면: 오늘(없으면 다음) 내 현장 한 줄 (11/4) — 클린 직원만
 function todayCard(){
   const t = ymd(today), mine = D.jobs.filter(j => j.my_status === 'approved' && j.status !== 'cancelled' && j.date >= t)
@@ -366,7 +379,27 @@ function evCard(e){
   return `<article class="card evc"><div class="t1"><div><div class="when">${md(e.date)}${e.time?' · '+e.time:''} · 내 일정</div><h4>${esc(e.kind)} ${e.maemul?`<span class="pill p-mute">${esc(e.maemul)}</span>`:''} ${esc(e.title)}</h4></div><button class="btn ghost sm" data-evedit="${e.id}">${I('edit')}수정</button></div>
     ${e.memo?`<div class="note">${esc(e.memo)}</div>`:''}<div class="row2"><span>${e.show_boss?'대표님 일정판에 보임':'나만 보기'}${e.gcal?' · 구글 캘린더':''}</span></div></article>`;
 }
-const avTag = s => { const k = D.avail[s]; return k === 'ok' ? '<span class="av ok">가능</span>' : k === 'no' ? '<span class="av no">불가</span>' : ''; };
+const hm2 = m => String(m||'').split('-').map(t => { const [h, mi] = t.split(':'); return +h + (mi && mi !== '00' ? ':' + mi : ''); }).join('–');   // '09:00-18:00' → '9–18'
+const avTag = s => { const k = D.avail[s] || ''; if (k.startsWith('work:')) return `<span class="av ok">${hm2(k.slice(5))}</span>`;
+  return k === 'ok' ? '<span class="av ok">가능</span>' : k === 'no' ? `<span class="av no">${isRES() ? '휴무' : '불가'}</span>` : ''; };
+// 부동산 출근표 (v35)
+const LT_KEY = 'ep_work_time';
+const lastTime = () => { try { return localStorage.getItem(LT_KEY) || '09:00-18:00'; } catch(_){ return '09:00-18:00'; } };
+const teamWorkOn = day => (D.team_work||[]).filter(x => x.day === day);
+function teamWorkWeek(){
+  const p = parse(pick), st = addDays(p, -p.getDay()); let h = '';
+  for (let i = 0; i < 7; i++){ const d = addDays(st, i), k = ymd(d), w = teamWorkOn(k);
+    h += `<div class="tw ${k===pick?'sel':''}" data-day="${k}" role="button"><b>${DOW[i]} ${d.getDate()}</b>${w.length ? w.map(x => `<span class="${x.kind==='no'?'off':''}">${esc(x.name.length>=3?x.name.slice(1):x.name)} ${x.kind==='no'?'휴무':hm2(x.memo)}</span>`).join('') : '<span class="off">-</span>'}</div>`; }
+  return `<div class="twk">${h}</div>`; }
+function workSheet(){
+  const [f, t] = lastTime().split('-'), opts = sel => { let o = ''; for (let m = 7*60; m <= 22*60; m += 30){ const v = pad(Math.floor(m/60)) + ':' + pad(m%60); o += `<option ${v===sel?'selected':''}>${v}</option>`; } return o; };
+  const p = parse(pick), st = addDays(p, -p.getDay());
+  sheet(`<h3 style="margin:0 0 4px">🏢 출근 시간</h3><p style="margin:0 0 12px;font-size:12.5px;color:var(--sub)">${md(pick)} · 지난번 시간이 기본으로 들어가요</p>
+    <div class="wt"><label>출근<select id="wf">${opts(f)}</select></label><span>~</span><label>퇴근<select id="wt">${opts(t)}</select></label></div>
+    <div class="wl">자주 쓰는 시간</div><div class="wq">${[['09:00','18:00'],['10:00','19:00'],['13:00','18:00','오후'],['09:00','13:00','오전']].map(([a,b,l]) => `<button data-wq="${a}-${b}">${hm2(a+'-'+b)}${l?' '+l:''}</button>`).join('')}</div>
+    <div class="wl">같은 시간으로 이번 주 더 넣기</div><div class="wd">${[0,1,2,3,4,5,6].map(i => { const k = ymd(addDays(st, i)); return `<button data-wd="${k}" aria-pressed="${k===pick}" ${k < ymd(today) ? 'disabled' : ''}>${DOW[i]}</button>`; }).join('')}</div>
+    <button class="btn" style="width:100%;margin-top:6px" data-wsave="1">출근표 저장</button>`); }
+
 const dots = s => { const js = jobsOn(s), es = evsOn(s); return `<span class="dots">${js.slice(0,4).map(j=>`<i class="${j.my_status==='approved'?'mine':j.my_status==='applied'?'wait':''}"></i>`).join('')}${es.slice(0,Math.max(0,4-js.length)).map(()=>'<i class="ev"></i>').join('')}</span>`; };
 
 function weekStrip(){
@@ -395,9 +428,13 @@ function boardView(){
     : `<div class="bar"><div class="mnav"><button data-wnav="-7" aria-label="이전 주">${I('left')}</button><b>${p.getMonth()+1}월 ${Math.ceil((p.getDate()+new Date(p.getFullYear(),p.getMonth(),1).getDay())/7)}주</b><button data-wnav="7" aria-label="다음 주">${I('right')}</button></div><button class="btn ghost sm" data-day="${ymd(today)}">오늘</button></div>`;
   const list = jobsOn(pick), evs = evsOn(pick);
   const av = D.avail[pick];
-  const avBox = V2() && pick >= ymd(today) ? `<div class="bar" style="margin:4px 2px 0"><span style="font-size:12.5px;color:var(--sub)">이날 나는: ${av==='ok'?`<b style="color:var(--ok)">${isRES()?'출근 가능':'일할 수 있어요'}</b>`:av==='no'?'<b style="color:var(--warn)">안 돼요</b>':'표시 안 함'}</span>
-      <span class="segs"><button data-av1="ok" aria-pressed="${av==='ok'}">✓ 가능</button><button data-av1="no" aria-pressed="${av==='no'}">✕ 불가</button>${av?'<button data-av1="clear">지우기</button>':''}</span></div>` : '';
-  return head + nav + (view==='month' ? monthGrid() : weekStrip()) + avBox +
+  const avW = String(av||'').startsWith('work:');
+  const avBox = !(V2() && pick >= ymd(today)) ? '' : isRES()
+    ? `<div class="bar" style="margin:4px 2px 0"><span style="font-size:12.5px;color:var(--sub)">이날 나는: ${avW?`<b style="color:var(--ok)">🏢 출근 ${hm2(av.slice(5))}</b>`:av==='no'?'<b style="color:var(--warn)">휴무</b>':'표시 안 함'}</span>
+      <span class="segs"><button data-work="1" aria-pressed="${avW}">🏢 출근</button><button data-av1="no" aria-pressed="${av==='no'}">휴무</button>${av?'<button data-av1="clear">지우기</button>':''}</span></div>`
+    : `<div class="bar" style="margin:4px 2px 0"><span style="font-size:12.5px;color:var(--sub)">이날 나는: ${av==='ok'?`<b style="color:var(--ok)">${isRES()?'출근 가능':'일할 수 있어요'}</b>`:av==='no'?'<b style="color:var(--warn)">안 돼요</b>':'표시 안 함'}</span>
+      <span class="segs"><button data-av1="ok" aria-pressed="${av==='ok'}">✓ 가능</button><button data-av1="no" aria-pressed="${av==='no'}">✕ 불가</button>${av?'<button data-av1="clear">지우기</button>':''}</span></div>`;
+  return head + nav + (view==='month' ? monthGrid() : weekStrip()) + (isRES() && scope==='team' ? teamWorkWeek() : '') + avBox +
     `<div class="dayh">${p.getMonth()+1}월 ${p.getDate()}일 ${DOW[p.getDay()]}요일 · ${list.length + evs.length}건</div>` +
     (evs.map(evCard).join('') + list.map(card).join('') || `<p class="empty">${scope==='mine'?'이 날 내 일정이 없어요':'이 날은 일정이 없어요'}${V2()?'<br><button class="btn ghost sm" style="margin-top:10px" data-plus="1">＋ 일정 · 가능일 넣기</button>':''}</p>`);
 }
@@ -559,7 +596,7 @@ function render(){
   const main = tab==='board'?boardView():tab==='mine'?mineView():tab==='report'?reportView():tab==='paint'?paintView():tab==='ev'?evForm():tab==='shoot'?shootView():noticeView();
   app.innerHTML = `<header class="head"><div class="brand"><img class="logo" src="../logo.svg" alt="">${isAGO() ? '아고스튜디오 파트너룸' : esc(C.BRAND)+' 일정판'}${mm}</div>
      <div class="hirow"><div style="display:flex;gap:12px;align-items:center;min-width:0">${EPProfile.av(D.me.name,46,{me:true})}<div class="hi"><b>${esc(who())}, ${esc(gr.h)}</b><p class="cheer">${esc(gr.s)}</p><small>${isAGO() ? `${esc(D.me.team_name)} 레이블 파트너 · co-work` : `${esc(D.me.team)} · ${esc(D.me.team_name)}${D.me.role?' · '+esc(D.me.role):''}`}</small></div></div>${EPStatus.pill()}</div>
-     ${EVT() ? `<div class="summary">${EVT()?`<div><b>${evN}</b><span>다가오는 내 일정</span></div>`:`<div><b>${ok}</b><span>확정된 일정</span></div>`}<div><b style="color:var(--warn)">${EVT()?ok:open}</b><span>${isAGO()?'확정 일정':isRES()?'확정 현장':'신청 가능'}</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div>` : todayCard()}</header>
+     ${isRES() ? resToday() : EVT() ? `<div class="summary">${EVT()?`<div><b>${evN}</b><span>다가오는 내 일정</span></div>`:`<div><b>${ok}</b><span>확정된 일정</span></div>`}<div><b style="color:var(--warn)">${EVT()?ok:open}</b><span>${isAGO()?'확정 일정':isRES()?'확정 현장':'신청 가능'}</span></div><div><b>${unread}</b><span>안 읽은 공지</span></div></div>` : todayCard()}</header>
    <main class="body">${main}
    <p class="foot">${esc(C.BRAND)} · 이 링크는 ${esc(who())} 전용이에요. 다른 사람과 공유하지 마세요.</p></main>`;
   tabbar();
@@ -633,6 +670,13 @@ document.addEventListener('click', async e => {
   if (d.nconf){ return act('staff_notice_confirm',{p_token:TOKEN,p_id:+d.nconf},'확인했어요'); }
   if (d.rmph){ URL.revokeObjectURL(photos[+d.rmph].url); photos.splice(+d.rmph,1); keepText(()=>render()); return; }
   // 하루 가능·불가 (일정판에서 바로)
+  if (d.work){ return workSheet(); }
+  if (d.wq){ const [f, t] = d.wq.split('-'); document.getElementById('wf').value = f; document.getElementById('wt').value = t; return; }
+  if (d.wd){ b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); return; }
+  if (d.wsave){ const f = document.getElementById('wf').value, t = document.getElementById('wt').value; if (f >= t) return toast('퇴근 시간이 출근보다 늦어야 해요');
+    const days = [...document.querySelectorAll('[data-wd][aria-pressed="true"]')].map(x => x.dataset.wd); if (!days.length) return toast('날짜를 골라주세요');
+    try { localStorage.setItem(LT_KEY, f + '-' + t); } catch(_){}
+    closeSheet(); return act('staff_set_avail', {p_token:TOKEN, p_days:days, p_kind:'work', p_memo:f + '-' + t}, `${days.length}일 출근 ${hm2(f + '-' + t)}로 넣었어요`); }
   if (d.av1){ return act('staff_set_avail',{p_token:TOKEN,p_days:[pick],p_kind:d.av1,p_memo:null}, d.av1==='ok'?'이날 가능으로 표시했어요':d.av1==='no'?'이날 불가로 표시했어요':'지웠어요'); }
   // 칠하기
   if (d.paint){ return openPaint(); }

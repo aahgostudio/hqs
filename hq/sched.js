@@ -24,8 +24,11 @@ H.view('sched', {label:'일정',
         if (d.getDay() === 0) h += '<tr>';
         const s = ymd(d); const items = dayItems(s);
         const av = v.f.avail ? (S.avail||[]).filter(a=>a.day===s) : [];
-        const ok = av.filter(a=>a.kind==='ok').length, no = av.filter(a=>a.kind==='no').length;
-        h += `<td data-a="schedPick" data-d="${s}" class="${d.getMonth()!==v.anchor.getMonth()?'out':''} ${s===today?'t':''} ${s===v.sel?'sel':''}"><span class="n">${d.getDate()}</span>${v.f.avail&&(ok||no)?`<span class="av">${ok?'가능'+ok:''}${no?' <span style="color:var(--warn)">불가'+no+'</span>':''}</span>`:''}
+        const ok = av.filter(a=>a.kind==='ok').length, no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').length;
+        // v35 부동산 출근표: 부동산 보기 켜져 있으면 날짜 위에 이름표 (보라 '기타' 일정 대신)
+        const rw = v.f.res ? (S.avail||[]).filter(a => a.day === s && a.kind === 'work' && H.P(a.staff_id).team === 'RES') : [];
+        const rwH = rw.length ? `<div class="rw" title="${rw.map(a => H.P(a.staff_id).name + ' ' + (a.memo||'')).join(' · ')}">🏢 ${rw.map(a => { const n = H.P(a.staff_id).name; return esc(n.length >= 3 ? n.slice(1) : n) + ' ' + String(a.memo||'').split('-').map(t => +t.split(':')[0]).join('–'); }).join(' · ')}</div>` : '';
+        h += `<td data-a="schedPick" data-d="${s}" class="${d.getMonth()!==v.anchor.getMonth()?'out':''} ${s===today?'t':''} ${s===v.sel?'sel':''}"><span class="n">${d.getDate()}</span>${rwH}${v.f.avail&&(ok||no)?`<span class="av">${ok?'가능'+ok:''}${no?' <span style="color:var(--warn)">불가'+no+'</span>':''}</span>`:''}
           ${items.slice(0,4).map(x=>x.ev).join('')}${items.length>4?`<div class="ev more">+${items.length-4}</div>`:''}</td>`;
         if (d.getDay() === 6) h += '</tr>';
       }

@@ -49,11 +49,16 @@ H.teamData = () => {
       const reg = mine.filter(r => r.reg === today).length, chk = mine.filter(r => r.chk === today).length;
       const stale = mine.filter(r => r.status === '진행' && (!r.chk || (Date.now() - new Date(r.chk + 'T00:00:00')) / 864e5 > 30)).length;
       const seenToday = isToday(s.last_seen_at) || reg || chk;
+      const wk = (S.avail||[]).find(x => x.staff_id === s.id && x.day === today), wkT = wk && wk.kind === 'work' && wk.memo ? wk.memo.split('-') : null;   // v35 출근표
+      const inOffice = wkT && now >= mins(wkT[0]) && now < mins(wkT[1]);
       let icon, now_;
-      if (curE) { icon = '🚗'; now_ = `${curE.kind} 중 ~${clock(new Date(new Date().setHours(0, mins(curE.ev_time) + 60, 0, 0)))}${curE.maemul_id ? ' · ' + curE.maemul_id : ''}`; }
-      else if (seenToday) { icon = '🏢'; now_ = '근무 중' + (nextE ? ` · 다음 ${hm(nextE.ev_time)} ${nextE.kind}` : ''); }
+      if (wk && wk.kind === 'no' && !curE) { icon = '🌙'; now_ = '오늘 휴무' + (nextE ? ` · ${hm(nextE.ev_time)} ${nextE.kind}` : ''); }
+      else if (curE) { icon = '🚗'; now_ = `${curE.kind} 중 ~${clock(new Date(new Date().setHours(0, mins(curE.ev_time) + 60, 0, 0)))}${curE.maemul_id ? ' · ' + curE.maemul_id : ''}`; }
+      else if (inOffice) { icon = '🏢'; now_ = `사무실 ${wkT[0]}~${wkT[1]}` + (nextE ? ` · 다음 ${hm(nextE.ev_time)} ${nextE.kind}` : ''); }
+      else if (wkT && now < mins(wkT[0])) { icon = '⏰'; now_ = `오늘 ${wkT[0]} 출근 예정` + (nextE ? ` · ${hm(nextE.ev_time)} ${nextE.kind}` : ''); }
+      else if (seenToday) { icon = '🏢'; now_ = '근무 중' + (wkT ? ` (출근표 ${wkT[0]}~${wkT[1]})` : '') + (nextE ? ` · 다음 ${hm(nextE.ev_time)} ${nextE.kind}` : ''); }
       else { icon = '💤'; now_ = '오늘 접속 없음' + (nextE ? ` · ${hm(nextE.ev_time)} ${nextE.kind} 예정` : ''); }
-      const warn = !curE && !seenToday && now >= 11*60;
+      const warn = !curE && !seenToday && !(wk && wk.kind === 'no') && (wkT ? now >= mins(wkT[0]) + 60 : now >= 11*60);
       return {s, icon, now: now_, reg, chk, stale, warn, evN: evs.length, seen: s.last_seen_at};
     }).sort((a,b) => b.warn - a.warn || (a.icon === '🚗' ? -1 : 0));
   }
