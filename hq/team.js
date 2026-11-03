@@ -173,10 +173,10 @@ function statsBox(){
   const own = H.S.owner, pct = (b, n) => n ? Math.round(b / n * 100) : 0;
   const row = (n, c, b, max) => `<div class="sr"><span class="nm">${esc(n)}</span><span class="sb"><i style="width:${(c - b) / (max || 1) * 100}%"></i><i class="b" style="width:${b / (max || 1) * 100}%"></i></span><span class="c">${c}${b ? `<em>⚠${b}</em>` : ''}</span></div>`;
   const bars = (w, wb, max, prt) => { const e = Object.entries(w).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([n, c]) => row(n, c, wb[n] || 0, max)).join('') : `<p class="note">${prt ? '도급 — 자기 팀 인원으로 가요' : '아직 없어요'}</p>`; };
-  const card = (title, sub, n, bad, w, wb, av, prt) => `<div class="lc"><div class="top">${av}<div class="t"><b>${title}</b><small>${sub}</small></div>
+  const card = (title, sub, n, bad, w, wb, av, prt) => `<div class="lc"><div class="lct">${av}<div class="t"><b>${title}</b><small>${sub}</small></div>
       <div class="rate ${bad ? 'warn' : 'ok'}"><b>${bad ? '⚠ ' + bad : '0'}</b><small>사고 ${pct(bad, n)}%</small></div></div>
       <div class="mem">${bars(w, wb, n, prt)}</div></div>`;
-  const bossCard = card(own ? '나 (대표)' : '대표님', `${d.boss.n}곳 같이 감`, d.boss.n, d.boss.bad, d.boss.w, d.boss.wb, '<span class="av me">대표</span>');
+  const bossCard = card(own ? '나 (대표)' : '대표님', `${d.boss.n}곳 같이 감`, d.boss.n, d.boss.bad, d.boss.w, d.boss.wb, '<span class="avme">대표</span>');
   const leadCards = d.leads.map(L => card(`${esc(L.p.name)} ${esc(L.p.team === 'PRT' ? '도급' : (L.p.role || ''))}`, `${L.n}곳 맡음`, L.n, L.bad, L.w, L.wb, H.av(L.p, 40), L.p.team === 'PRT')).join('');
   const plist = (arr, good) => arr.length ? arr.map(x => `<div class="pair"><span class="n">${esc(x.k)}</span><b>${x.c}</b><span class="tag ${good ? 'g' : ''}">${good ? '사고 0' : '⚠ ' + x.b}</span></div>`).join('') : `<p class="note">${good ? '2번 이상 같이 간 짝이 아직 없어요' : '사고 난 짝이 없어요 👍'}</p>`;
   return `<section class="box tm-stat"><div class="bh"><h3>📊 ${d.m}월 함께한 현장 <span class="sub">대표님·관리자만 보여요</span></h3>

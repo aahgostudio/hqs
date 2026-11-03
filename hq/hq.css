@@ -409,8 +409,8 @@ html.chatapp .fab{display:none}
 .tm-stat .kpi{background:var(--soft);border-radius:12px;padding:11px 14px}.tm-stat .kpi small{font-size:12px;color:var(--sub)}.tm-stat .kpi b{display:block;font-size:23px;margin-top:2px}.tm-stat .kpi b i{font-style:normal;font-size:13px;color:var(--sub);font-weight:600;margin-left:3px}.tm-stat .kpi.bad b{color:#DC2626}
 .tm-stat .leads{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .tm-stat .lc{border:1px solid var(--line);border-radius:14px;padding:13px 14px}
-.tm-stat .lc .top{display:flex;align-items:center;gap:10px;margin-bottom:8px}.tm-stat .lc .t{min-width:0}.tm-stat .lc .t b{display:block;font-size:14.5px}.tm-stat .lc .t small{font-size:12px;color:var(--sub)}
-.tm-stat .av.me{width:40px;height:40px;border-radius:50%;background:#EDE7FB;color:#5B3FA8;display:grid;place-items:center;font-weight:800;font-size:12px;flex:none}
+.tm-stat .lc .lct{display:flex;align-items:center;gap:10px;margin-bottom:8px}.tm-stat .lc .t{min-width:0}.tm-stat .lc .t b{display:block;font-size:14.5px}.tm-stat .lc .t small{font-size:12px;color:var(--sub)}
+.tm-stat .avme{width:40px;height:40px;border-radius:50%;background:#EDE7FB;color:#5B3FA8;display:grid;place-items:center;font-weight:800;font-size:12px;flex:none}
 .tm-stat .rate{margin-left:auto;text-align:right;white-space:nowrap}.tm-stat .rate b{font-size:18px}.tm-stat .rate small{display:block;font-size:11px;color:var(--sub)}.tm-stat .rate.ok b{color:#059669}.tm-stat .rate.warn b{color:#DC2626}
 .tm-stat .sr{display:grid;grid-template-columns:78px 1fr 34px;align-items:center;gap:8px;font-size:12.5px;padding:3px 0}
 .tm-stat .sr .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -423,3 +423,11 @@ html.chatapp .fab{display:none}
 .tm-stat .tag{font-size:11px;border-radius:6px;padding:2px 7px;background:#FEE2E2;color:#DC2626;font-weight:700}.tm-stat .tag.g{background:#DCFCE7;color:#047857}
 .tg.okc{background:#DCFCE7;color:#047857}
 @media (max-width:860px){.tm-stat .kpis{grid-template-columns:repeat(2,1fr)}.tm-stat .pairs{grid-template-columns:1fr}}
+/* 함께한 현장: 흰 바탕 위에서 칸이 또렷하게 */
+.tm-stat .kpi{background:#F1F4F9;border:1px solid #E3E8F1}
+.tm-stat .lc{background:#F7F9FC;border:1px solid #DFE5EF;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.tm-stat .lc .lct{padding-bottom:9px;border-bottom:1px solid #E3E8F1}
+.tm-stat .sb{background:#E3E8F1}
+.tm-stat .pairs>div{background:#F7F9FC;border:1px solid #DFE5EF;border-radius:14px;padding:12px 14px}
+.tm-stat .pair{border-top-color:#E3E8F1}
+.tm-stat .seg{background:#EEF1F6}
