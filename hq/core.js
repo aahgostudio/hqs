@@ -173,7 +173,7 @@ H.BK = {office:['사무실','#10B981','<rect x="5" y="3" width="14" height="18" 
   guide:['안내','#6D28D9','<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>'],
   busy:['바쁨','#DC2626','<circle cx="12" cy="12" r="9"/><path d="M7.5 12h9"/>'],
   rest:['휴무','#DB2777','<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'],
-  vac:['휴가','#EA580C','<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>'],
+  vac:['휴가','#EA580C','<path d="M2.5 19h19"/><path d="M3.5 13.5 6 15l13.2-4.4a1.8 1.8 0 0 0-1-3.4l-3.7 1L8.6 4.7 6.9 5.3l3.4 4.6-4 1.1L4.4 9.6 3 10z"/>'],
   off:['퇴근','#9CA3AF','<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'],
   out:['외근','#E08A00','<path d="M3 17v-4l2.2-5.2A2 2 0 0 1 7 6.5h10a2 2 0 0 1 1.8 1.3L21 13v4"/><path d="M3 13h18M3 17h18"/><circle cx="7" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>']};
 H.bIco = (k, sz=16) => `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="${H.BK[k][1]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none">${H.BK[k][2]}</svg>`;

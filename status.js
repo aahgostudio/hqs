@@ -9,21 +9,32 @@
   const KAKAO = 'http://pf.kakao.com/_hZqWX/chat';
 
   const LOOK = {
-    '현장 근무중': {i:'🦺', n:'현장', t:'field', busy:true},
-    '내근중':      {i:'📋', n:'사무실', t:'ok'},
-    '근무중':      {i:'📋', n:'사무실', t:'ok'},
-    '회의중':      {i:'💬', n:'미팅', t:'busy', busy:true},
-    '계약중':      {i:'✍️', n:'계약', t:'busy', busy:true},
-    '견적 외근중': {i:'💼', n:'외근', t:'away', busy:true},
-    '부동산 외근중':{i:'🏠', n:'안내', t:'away', busy:true},
-    '외근중':      {i:'💼', n:'외근', t:'away', busy:true},
-    '일정 중':     {i:'📌', t:'away', busy:true},
-    '휴가중':      {i:'🌴', n:'휴가', t:'off', busy:true},
-    '휴무':        {i:'☀️', n:'휴무', t:'off', busy:true},
-    '부재':        {i:'⏸', t:'off', busy:true},
-    'Busy':        {i:'📵', n:'통화불가', t:'busy', busy:true},
-    '업무 종료':   {i:'🌙', n:'퇴근', t:'off', busy:true}
+    '현장 근무중': {k:'site', i:'🦺', n:'현장', t:'field', busy:true},
+    '내근중':      {k:'office', i:'📋', n:'사무실', t:'ok'},
+    '근무중':      {k:'office', i:'📋', n:'사무실', t:'ok'},
+    '회의중':      {k:'meet', i:'💬', n:'미팅', t:'busy', busy:true},
+    '계약중':      {k:'contract', i:'✍️', n:'계약', t:'busy', busy:true},
+    '견적 외근중': {k:'out', i:'💼', n:'외근', t:'away', busy:true},
+    '부동산 외근중':{k:'guide', i:'🏠', n:'안내', t:'away', busy:true},
+    '외근중':      {k:'out', i:'💼', n:'외근', t:'away', busy:true},
+    '일정 중':     {k:'out', i:'📌', t:'away', busy:true},
+    '휴가중':      {k:'vac', i:'🌴', n:'휴가', t:'off', busy:true},
+    '휴무':        {k:'rest', i:'☀️', n:'휴무', t:'off', busy:true},
+    '부재':        {k:'rest', i:'⏸', t:'off', busy:true},
+    'Busy':        {k:'busy', i:'📵', n:'통화불가', t:'busy', busy:true},
+    '업무 종료':   {k:'off', i:'🌙', n:'퇴근', t:'off', busy:true}
   };
+  const BK = {office:['사무실','#10B981','<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10.5 21v-3h3v3"/>'],
+  site:['현장','#2453C7','<path d="M3 18h18"/><path d="M5 18v-2a7 7 0 0 1 14 0v2"/><path d="M10 9.5V6.5a2 2 0 0 1 4 0v3"/>'],
+  meet:['미팅','#0891B2','<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/>'],
+  contract:['계약','#7C3AED','<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 17c1.5-2 2.5-2 3.5 0s2 2 3.5 0"/>'],
+  guide:['안내','#6D28D9','<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>'],
+  busy:['바쁨','#DC2626','<circle cx="12" cy="12" r="9"/><path d="M7.5 12h9"/>'],
+  rest:['휴무','#DB2777','<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'],
+  vac:['휴가','#EA580C','<path d="M2.5 19h19"/><path d="M3.5 13.5 6 15l13.2-4.4a1.8 1.8 0 0 0-1-3.4l-3.7 1L8.6 4.7 6.9 5.3l3.4 4.6-4 1.1L4.4 9.6 3 10z"/>'],
+  off:['퇴근','#9CA3AF','<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'],
+  out:['외근','#E08A00','<path d="M3 17v-4l2.2-5.2A2 2 0 0 1 7 6.5h10a2 2 0 0 1 1.8 1.3L21 13v4"/><path d="M3 13h18M3 17h18"/><circle cx="7" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>']};
+  const ico = (k, sz) => `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="${BK[k][1]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block">${BK[k][2]}</svg>`;
   const MANUAL_NAME = {'현장':'현장 근무중'};
 
   let auto = null, opt = {manual:()=>null, onChange:()=>{}, demo:false};
@@ -48,7 +59,7 @@
 
   function pill(){
     const c = current(), L = LOOK[c.state] || LOOK['근무중'];
-    return `<button type="button" class="epst-ic t-${L.t}" data-epst="1" title="대표님 ${esc(L.n||c.state)} · 눌러서 연락" aria-label="대표님 ${esc(L.n||c.state)}, 연락하기"><span class="em">${L.i}</span><span class="dot"></span></button>`;
+    return `<button type="button" class="epst-ic t-${L.t}" style="--epc:${BK[L.k||'office'][1]}" data-epst="1" title="대표님 ${esc(L.n||c.state)} · 눌러서 연락" aria-label="대표님 ${esc(L.n||c.state)}, 연락하기"><span class="em">${ico(L.k || 'office', 17)}</span><span class="dot"></span></button>`;
   }
 
   function openSheet(){
@@ -66,7 +77,7 @@
     wrap.className = 'epst-back';
     wrap.innerHTML = `<div class="epst-sheet" role="dialog" aria-label="대표님 연락하기">
       <div class="epst-grab"></div>
-      <div class="epst-now t-${L.t}"><span class="big">${L.i}</span><div><small>대표님 지금</small><b>${esc(L.n||c.state)}${c.until?` <em>${esc(untilTxt(c.until))}</em>`:''}</b>
+      <div class="epst-now t-${L.t}" style="--epc:${BK[L.k||'office'][1]};--eps:${BK[L.k||'office'][1]}1A"><span class="big">${ico(L.k || 'office', 32)}</span><div><small>대표님 지금</small><b>${esc(L.n||c.state)}${c.until?` <em>${esc(untilTxt(c.until))}</em>`:''}</b>
         ${c.start && c.state !== '휴가중' ? `<p>${esc(hm(c.start))} 출근${c.state === '업무 종료' && c.since ? ' · ' + esc(hm(c.since)) + ' 퇴근' : ''}</p>` : ''}${c.memo?`<p>${esc(c.memo)}</p>`:''}${c.next?`<p class="nx">다음 · ${esc(c.next)}</p>`:''}${c.note?`<p class="nx">${esc(c.note)}</p>`:''}</div></div>
       <p class="epst-hint">${hint}</p>
       <div class="epst-btns">${L.busy ? btnKakao + btnCall : btnCall + btnKakao}${btnSms}</div>
