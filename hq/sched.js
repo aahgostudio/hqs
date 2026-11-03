@@ -130,6 +130,7 @@ function bossBox(day){
   const b = bossDay(day), on = st().open === 'boss';
   const restBtn = `<button class="btn ghost sm" data-a="bossRest" data-d="${day}">${b && b.rest ? '휴무 표시 빼기' : '이날 대표 휴무로 표시'}</button>`;
   if (!b && day === ymd(H.today()) && !H.S.noV36) return `<div class="dbx boss" data-a="bossSheet"><div class="dt"><b>대표 · 아직 출근 안 찍음</b><em>눌러서 찍기</em></div><div class="ds">사무실·현장·외근·퇴근을 찍으면 내 출근부에 쌓여요</div></div>`;
+  if (!b && day < ymd(H.today()) && !H.S.noV36) return `<div class="dbx boss" data-a="bossFix" data-d="${day}" style="opacity:.75"><div class="dt"><b>대표 · 기록 없음</b><em>눌러서 넣기</em></div><div class="ds">지난 날 출근·퇴근 시간을 직접 넣을 수 있어요</div></div>`;
   if (!b) return '';
   if (!b.p.length) return `<div class="dbx brest"><div class="dt"><b>대표 휴무</b></div><div class="ds">직원 달력에 분홍 점으로 보여요</div></div>`;
   const parts = [['office','사무실'],['site','현장'],['out','외근']].filter(([k]) => b.seg[k]).map(([k,l]) => l + ' ' + hmM(b.seg[k]));
@@ -162,13 +163,13 @@ H.ACT.bossFix = el => { const d = el.dataset.d, b = bossDay(d) || {p: []};
   const row = (x, i) => `<div class="fg" style="grid-template-columns:1fr 1fr auto;align-items:end;margin-bottom:6px"><div class="field"><label>${i === 0 ? '시간' : '&nbsp;'}</label><input type="time" name="t_${x.id||'n'+i}" value="${x.at ? H.hm(x.at) : ''}"></div>
     <div class="field"><label>${i === 0 ? '어디' : '&nbsp;'}</label><select name="k_${x.id||'n'+i}">${['office','site','out','off'].map(k => `<option value="${k}" ${x.kind===k?'selected':''}>${H.BK[k][0]}</option>`).join('')}</select></div>
     ${x.id ? `<label style="font-size:12px;padding-bottom:10px"><input type="checkbox" name="del_${x.id}"> 지우기</label>` : '<span></span>'}</div>`;
-  H.open(`<form data-f="bossFix" data-d="${d}"><h3>${md(d)} 출퇴근 고치기</h3>${b.p.map(row).join('')}${row({kind: b.p.length ? 'off' : 'office'}, 99)}
-    <p class="note">맨 아래 줄은 새로 넣기예요 (예: 깜빡한 퇴근 19:30). 비워두면 안 넣어요.</p>${H.sacts('저장')}</form>`); };
+  H.open(`<form data-f="bossFix" data-d="${d}"><h3>${md(d)} 출퇴근 고치기</h3>${b.p.map(row).join('')}${b.p.length ? '' : row({kind:'office'}, 98)}${row({kind: 'off'}, 99)}
+    <p class="note">빈 줄은 새로 넣기예요 (예: 출근 08:00 · 퇴근 19:30). 중간에 현장 간 시간도 넣으려면 저장 후 한 번 더 열어 추가하세요. 비워두면 안 넣어요.</p>${H.sacts('저장')}</form>`); };
 H.FORM.bossFix = async (v, f) => { const d = f.dataset.d, b = bossDay(d) || {p: []};
   const at = t => { const [h, mi] = t.split(':').map(Number); const x = parse(d); x.setHours(h, mi, 0, 0); return x.toISOString(); };
   for (const x of b.p) { if (v.get('del_' + x.id)) { await H.q(sb.from('boss_punch').delete().eq('id', x.id)); continue; }
     const t = v.get('t_' + x.id), k = v.get('k_' + x.id); if (t && (t !== H.hm(x.at) || k !== x.kind)) await H.q(sb.from('boss_punch').update({at: at(t), kind: k}).eq('id', x.id)); }
-  const nt = v.get('t_n99'); if (nt) await H.q(sb.from('boss_punch').insert({at: at(nt), kind: v.get('k_n99')}));
+  for (const n of ['n98','n99']) { const nt = v.get('t_' + n); if (nt) await H.q(sb.from('boss_punch').insert({at: at(nt), kind: v.get('k_' + n)})); }
   H.close(); H.toast('고쳤어요'); H._dirty = Date.now(); H.render(); };
 
 /* ---------- 하루 패널 ---------- */
