@@ -408,3 +408,4 @@ html.chatapp .fab{display:none}
 .tc{font-size:12.5px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:3px 9px}.tc b{color:var(--navy,#16347A);margin-left:2px}
 .tm-ld{padding:6px 0;border-top:1px dashed var(--line)}.tm-ld:first-of-type{border-top:0}.tm-ld small{color:var(--sub)}.tm-ld .tcs{margin-top:5px}
 @media (max-width:860px){.tm-sg{grid-template-columns:1fr}}
+.tm-stat em.bad,.tc em.bad,.tm-ld em.bad{font-style:normal;color:#DC2626;font-weight:800;margin-left:3px}
