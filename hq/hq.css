@@ -491,3 +491,13 @@ html.chatapp .fab{display:none}
 .dbx.rwx{cursor:default}.dbx.on{box-shadow:0 0 0 2px var(--clean) inset}
 .dbx-d{margin:-2px 0 10px}
 @media(max-width:600px){.cal td{height:56px}.cal td .bars{margin:4px 3px 0;gap:2px}.cal td .bars i{height:3.5px}}
+
+/* 1104F 출근부 */
+.att{border:1px solid var(--line);border-left:4px solid var(--res);border-radius:12px;padding:12px;background:#fff}
+.att-h{font-size:14px;margin-bottom:10px;color:var(--sub)}.att-h b{color:#111;font-size:15px}
+.att-k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.att-k div{background:#F5F2FD;border-radius:12px;padding:10px;text-align:center;font-size:12px}
+.att-k b{font-size:22px;color:var(--res)}.att-k small{display:block;color:var(--sub);font-size:11px;margin-top:2px;line-height:1.35}
+.att-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}.att-g em{font-style:normal;font-size:11px;color:var(--sub)}
+.att-g i{font-style:normal;font-size:12px;padding:6px 0;border-radius:8px;background:#F4F5F7;color:#9CA3AF}.att-g i.x{background:none}
+.att-g i.w{background:var(--res);color:#fff;font-weight:700}.att-g i.o{background:#FDE8E8;color:#DC2626}.att-g i.t{box-shadow:inset 0 0 0 2px #111}.att-g i.s{outline:2px solid var(--resl);outline-offset:1px}
+.att-l{display:flex;gap:12px;font-size:11px;color:var(--sub);margin-top:8px}.att-l i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--res);margin-right:4px;vertical-align:-1px}.att-l i.o{background:#FCA5A5}

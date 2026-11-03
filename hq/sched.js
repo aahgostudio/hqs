@@ -71,15 +71,36 @@ function dayItems(s){
   // 1104E: 부동산 출근도 한 사람씩 일정처럼 — 출근 시간 순서대로 섞여 나옴
   if (f.res) (S.avail||[]).filter(a => a.day === s && a.kind === 'work' && H.P(a.staff_id).team === 'RES').forEach(a => {
     const [b, e] = String(a.memo||'').split('-');
-    out.push({t:(b||'09:00').padStart(5,'0'), cls:'res', k:'w'+a.staff_id, title:'🏢 출근 · '+H.P(a.staff_id).name, sub:[b,e].filter(Boolean).join(' – ') || '사무실', still:true});
+    out.push({t:(b||'09:00').padStart(5,'0'), cls:'res', k:'w'+a.staff_id, title:'🏢 출근 · '+H.P(a.staff_id).name, sub:[b,e].filter(Boolean).join(' – ') || '사무실', card:()=>attCard(a.staff_id, s)});
   });
   if (f.ntc) (S.notices||[]).filter(n=>ymd(new Date(n.created_at))===s).forEach(n=>out.push({t:'00', cls:'ntc', k:'n'+n.id, title:'📢 '+(n.title||n.body.slice(0,20)), sub:'공지', ntc:true}));
   return out.sort((a,b)=>a.t.localeCompare(b.t));
 }
 function dayBox(x){
   const on = st().open === x.k;
-  if (x.still) return `<div class="dbx ${x.cls} rwx"><div class="dt"><b>${esc(x.title)}</b></div><div class="ds">${esc(x.sub)}</div></div>`;
   return `<div class="dbx ${x.cls}${on?' on':''}" data-a="${x.ntc?'schedSide':'dayOpen'}" data-s="ntc" data-k="${x.k}"><div class="dt"><b>${esc(x.title)}</b>${x.badge||''}</div><div class="ds">${esc(x.sub)}</div></div>${on && x.card ? `<div class="dbx-d">${x.card()}</div>` : ''}`;
+}
+
+/* 1104F: 부동산 출근부 — 출근 블럭 누르면 이번 달 근무 현황 */
+function attCard(sid, day){
+  const p = H.P(sid), d0 = parse(day), y = d0.getFullYear(), m = d0.getMonth(), today = ymd(H.today());
+  const last = new Date(y, m+1, 0).getDate();
+  const rows = (H.S.avail||[]).filter(a => a.staff_id === sid && parse(a.day).getFullYear() === y && parse(a.day).getMonth() === m);
+  const byDay = Object.fromEntries(rows.map(a => [a.day, a]));
+  const hrs = memo => { const [b, e] = String(memo||'').split('-').map(t => { const [h, mi] = (t||'').split(':').map(Number); return h + (mi||0)/60; }); return e > b ? e - b : 0; };
+  const work = rows.filter(a => a.kind === 'work'), off = rows.filter(a => a.kind === 'no');
+  const done = work.filter(a => a.day <= today), left = work.length - done.length;
+  const h = work.reduce((t, a) => t + hrs(a.memo), 0), hDone = done.reduce((t, a) => t + hrs(a.memo), 0);
+  const f1 = n => (Math.round(n*10)/10).toString().replace(/\.0$/, '');
+  let cells = ''; const pre = new Date(y, m, 1).getDay();
+  for (let i = 0; i < pre; i++) cells += '<i class="x"></i>';
+  for (let n = 1; n <= last; n++) { const k = ymd(new Date(y, m, n)), a = byDay[k];
+    const st = a ? (a.kind === 'work' ? 'w' : a.kind === 'no' ? 'o' : '') : '';
+    cells += `<i class="${st}${k === today ? ' t' : ''}${k === day ? ' s' : ''}" title="${md(k)}${a && a.kind === 'work' ? ' ' + esc(a.memo) : a && a.kind === 'no' ? ' 휴무' : ''}">${n}</i>`; }
+  return `<div class="att"><div class="att-h"><b>${esc(p.name)}</b> · ${m+1}월 출근부</div>
+    <div class="att-k"><div><b>${work.length}</b>일<small>출근 (지금까지 ${done.length} · 남음 ${left})</small></div><div><b>${f1(h)}</b>시간<small>근무 예정 (지금까지 ${f1(hDone)})</small></div><div><b>${off.length}</b>일<small>휴무</small></div></div>
+    <div class="att-g">${H.DOW.map(w => `<em>${w}</em>`).join('')}${cells}</div>
+    <div class="att-l"><span><i class="w"></i>출근</span><span><i class="o"></i>휴무</span><span>빈칸 = 아직 안 적음</span></div></div>`;
 }
 
 /* ---------- 하루 패널 ---------- */
@@ -90,7 +111,7 @@ function daySide(s){
   const ok = av.filter(a=>a.kind==='ok').map(a=>H.P(a.staff_id).name), no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').map(a=>H.P(a.staff_id).name);
   const rw = av.filter(a => a.kind === 'work' && H.P(a.staff_id).team === 'RES');
   const hr = t => String(t||'').split('-').map(x => +x.split(':')[0]).join('–');
-  return `<div class="dhd"><b>${md(s)}</b><span>${items.filter(x=>!x.still).length}개 일정</span></div>
+  return `<div class="dhd"><b>${md(s)}</b><span>${items.filter(x=>x.k[0]!=='w').length}개 일정</span></div>
     ${items.map(dayBox).join('')}
     ${!items.length ? '<p class="empty">이날 일정이 없어요</p>' : ''}
     ${ok.length?`<div class="avl">이날 가능: ${ok.map(esc).join(' · ')}</div>`:''}${no.length?`<div class="avl no">이날 불가: ${no.map(esc).join(' · ')}</div>`:''}
