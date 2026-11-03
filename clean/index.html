@@ -74,6 +74,7 @@ body{background:var(--bg)}
 .addr a{color:inherit}
 .money{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--waitb);color:#7C2D12;border-radius:10px;padding:9px 11px;margin-top:8px;font-size:13.5px}
 .money b{font-size:16px}
+.money a{text-decoration:none}
 .mates{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
 .mates .mt{font-size:12.5px;color:var(--sub);margin-right:2px}
 .mate{display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:600;text-decoration:none}
@@ -176,12 +177,12 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1104a"></script>
+<script src="../status.js?v=1104b"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1104a'</script>
-<script src="../chatkit.js?v=1104a"></script>
-<script src="../chat.js?v=1104a"></script>
+<script>window.EP_VER='1104b'</script>
+<script src="../chatkit.js?v=1104b"></script>
+<script src="../chat.js?v=1104b"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -282,7 +283,7 @@ function card(j){
     ? `<div class="addr">${I('pin')}<span>${j.address ? `<a href="https://map.kakao.com/link/search/${encodeURIComponent(j.address)}" target="_blank" rel="noopener">${esc(j.address)}</a>` : '주소는 따로 알려드릴게요'}${j.private_note ? `<br><small>${esc(j.private_note)}</small>` : ''}</span></div>`
     : (j.my_status === 'applied' ? `<div class="addr lock">${I('lock')}확정되면 상세 주소가 열려요</div>` : '');
   const cust = j.collector && (j.cust_name || j.cust_phone)
-    ? `<div class="money"><span>고객 <b>${esc(j.cust_name||'')}</b></span>${j.cust_phone ? `<a class="btn sm" href="tel:${esc(j.cust_phone.replace(/[^0-9+]/g,''))}">📞 ${esc(j.cust_phone)}</a>` : ''}</div>` : '';
+    ? `<div class="money"><span>고객 <b>${esc(j.cust_name||'')}</b>${j.cust_phone?`<br><small>${esc(j.cust_phone)}</small>`:''}</span>${j.cust_phone ? `<span style="display:flex;gap:6px"><a class="btn sm" href="tel:${esc(j.cust_phone.replace(/[^0-9+]/g,''))}">📞 전화</a><a class="btn sm ghost" href="sms:${esc(j.cust_phone.replace(/[^0-9+]/g,''))}">💬 문자</a></span>` : ''}</div>` : '';
   const xs = j.collector ? (j.extras||[]).filter(x => x.agreed !== false) : [];
   const xsum = xs.reduce((a,x) => a + (+x.amount||0), 0);
   const money = j.collector && j.balance != null
@@ -304,13 +305,13 @@ function card(j){
   const py = ((j.title||'').match(/(\d+(?:\.\d+)?)\s*평/)||[])[1];
   const spec = [py && !(j.public_note||'').includes(py+'평') ? py+'평' : '', j.public_note||''].filter(Boolean).join(' · ');
   // 같이 가는 사람 연락처 (팀장·수금 담당만, v32)
-  const mates = (j.crew_info||[]).filter(x => x.phone);
+  const mates = (j.crew_info||[]).filter(x => x.phone).sort((a,b) => (b.kind==='boss') - (a.kind==='boss'));   // 대표님 맨 앞
   const crewCall = mates.length ? `<div class="mates"><div class="mt">📞 같이 가는 사람</div>${mates.map(x => `<a class="mate" href="tel:${esc(String(x.phone).replace(/[^0-9+]/g,''))}">${x.kind==='ext'?'외부 ':''}${esc(x.name)}</a>`).join('')}</div>` : '';
   const pay = j.my_pay != null ? `<div class="row2"><span>내 정산</span><b>${won(j.my_pay)}</b></div>` : '';
   return `<article class="card ${j.need_ack?'alert':''}">
     <div class="t1"><div><div class="when">${md(j.date)}${j.time ? ' · '+j.time : ''}${j.kind ? ' · '+esc(j.kind) : ''}</div><h4>${esc(j.title)}</h4></div>${statusPill(j)}</div>
     ${spec ? `<div class="note">${esc(spec)}</div>` : ''}
-    <div class="row2"><span><b>${j.approved}</b> / ${j.headcount}명 확정</span><span class="crew">${j.crew.map(n=>`<span>${esc(n)}</span>`).join('')}</span></div>
+    <div class="row2"><span><b>${j.approved}</b> / ${j.headcount}명 확정</span><span class="crew">${[...j.crew].sort((a,b)=>(b==='대표')-(a==='대표')).map(n=>`<span>${esc(n)}</span>`).join('')}</span></div>
     ${ack}${addr}${crewCall}${cust}${money}${extra}${pay}${shootBtn}${btn}</article>`;
 }
 function evCard(e){
