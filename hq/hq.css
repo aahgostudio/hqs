@@ -399,3 +399,5 @@ html.chatapp .fab{display:none}
 
 /* 밀어서 답장: 양쪽 방향 다 (브라우저가 가로 밀기를 가져가지 않게) */
 .ch-msgs{overflow-x:hidden}.ch-b[data-mid]{touch-action:pan-y}
+
+.tm-site .ppl i.call{cursor:pointer;text-decoration:underline;text-decoration-color:rgba(55,48,163,.35);text-underline-offset:3px}.tm-site .ppl i.call::before{content:'📞';font-size:10px;margin-right:3px}

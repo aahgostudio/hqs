@@ -72,11 +72,13 @@ function siteCard(x){
   const j = x.j, [tc, tl] = TONE[x.state];
   const lead = x.ppl.find(p => /팀장|실장/.test(p.role||'')) || x.ppl[0];
   const empty = !x.partner && j.headcount > x.crewN && x.state !== 'done' ? j.headcount - x.crewN : 0;
-  const extra = (j.boss_on ? '<i class="lead">대표</i>' : '') + H.helpers(j).map(h => `<i>외부 ${esc(h.name)}</i>`).join('');
+  // 이름 누르면 연락 (v1104) — 대표님 본인은 그냥 표시
+  const call = (name, phone, cls, label) => phone ? `<i class="${cls} call" data-a="tmCall" data-n="${esc(name)}" data-p="${esc(phone)}" role="button">${label}</i>` : `<i class="${cls}">${label}</i>`;
+  const extra = (j.boss_on ? '<i class="lead">대표</i>' : '') + H.helpers(j).map(h => call(h.name, h.phone, '', `외부 ${esc(h.name)}`)).join('');
   return `<a class="tm-site ${x.warn.length?'warn':x.partner?'prt':x.state}" href="#sched">
     <div class="r1"><b>${esc(j.title)}</b><span class="tm">${hm(j.start_time)||'시간 미정'}~</span></div>
-    <div class="ppl">${x.boss ? '<i class="lead">대표 현장</i>' : x.partner ? '<span class="tg prt">도급 파트너</span> ' + x.ppl.map(p => esc(p.name)).join('·')
-      : `<span class="n">${x.crewN}${j.headcount?'/'+j.headcount:''}인</span>${extra}${x.ppl.map(p => `<i class="${p===lead&&!j.boss_on?'lead':''}">${esc(p.name)}${p.role&&p===lead?' '+esc(p.role):''}</i>`).join('')}${empty?`<i class="empty">+${empty} 비었음</i>`:''}`}</div>
+    <div class="ppl">${x.boss ? '<i class="lead">대표 현장</i>' : x.partner ? '<span class="tg prt">도급 파트너</span> ' + x.ppl.map(p => call(p.name, p.phone, '', esc(p.name))).join('')
+      : `<span class="n">${x.crewN}${j.headcount?'/'+j.headcount:''}인</span>${extra}${x.ppl.map(p => call(p.name, p.phone, p===lead&&!j.boss_on?'lead':'', `${esc(p.name)}${p.role&&p===lead?' '+esc(p.role):''}`)).join('')}${empty?`<i class="empty">+${empty} 비었음</i>`:''}`}</div>
     <div class="st"><span class="tg ${tc}">${x.state==='done'?'✅ '+tl+' '+clock(x.done):tl}</span>${x.warn.map(w => `<span class="tg bad">⚠ ${esc(w)}</span>`).join('')}
       ${x.ph.length?`<span>📸 ${x.ph.length}장 · 마지막 ${clock(x.ph[0].created_at)}</span>`:''}${j.live_views?`<span>👀 고객님 ${j.live_views}번 봄</span>`:''}${x.info.map(t => `<span>${esc(t)}</span>`).join('')}</div>
     ${x.state==='on'||x.state==='over'?`<div class="bar"><i style="width:${Math.round(x.prog*100)}%"></i></div>`:''}</a>`;
@@ -129,3 +131,9 @@ H.view('team', {label:'팀',
 });
 H.ACT.teamRefresh = () => H.refresh();
 })(window.HQ);
+
+H.ACT.tmCall = (el, e) => { if (e) { e.preventDefault(); e.stopPropagation(); }
+  const n = el.dataset.n, p = el.dataset.p, d = String(p).replace(/[^0-9+]/g, '');
+  H.open(`<h3>${H.esc(n)}</h3><p class="note" style="margin:-4px 0 14px;font-size:15px">${H.esc(p)}</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><a class="btn" href="tel:${d}">📞 전화</a><a class="btn ghost" href="sms:${d}">💬 문자</a></div>
+    <button class="btn ghost" style="width:100%;margin-top:8px" data-a="close">닫기</button>`); };
