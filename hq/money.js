@@ -53,7 +53,7 @@ H.view('money', {label:'경영', owner:true,
         <div class="tbl"><table><thead><tr><th>직원</th><th>지급 방식</th><th class="num">현장</th><th class="num">지급 총액</th><th class="num">공제</th><th class="num">실지급</th><th>상태</th></tr></thead><tbody>
         ${(() => { const bj = (H.S.mJobs||[]).filter(j => j.boss_on && j.status !== 'cancelled' && j.status !== 'quote'), dn = bj.filter(j => j.status === 'done');
           return `<tr class="grp"><td colspan="7">대표</td></tr><tr class="boss"><td><b>권성환</b> <span class="note">대표 · 직접 현장</span></td><td class="note">사업 소득</td><td class="num">${dn.length}${bj.length>dn.length?`<div class="note">예정 ${bj.length-dn.length}</div>`:''}</td><td class="num">${won(dn.reduce((a,j)=>a+H.jobRevenue(j),0))}<div class="note">현장 매출</div></td><td class="num">-</td><td class="num">-</td><td class="note">${dn.slice(0,3).map(j=>esc(j.title||'')).join(' · ')}${dn.length>3?' 외':''}</td></tr>`; })()}
-        ${[['OPS','직영'],['SPT','지원'],['PRT','도급']].map(([tm,l])=>{ const rows = (H.S.staff||[]).filter(s=>s.team===tm && s.status!=='left').map(s => R.payBy[s.id] ? Object.assign(R.payBy[s.id], {ded: R.payBy[s.id].ded ?? H.deduct(s.pay_type, R.payBy[s.id].gross, R.payBy[s.id].n)}) : {s, n:0, gross:0, extra:0, ded:0, paid:false, items:[]}); if (!rows.length) return '';
+        ${[['OPS','직영'],['SPT','지원'],['PRT','지원 온 도급']].map(([tm,l])=>{ const rows = (H.S.staff||[]).filter(s=>s.team===tm && s.status!=='left').map(s => R.payBy[s.id] ? Object.assign(R.payBy[s.id], {ded: R.payBy[s.id].ded ?? H.deduct(s.pay_type, R.payBy[s.id].gross, R.payBy[s.id].n)}) : {s, n:0, gross:0, extra:0, ded:0, paid:false, items:[]}).filter(p => tm !== 'PRT' || p.n); if (!rows.length) return '';
           return `<tr class="grp"><td colspan="7">${l}</td></tr>` + rows.map(p=>`<tr><td><button class="st-name" data-a="payDetail" data-s="${p.s.id}"><b>${esc(p.s.name)}</b></button> <span class="note">${esc(p.s.role||'')}</span>${p.s.status==='leave'?` <span class="pill p-leave">${H.STL(p.s).leave}</span>`:''}</td>
             <td><select class="in sm" data-c="payType" data-s="${p.s.id}">${Object.entries(H.PT).map(([k,v])=>`<option value="${k}" ${p.s.pay_type===k?'selected':''}>${v}</option>`).join('')}</select></td>
             <td class="num">${p.n}</td><td class="num">${won(p.gross)}${p.extra?`<div class="note">추가수당 ${won(p.extra)}</div>`:''}</td><td class="num">${p.s.pay_type==='salary'?'<span class="note">급여에서</span>':won(p.ded)}</td><td class="num"><b>${won(p.gross-p.ded)}</b>${H.payHtml?H.payHtml(p.s.id, p.gross-p.ded):''}${H.acctHtml?H.acctHtml(p.s.id):''}</td>
@@ -61,6 +61,18 @@ H.view('money', {label:'경영', owner:true,
         ${R.pay.length?`<tr><td colspan="3"><b>합계</b></td><td class="num"><b>${won(R.labor)}</b></td><td class="num">${won(R.pay.reduce((n,p)=>n+p.ded,0))}</td><td class="num"><b>${won(R.labor-R.pay.reduce((n,p)=>n+p.ded,0))}</b></td><td></td></tr>`:''}
         </tbody></table></div>
         <p class="note">지급 방식: 3.3% / 공제 없음 / 일용직 / 급여 / 도급 · 일용직은 하루 15만원 넘는 부분만 원천징수로 계산 (세무사 확인)</p></section>
+      <section class="box" style="margin-top:12px"><div class="bh"><h3><i class="dot" style="background:var(--prt)"></i>클린 · 도급 정산 <span class="sub">도급이 맡은 현장 · 공제 없음</span></h3></div>
+        <div class="prt-leg"><span><i class="mode b">B</i> 고객 돈 전부 본사 → 도급 몫 <b class="snd">보낼 돈</b></span><span><i class="mode a">A</i> 예약금만 본사 · 잔금은 도급이 직접 → 도급이 받은 추가금 50% <b class="rcv">받을 돈</b></span></div>
+        <div class="prt-k"><div><small>도급 현장 고객 결제</small><b>${won(R.prt.reduce((n,p)=>n+p.tot+p.ext,0))}</b></div><div class="s"><small>💸 보낼 돈 (B)</small><b>${won(R.prt.reduce((n,p)=>n+p.items.filter(i=>!i.done).reduce((a,i)=>a+i.send,0),0))}</b></div><div class="r"><small>📥 받을 돈 (A)</small><b>${won(R.prt.reduce((n,p)=>n+p.items.filter(i=>!i.done).reduce((a,i)=>a+i.recv,0),0))}</b></div></div>
+        <div class="tbl"><table class="prt-t"><thead><tr><th>도급</th><th>방식</th><th class="num">현장</th><th class="num">고객 결제</th><th class="num">본사 몫</th><th class="num">도급 몫</th><th>정산</th><th>상태</th></tr></thead><tbody>
+        ${R.prt.map(p => { const ms = [...new Set(p.items.map(i => i.mode || '?'))], lS = p.items.filter(i=>!i.done).reduce((a,i)=>a+i.send,0), lR = p.items.filter(i=>!i.done).reduce((a,i)=>a+i.recv,0);
+          return `<tr><td><button class="st-name" data-a="prtDetail" data-s="${p.s.id}"><b>${esc(p.s.name)}</b></button> <span class="note">${esc(p.s.role||'')}</span></td>
+            <td>${ms.map(m => m === '?' ? '<i class="mode q" title="금액·증빙에서 방식을 골라주세요">미정</i>' : `<i class="mode ${m.toLowerCase()}">${m}</i>`).join(' ')}</td><td class="num">${p.n}</td>
+            <td class="num">${won(p.tot + p.ext)}${p.ext?`<div class="note">추가 ${won(p.ext)}</div>`:''}</td><td class="num">${won(p.hq)}</td><td class="num">${won(p.mine)}</td>
+            <td>${lS ? `<div class="flow snd">💸 보낼 돈 ${won(lS)}</div>` : ''}${lR ? `<div class="flow rcv">📥 받을 돈 ${won(lR)}</div>` : ''}${!lS && !lR ? '<span class="note">-</span>' : ''}</td>
+            <td>${p.open ? `<button class="btn sm" data-a="prtDone" data-s="${p.s.id}">${lS && !lR ? '송금 완료' : !lS && lR ? '받음 체크' : '정산 완료'}</button>` : '<span class="pill p-ok">정산 끝</span>'}</td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">이 달 도급 현장이 없어요</td></tr>'}
+        </tbody></table></div>
+        <p class="note">본사 몫 = 예약금 + 고객 추가금 50% · 도급 몫 = 나머지 · 방식은 현장마다 [금액·증빙]에서 고른 대로 · 이름을 누르면 현장별 · 도급 대금 세금계산서는 세무사 확인</p></section>
 ` : ''}
     ${sec==='res' ? `
     <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>부동산 · 직원별 배분 · 수익 <button class="btn sm" data-a="resMonthly" style="margin-left:6px">🏠 월 정산 (10일 지급)</button></h3><span class="sub">배분율은 사람마다 기본값, 계약마다 바꿀 수 있어요</span></div>
@@ -130,11 +142,20 @@ H.calcMonth = () => {
   R.res = res; R.shareTot = res.rows.reduce((n,r)=>n+r.inc,0);
   // 청소 직원별
   const by = {};
-  jobs.forEach(j => (j.assignments||[]).filter(a=>a.status==='approved' && (a.pay_amount!=null || a.extra_amount!=null)).forEach(a => {
+  jobs.forEach(j => (j.assignments||[]).filter(a=>a.status==='approved' && (a.pay_amount!=null || a.extra_amount!=null) && !(H.isPartner(j) && H.isPrt(a.staff_id))).forEach(a => {   // 도급 현장의 도급 사장님은 아래 '도급 정산'으로
     const p = by[a.staff_id] = by[a.staff_id] || {s:H.P(a.staff_id), n:0, gross:0, extra:0, paid:true, items:[]};
     p.n++; p.gross += (+a.pay_amount||0) + (+a.extra_amount||0); p.extra += +a.extra_amount||0; if (!a.paid) p.paid = false; p.items.push({j, a}); }));
   R.pay = Object.values(by).filter(p=>p.s.team && p.s.team!=='RES').map(p => Object.assign(p, {ded: H.deduct(p.s.pay_type, p.gross, p.n)})).sort((a,b)=>b.gross-a.gross);
   R.payBy = by;
+  // 도급 정산 (도급 현장만): 본사 몫 = 예약금 + 고객 추가금 50% · 도급 몫 = 나머지 · B = 보낼 돈 / A = 받을 돈
+  const pb = {};
+  jobs.filter(j => H.isPartner(j)).forEach(j => { const a = (j.assignments||[]).find(x => x.status === 'approved' && H.isPrt(x.staff_id)); if (!a) return;
+    const tot = +j.total_amount || 0, ext = H.extrasSum(j), dep = +j.deposit_amount || 0, mode = j.contract_mode || '';
+    const hq = dep + Math.round(ext / 2), mine = Math.max(0, tot + ext - hq);
+    const p = pb[a.staff_id] = pb[a.staff_id] || {s: H.P(a.staff_id), items: [], n: 0, tot: 0, ext: 0, hq: 0, mine: 0, send: 0, recv: 0, open: 0};
+    const it = {j, a, mode, tot, ext, hq, mine, send: mode === 'A' ? 0 : mine, recv: mode === 'A' ? Math.round(ext / 2) : 0, done: !!a.paid};
+    p.items.push(it); p.n++; ['tot','ext','hq','mine','send','recv'].forEach(k => p[k] += it[k]); if (!it.done && (it.send || it.recv)) p.open++; });
+  R.prt = Object.values(pb).sort((a,b) => (b.send + b.recv) - (a.send + a.recv));
   // 운영비 · 매입
   const grp = (arr, key) => { const o = {}; arr.forEach(x => { const k = key(x) || '기타'; o[k] = (o[k]||0) + (+x.amount||0); }); return Object.entries(o).sort((a,b)=>b[1]-a[1]); };
   const ex = S.mEx||[]; R.exTot = ex.reduce((n,x)=>n+(+x.amount||0),0); R.exByCat = grp(ex, x=>x.category); R.exByAcc = grp(ex, x=>x.account); R.exByBiz = grp(ex, x=>x.biz); R.exNoRcpt = ex.filter(x=>!x.has_receipt).length;
@@ -153,6 +174,16 @@ H.ACT.monNav = el => { const m = V.money.month; V.money.month = new Date(m.getFu
 H.CHANGE.payType = async el => { await H.q(sb.from('staff').update({pay_type: el.value}).eq('id', el.dataset.s)); const s = H.S.staff.find(x=>x.id===el.dataset.s); if (s) s.pay_type = el.value; H.toast('지급 방식을 바꿨어요'); H.render(); };
 H.CHANGE.shareRate = async el => { const v = el.value === '' ? null : +el.value;
   await H.q(sb.from('pay_rules').upsert({staff_id: el.dataset.s, share_rate: v})); const r = (H.S.payRules||[]).find(p=>p.staff_id===el.dataset.s); if (r) r.share_rate = v; else (H.S.payRules = H.S.payRules||[]).push({staff_id:el.dataset.s, share_rate:v}); H.toast('배분율을 저장했어요'); H.render(); };
+H.ACT.prtDetail = el => { const p = (H.calcMonth().prt||[]).find(x => x.s.id === el.dataset.s); if (!p) return;
+  H.open(`<h3>${esc(p.s.name)} · 도급 현장별</h3><div class="tbl"><table><thead><tr><th>현장</th><th>방식</th><th class="num">고객 결제</th><th class="num">본사 몫</th><th class="num">도급 몫</th><th>정산</th></tr></thead><tbody>
+    ${p.items.map(i => `<tr><td>${H.md(i.j.job_date)} ${esc(i.j.title||'')}</td><td>${i.mode || '<span class="note">미정</span>'}</td><td class="num">${won(i.tot + i.ext)}</td><td class="num">${won(i.hq)}</td><td class="num">${won(i.mine)}</td>
+      <td>${i.send ? `보낼 돈 ${won(i.send)}` : i.recv ? `받을 돈 ${won(i.recv)}` : '-'} ${i.done ? '<span class="pill p-ok">끝</span>' : ''}</td></tr>`).join('')}</tbody></table></div>
+    <button class="btn ghost" style="width:100%;margin-top:10px" data-a="close">닫기</button>`, true); };
+H.ACT.prtDone = async el => { const p = (H.calcMonth().prt||[]).find(x => x.s.id === el.dataset.s); if (!p) return;
+  const open = p.items.filter(i => !i.done && (i.send || i.recv)), sS = open.reduce((a,i)=>a+i.send,0), sR = open.reduce((a,i)=>a+i.recv,0);
+  if (!confirm(`${p.s.name} 사장님 정산을 끝낼까요?${sS ? `\n💸 보낸 돈 ${won(sS)}` : ''}${sR ? `\n📥 받은 돈 ${won(sR)}` : ''}`)) return;
+  for (const i of open) await H.q(sb.from('assignments').update({paid: true}).match({job_id: i.j.id, staff_id: p.s.id}));
+  H.toast('도급 정산을 끝냈어요'); H.refresh(); };
 H.ACT.payDone = async el => { const p = H.calcMonth().payBy[el.dataset.s]; if (!p || !confirm(`${p.s.name}님 ${V.money.month.getMonth()+1}월 정산을 지급 완료로 바꿀까요?`)) return;
   for (const {j} of p.items) await H.q(sb.from('assignments').update({paid:true}).match({job_id:j.id, staff_id:el.dataset.s}));
   H.toast('지급 완료로 바꿨어요 · 직원 정산 화면에도 보여요'); H.refresh(); };

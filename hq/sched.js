@@ -101,7 +101,7 @@ function jobCard(j){
   const people = bossChip + ap.map(a => `<span class="who ok ${seen(a)?'':'unseen'}" title="${seen(a)?'확인함 '+H.ago(a.seen_at):'아직 안 봤어요'}">${seen(a)?'✓':'!'} ${esc(H.P(a.staff_id).name)}${active?`<button class="x" data-a="unassign" data-j="${j.id}" data-s="${a.staff_id}" aria-label="배정 빼기">✕</button>`:''}</span>`).join('')
     + wait.map(a => `<span class="who wait">${esc(H.P(a.staff_id).name)} 신청<button data-a="approve" data-j="${j.id}" data-s="${a.staff_id}">승인</button><button class="no" data-a="reject" data-j="${j.id}" data-s="${a.staff_id}">거절</button></span>`).join('')
     + hp.map(x => `<span class="who ext" title="외부지원${x.src?' · '+esc(x.src):''}">외부 · ${esc(x.name)}${j.status!=='cancelled'?`<button class="x" data-a="helperDel" data-j="${j.id}" data-h="${x.id}" aria-label="외부지원 빼기">✕</button>`:''}</span>`).join('')
-    + (active && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '')
+    + (j.status!=='cancelled' && j.status!=='quote' ? `<button class="btn ghost sm" data-a="assign" data-j="${j.id}">+ 직접 배정</button>` : '')
     + (j.status!=='cancelled' && j.status!=='quote' && !H.S.needV29 ? `<button class="btn ghost sm" data-a="helperAdd" data-j="${j.id}">+ 외부지원</button>` : '');
   const tc = H.isPartner(j) ? 'var(--prt)' : j.status==='open' && left ? 'var(--cleanl)' : 'var(--clean)';
   const phs = H.photosOf(j.id).length;
@@ -427,14 +427,14 @@ H.ACT.assign = el => { const j = J(el.dataset.j), S = H.S;
   const others = S.staff.filter(s => s.status !== 'left' && !j.teams.includes(s.team) && s.team !== 'RES');
   H.open(`<form data-f="assign"><h3>직접 배정</h3><p class="note" style="margin:-6px 0 10px">${esc(j.title)} · ${md(j.job_date)} · '가능'으로 표시한 사람이 앞에 와요</p>
     <div class="chips">${H.S.owner && !H.S.needV4 && !j.boss_on ? `<label><input type="checkbox" name="boss" value="1"><span>${esc(H.S.name||'대표')} (대표)</span></label>` : ''}${cand.map(s=>`<label><input type="checkbox" name="s" value="${s.id}"><span>${esc(s.name)}${s.status==='leave'?` (${H.STL(s).leave})`:''}${tag(s)}</span></label>`).join('') || '<span class="note">팀 직원이 없어요</span>'}</div>
-    ${others.length?`<p class="note" style="margin:12px 0 6px">다른 팀에서 지원</p><div class="chips">${others.map(s=>`<label><input type="checkbox" name="s" value="${s.id}"><span>${s.team} ${esc(s.name)}${tag(s)}</span></label>`).join('')}</div>`:''}
+    ${others.length?`<p class="note" style="margin:12px 0 6px">다른 팀에서 지원 <small>(도급 사장님도 여기서 · 그 사람에게만 배정돼요)</small></p><div class="chips">${others.map(s=>`<label><input type="checkbox" name="s" value="${s.id}"><span>${s.team} ${esc(s.name)}${tag(s)}</span></label>`).join('')}</div>`:''}
     ${H.sacts('배정')}<input type="hidden" name="id" value="${j.id}"></form>`); };
 H.FORM.assign = async v => { const id = +v.get('id'); const ids = v.getAll('s'), me = v.get('boss') === '1'; if (!ids.length && !me) return H.close();
   const now = new Date().toISOString();
   if (ids.length) await H.q(sb.from('assignments').upsert(ids.map(s=>({job_id:id, staff_id:s, status:'approved', decided_at:now})), {onConflict:'job_id,staff_id'}));
   if (me) await H.q(sb.from('jobs').update({boss_on: true}).eq('id', id));   // 대표님도 한 자리
   const j = J(id); const n = new Set([...j.assignments.filter(a=>a.status==='approved').map(a=>a.staff_id), ...ids]).size + ((me || j.boss_on) ? 1 : 0) + H.helpers(j).length;
-  if (n >= j.headcount || (H.isPartner(j) && ids.some(H.isPrt)) || H.prtOn(j)) await H.q(sb.from('jobs').update({status:'full'}).eq('id', id));
+  if (j.status === 'open' && (n >= j.headcount || (H.isPartner(j) && ids.some(H.isPrt)) || H.prtOn(j))) await H.q(sb.from('jobs').update({status:'full'}).eq('id', id));   // 마감된 현장은 상태 그대로
   H.close(); H.toast('배정했어요 · 카톡으로 알려주세요'); H.refresh(); };
 
 /* 외부지원 (일용직) — 직원 명단엔 안 넣고 이 현장에만 붙임 · 정산은 공제 없이 */

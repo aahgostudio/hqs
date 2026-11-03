@@ -463,3 +463,10 @@ html.chatapp .fab{display:none}
 .pm-det{margin-top:8px;background:#F7F9FC;border-radius:10px;padding:8px 10px;font-size:13px}.pm-det>div{display:flex;justify-content:space-between;gap:10px;padding:4px 0}
 .pm-det small{color:#B45309;font-size:11px}.pm-det b.ok{color:#15803D}.pm-det b.no{color:var(--sub)}.pm-det p{margin:4px 0 0;font-size:11.5px;color:var(--sub)}
 .pm-g{font-size:12.5px;font-weight:800;color:var(--sub);margin:6px 2px -2px}
+
+/* 경영 › 도급 정산 */
+.prt-leg{display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;margin:2px 0 10px}.prt-leg>span{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.prt-leg b.snd,.flow.snd{color:#1D4ED8}.prt-leg b.rcv,.flow.rcv{color:#047857}.flow{font-weight:800;font-size:13px}
+.mode{display:inline-block;font-style:normal;font-size:11.5px;font-weight:800;border-radius:6px;padding:2px 7px}.mode.a{background:#ECFDF5;color:#047857}.mode.b{background:#EEF2FF;color:#3730A3}.mode.q{background:#FEF3C7;color:#92400E}
+.prt-k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}.prt-k>div{border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff}.prt-k small{font-size:11.5px;color:var(--sub)}.prt-k b{display:block;font-size:18px}
+.prt-k .s b{color:#1D4ED8}.prt-k .r b{color:#047857}.prt-t td,.prt-t th{white-space:nowrap}
