@@ -199,12 +199,12 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1104k"></script>
+<script src="../status.js?v=1104l"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1104k'</script>
-<script src="../chatkit.js?v=1104k"></script>
-<script src="../chat.js?v=1104k"></script>
+<script>window.EP_VER='1104l'</script>
+<script src="../chatkit.js?v=1104l"></script>
+<script src="../chat.js?v=1104l"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -403,10 +403,11 @@ function mineView(){
   const tsBox = (() => { const T = teamStats; if (!T || !T.level || !T.rows) return '';
     const me = T.me, isLead = p => /팀장|실장/.test(p.role||'') || p.team === 'PRT', add = (o,k) => o[k] = (o[k]||0) + 1;
     const lead = {}, pair = {}, pairBad = {}; let bad = 0;
-    T.rows.forEach(j => { const names = j.crew.map(c => c.name).concat(j.helpers||[]); if (j.bad) bad++;
+    T.rows.forEach(j => { const ld = j.crew.find(c => c.id === j.collector_id) || j.crew.find(isLead);   // 그날 팀장 = 수금 담당
+      const names = j.crew.map(c => c.name).concat(j.helpers||[]).concat(j.boss && ld ? ['대표'] : []); if (j.bad) bad++;
       for (let a = 0; a < names.length; a++) for (let b = a+1; b < names.length; b++) { const k = [names[a], names[b]].sort().join(' · ');
         if (T.level === 'chief' || names[a] === me.name || names[b] === me.name) { add(pair, k); if (j.bad) add(pairBad, k); } }
-      const ld = j.crew.find(c => c.id === j.collector_id && isLead(c)) || j.crew.find(isLead); if (!ld || ld.team === 'PRT') return;
+      if (!ld || ld.team === 'PRT') return;
       if (T.level === 'lead' && ld.id !== me.id) return;
       const L = lead[ld.id] = lead[ld.id] || {p: ld, n: 0, b: 0, w: {}, wb: {}}; L.n++; if (j.bad) L.b++;
       names.filter(n => n !== ld.name).forEach(n => { add(L.w, n); if (j.bad) add(L.wb, n); }); });

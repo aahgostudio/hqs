@@ -3,6 +3,7 @@
 --  팀별 현황 (직원 화면 · 내 일정 탭)
 --   · 팀장: 내가 맡은 현장 + 나랑 같이 간 사람·짝
 --   · 실장: 팀장·실장 전체 카드 + 모든 짝 (대표님 카드는 빼고)
+--   · 대표님이 같이 간 현장은 대표님도 팀원으로 셈 (수금 담당 = 그날 팀장)
 --   · 금액·고객 정보는 없음. 사고 = 운영 › CS·품질에 클레임·재방문 적은 현장
 -- ============================================================
 create or replace function public.staff_team_stats(p_token text, p_month date)
@@ -20,6 +21,7 @@ begin
     'month', to_char(m0, 'YYYY-MM'),
     'rows', coalesce((select jsonb_agg(jsonb_build_object(
         'collector_id', j.collector_id,
+        'boss', j.boss_on,
         'bad', (coalesce(j.cs->>'claim','') <> '' or coalesce(j.cs->>'revisit','') in ('true','1','yes')),
         'crew', coalesce((select jsonb_agg(jsonb_build_object('id', st.id, 'name', st.name, 'role', st.role, 'team', st.team))
                   from public.assignments a join public.staff st on st.id = a.staff_id

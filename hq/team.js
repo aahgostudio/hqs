@@ -154,11 +154,12 @@ function monthStats(){
   const boss = {n: 0, bad: 0, w: {}, wb: {}}, pair = {}, pairBad = {}, lead = {}; let badN = 0;
   st.rows.forEach(j => {
     const ppl = (j.assignments || []).filter(a => a.status === 'approved').map(a => H.P(a.staff_id)).filter(p => p && p.name !== '?');
-    const names = ppl.map(p => p.name).concat((j.helpers || []).map(h => '외부 ' + h.name));
+    const ld = ppl.find(p => p.id === j.collector_id) || ppl.find(isLead);   // 그날 팀장 = 수금 담당 (없으면 같이 간 팀장·실장)
+    // 대표님도 팀장 밑에서 같이 갔으면 팀원으로 셈 (짝·팀장 카드에 '대표'로)
+    const names = ppl.map(p => p.name).concat((j.helpers || []).map(h => '외부 ' + h.name)).concat(j.boss_on && ld ? ['대표'] : []);
     const bad = !!(j.cs && (j.cs.claim || j.cs.revisit)); if (bad) badN++;   // 사고 = 클레임 or 재방문 (운영 › CS·품질)
-    if (j.boss_on) { boss.n++; if (bad) boss.bad++; names.forEach(n => { add(boss.w, n); if (bad) add(boss.wb, n); }); }
+    if (j.boss_on) { boss.n++; if (bad) boss.bad++; names.filter(n => n !== '대표').forEach(n => { add(boss.w, n); if (bad) add(boss.wb, n); }); }
     for (let a = 0; a < names.length; a++) for (let b = a + 1; b < names.length; b++) { const k = [names[a], names[b]].sort().join(' · '); add(pair, k); if (bad) add(pairBad, k); }
-    const coll = ppl.find(p => p.id === j.collector_id && isLead(p)), ld = coll || ppl.find(isLead);
     if (ld) { const L = lead[ld.name] = lead[ld.name] || {p: ld, n: 0, bad: 0, w: {}, wb: {}}; L.n++; if (bad) L.bad++;
       names.filter(n => n !== ld.name).forEach(n => { add(L.w, n); if (bad) add(L.wb, n); }); }
   });
@@ -185,7 +186,7 @@ function statsBox(){
       <div class="kpi ${d.badN ? 'bad' : ''}"><small>사고 (클레임·재방문)</small><b>${d.badN}<i>곳</i></b></div><div class="kpi"><small>사고율</small><b>${pct(d.badN, d.total)}<i>%</i></b></div></div>
     <div class="leads">${bossCard}${leadCards}</div>
     <div class="pairs"><div><h4>👥 잘 맞는 짝 <small>사고 0 · 많이 간 순</small></h4>${plist(d.good, true)}</div><div><h4>⚠ 살펴볼 짝 <small>사고 있었던 짝</small></h4>${plist(d.watch, false)}</div></div>
-    <p class="tm-foot">취소·견적 중 현장은 빼요 · 팀장 = 그날 수금 담당(팀장·실장·도급), 없으면 같이 간 팀장·실장 · 사고 = 운영 › CS·품질에 클레임·재방문 적은 현장 · 막대 빨강 = 그중 사고</p></section>`;
+    <p class="tm-foot">취소·견적 중 현장은 빼요 · 팀장 = 그날 수금 담당, 없으면 같이 간 팀장·실장 · 대표님·실장·팀장도 남의 현장에선 팀원으로 셈 · 사고 = 운영 › CS·품질에 클레임·재방문 적은 현장 · 막대 빨강 = 그중 사고</p></section>`;
 }
 H.ACT.tmMon = async el => { H.S.tmMon = +el.dataset.v; H.S.tmStats = null; H.render(); await loadMonthStats(); H.render(); };
 })(window.HQ);
