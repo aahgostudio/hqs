@@ -299,9 +299,9 @@
   // 답장(댓글): 원문 한 줄 · 말풍선 안 인용 · 원문으로 이동
   function snip(r){ if (!r) return ''; if (r.deleted) return '삭제된 메시지'; const b = (r.body || '').replace(/\s+/g, ' ').trim(); return b ? (b.length > 40 ? b.slice(0, 40) + '…' : b) : (r.photo ? '📷 사진' : ''); }
   function quote(r){ if (!r) return ''; const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    return `<span class="kit-q" data-kitjump="${+r.id}"><b>↩ ${e(r.name || '')}</b><span>${e(snip(r))}</span></span>`; }
+    return `<span class="kit-q" data-kitjump="${+r.id}"><b>↩︎ ${e(r.name || '')}</b><span>${e(snip(r))}</span></span>`; }
   function replyBar(r){ if (!r) return ''; const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    return `<div class="kit-rp"><span class="t">↩ <b>${e(r.name || '')}</b>에게 답장 · ${e(snip(r))}</span><button type="button" data-kitrpx="1">취소</button></div>`; }
+    return `<div class="kit-rp"><span class="t">↩︎ <b>${e(r.name || '')}</b>에게 답장 · ${e(snip(r))}</span><button type="button" data-kitrpx="1">취소</button></div>`; }
   document.addEventListener('click', e => { const q = e.target.closest('[data-kitjump]'); if (!q) return; e.preventDefault(); e.stopPropagation();
     const el = document.querySelector(`[data-mid="${q.dataset.kitjump}"]`); if (!el) return; el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.remove('kit-hl'); void el.offsetWidth; el.classList.add('kit-hl'); }, true);
   window.EPKit = {snip, quote, replyBar, shrink, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
