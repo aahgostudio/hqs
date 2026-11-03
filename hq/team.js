@@ -15,7 +15,7 @@ H.teamData = () => {
   const yday = H.ymd(H.addDays(H.today(), -1));
   const mk = day => (S.jobs||[]).filter(j => j.job_date === day && j.status !== 'cancelled' && j.status !== 'quote').map(j => {
     const ppl = appr(j).map(a => H.P(a.staff_id));
-    const partner = ppl.some(p => p.team === 'PRT');
+    const partner = H.isPartner(j) && ppl.some(p => p.team === 'PRT');   // 직영 현장에 지원 온 도급 사장님은 일반 인원
     const boss = (j.boss_on && !ppl.length) || (!ppl.length && j.status === 'full'); // 대표 현장 (배정 없이 마감)
     const crewN = H.crewN(j);
     const lead = (j.collector_id && appr(j).some(a => a.staff_id === j.collector_id)) ? H.P(j.collector_id) : (appr(j).map(a => H.P(a.staff_id)).find(p => /팀장|실장/.test(p.role||'')) || null);   // 그날 팀장 = 수금 담당   // 직원 + 대표님 + 외부지원 (도급 확정이면 정원)
@@ -165,12 +165,12 @@ async function loadMonthStats(){
 }
 function monthStats(){
   const st = H.S.tmStats; if (!st) return null;
-  const isLead = p => /팀장|실장/.test(p.role || '') || p.team === 'PRT';
+  const isLead = p => /팀장|실장/.test(p.role || '');
   const add = (o, k) => o[k] = (o[k] || 0) + 1;
   const boss = {n: 0, bad: 0, w: {}, wb: {}}, pair = {}, pairBad = {}, lead = {}; let badN = 0;
   st.rows.forEach(j => {
     const ppl = (j.assignments || []).filter(a => a.status === 'approved').map(a => H.P(a.staff_id)).filter(p => p && p.name !== '?');
-    const ld = ppl.find(p => p.id === j.collector_id) || ppl.find(isLead);   // 그날 팀장 = 수금 담당 (없으면 같이 간 팀장·실장)
+    const ld = ppl.find(p => p.id === j.collector_id) || ppl.find(isLead) || (H.isPartner(j) ? ppl.find(p => p.team === 'PRT') : null);   // 그날 팀장 = 수금 담당 (없으면 같이 간 팀장·실장)
     // 대표님도 팀장 밑에서 같이 갔으면 팀원으로 셈 (짝·팀장 카드에 '대표'로)
     const names = ppl.map(p => p.name).concat((j.helpers || []).map(h => '외부 ' + h.name)).concat(j.boss_on && ld ? ['대표'] : []);
     const bad = !!(j.cs && (j.cs.claim || j.cs.revisit)); if (bad) badN++;   // 사고 = 클레임 or 재방문 (운영 › CS·품질)
