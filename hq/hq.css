@@ -515,3 +515,6 @@ html.chatapp .fab{display:none}
 .bat .att-g i.w{background:#10B981}.bat .att-g i.o{background:#FCE7F3;color:#DB2777}
 .bbar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:#F1F2F4;margin:6px 0 4px}.bbar i{display:block;height:100%}
 .brow{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:7px 0;border-bottom:1px solid #F1F2F4}.brow span:last-child{color:var(--sub);text-align:right}.brow .miss{color:#DC2626;font-weight:700}
+
+/* 1104P 폰에선 오른쪽 아래 ＋ 하나만 */
+@media(max-width:900px){.only-pc{display:none!important}}

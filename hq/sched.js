@@ -16,7 +16,7 @@ H.view('sched', {label:'일정',
         <div class="chips">${[['clean','클린','var(--clean)'],['res','부동산','var(--res)'],['ntc','공지','var(--notice)'],['me','내 일정','#9CA3AF'],['avail','가능·불가일','#86EFAC']].map(([k,l,c])=>`<label><input type="checkbox" data-c="schedF" value="${k}" ${v.f[k]?'checked':''}><span><i style="background:${c}"></i>${l}</span></label>`).join('')}</div>
         <div class="seg"><button data-a="schedMode" data-m="month" aria-pressed="${v.mode==='month'}">달력</button><button data-a="schedMode" data-m="list" aria-pressed="${v.mode==='list'}">목록</button></div>
         <button class="btn ghost sm" data-a="schedNav" data-n="-1" aria-label="이전 달">${I('left')}</button><button class="btn ghost sm" data-a="schedNav" data-n="0">오늘</button><button class="btn ghost sm" data-a="schedNav" data-n="1" aria-label="다음 달">${I('right')}</button>
-        <button class="btn sm" data-a="addMenu">${I('plus')}올리기</button></div></div>`;
+        <button class="btn sm only-pc" data-a="addMenu">${I('plus')}올리기</button></div></div>`;
     let body = '';
     if (v.mode === 'month') {
       let h = `<div class="cal"><table><thead><tr>${DOW.map((d,i)=>`<th style="${i===0?'color:var(--warn)':''}">${d}</th>`).join('')}</tr></thead><tbody>`;
