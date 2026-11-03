@@ -90,6 +90,12 @@ body{background:var(--bg)}
 .mates{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
 .mates .mt{font-size:12.5px;color:var(--sub);margin-right:2px}
 .mate{display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:600;text-decoration:none}
+.mseg{display:grid;grid-template-columns:1fr 1fr;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px;margin:4px 0 12px}
+.mseg button{border:0;background:none;font:inherit;font-size:14.5px;font-weight:700;color:var(--sub);padding:9px 0;border-radius:9px;position:relative}
+.mseg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.mseg button i{font-style:normal;background:#E5484D;color:#fff;font-size:10.5px;border-radius:9px;padding:1px 6px;margin-left:5px;vertical-align:2px}
+.msum{display:flex;align-items:center;gap:8px;width:100%;border:1px solid #FDE2A7;background:#FFF7E6;border-radius:14px;padding:11px 13px;font:inherit;font-size:13.5px;color:var(--ink);margin-bottom:6px;text-align:left}
+.msum b{font-size:15px}.msum em{margin-left:auto;font-style:normal;color:#92400E;font-weight:700}.msum em.ok{color:#15803D}
 .tsw{background:#EEF1F5;border-radius:14px;padding:10px;display:grid;gap:8px}
 .tsk{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tsk>div{background:var(--card);border-radius:12px;padding:9px 12px}.tsk small{font-size:11.5px;color:var(--sub)}.tsk b{display:block;font-size:20px}.tsk b.bd{color:#DC2626}
 .tsc{background:var(--card);border-radius:12px;padding:11px 12px}
@@ -199,13 +205,13 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1104p"></script>
+<script src="../status.js?v=1104q"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1104p'</script>
-<script src="../chatkit.js?v=1104p"></script>
-<script src="../chat.js?v=1104p"></script>
-<script src="../mymoney.js"></script>
+<script>window.EP_VER='1104q'</script>
+<script src="../chatkit.js?v=1104q"></script>
+<script src="../chat.js?v=1104q"></script>
+<script src="../mymoney.js?v=1104q"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -273,6 +279,7 @@ async function load(){
 function jobsOn(day){ return D.jobs.filter(j => j.date === day && (scope === 'team' || ['applied','approved'].includes(j.my_status))); }
 const evsOn = day => D.events.filter(e => e.date === day);
 let xOpen = null;
+let mineSub = 'sched';   // 나 탭: 내 일정 / 내 수입
 let teamStats = null;   // 팀장·실장: 팀별 현황 (v33)
 if (new URLSearchParams(location.search).has('demo')) window.__epDemoTeam = (ts, role) => { teamStats = ts; D.me.role = role; tab = 'mine'; render(); };   // 미리보기용
 const mineOK = () => D.jobs.filter(j => j.my_status === 'approved');
@@ -422,8 +429,11 @@ function mineView(){
       <div class="tsw"><div class="tsk"><div><small>현장</small><b>${T.rows.length}</b></div><div><small>사고</small><b class="${bad?'bd':''}">${bad}</b></div><div><small>사고율</small><b>${pct(bad,T.rows.length)}%</b></div></div>
       ${cards}<div class="tsc"><div class="tsh"><b>👥 잘 맞는 짝</b><small>사고 0</small></div>${pl(good,true)}</div><div class="tsc"><div class="tsh"><b>⚠ 살펴볼 짝</b><small>사고 있었던 짝</small></div>${pl(watch,false)}</div></div>`; })();
   const ics = V2() ? `<div class="icsrow"><div><b>📅 내 구글 캘린더에 넣기</b><small>주소 복사 → 구글 캘린더 › 다른 캘린더 + › URL로 추가</small></div><button class="btn ghost sm" data-icscopy="1">주소 복사</button></div>` : '';
-  return `<div class="bar"><h3>다가오는 내 일정</h3>${V2()?'<button class="btn ghost sm" data-plus="1">＋ 넣기</button>':''}</div>` + (evs.map(evCard).join('') + up.map(card).join('') || '<p class="empty">다가오는 일정이 없어요</p>') +
-    `<div class="bar" style="margin-top:18px"><h3>${isAGO()?'파트너 정산':'내 정산'}</h3></div>` + EPMoney.html() + (payBox ? `<details class="paydet"><summary>${month.getMonth()+1}월 현장별 보기</summary>${payBox}</details>` : '') + tsBox + ics;
+  const M = window.EPMoney && EPMoney.data, cur = M && (M.months||[])[0];
+  const seg = `<div class="mseg"><button data-msub="sched" class="${mineSub==='sched'?'on':''}">📅 내 일정</button><button data-msub="money" class="${mineSub==='money'?'on':''}">💰 ${isAGO()?'파트너 정산':'내 수입'}${M && M.due > 0 ? '<i>!</i>' : ''}</button></div>`;
+  if (mineSub === 'money') return seg + EPMoney.html() + (payBox ? `<details class="paydet"><summary>${month.getMonth()+1}월 현장별 보기</summary>${payBox}</details>` : '') + tsBox;
+  const sum = cur ? `<button class="msum" data-msub="money">💰 <span>이번 달 <b>${won(cur.net)}</b></span>${M.due > 0 ? `<em>안 받은 돈 ${won(M.due)} ›</em>` : '<em class="ok">다 받았어요 ›</em>'}</button>` : '';
+  return seg + sum + `<div class="bar"><h3>다가오는 내 일정</h3>${V2()?'<button class="btn ghost sm" data-plus="1">＋ 넣기</button>':''}</div>` + (evs.map(evCard).join('') + up.map(card).join('') || '<p class="empty">다가오는 일정이 없어요</p>') + ics;
 }
 
 function reportView(){
@@ -544,7 +554,7 @@ function tabbar(){
   if (!D) return;
   const acks = D.jobs.filter(j=>j.need_ack).length, unread = D.notices.filter(n=>!n.read || (n.important && !n.confirmed)).length, ch = EPChat.state;
   const tb = document.getElementById('tabbar'); tb.classList.remove('hidden');
-  const items = [['board','cal','일정판',acks], ch.on ? ['chat','chat','대화',ch.unread] : null, ['mine','check','내 일정',0], V2() ? ['plus'] : null, ['report','cam',W('사진·보고','촬영·공유'),0],['notice','bell','공지',unread]].filter(Boolean);
+  const items = [['board','cal','일정판',acks], ch.on ? ['chat','chat','대화',ch.unread] : null, ['mine','check','나',(window.EPMoney && EPMoney.data && EPMoney.data.due > 0) ? '!' : 0], V2() ? ['plus'] : null, ['report','cam',W('사진·보고','촬영·공유'),0],['notice','bell','공지',unread]].filter(Boolean);
   tb.querySelector('nav').style.gridTemplateColumns = `repeat(${items.length},1fr)`;
   tb.querySelector('nav').innerHTML = items.map(([k,i,l,b]) => k==='plus' ? `<button class="plus" data-plus="1" aria-label="넣기">${I('plus')}</button>`
     : k==='chat' ? `<button data-chat="1">${I(i)}${l}${b?`<span class="badge">${b>99?'99+':b}</span>`:''}</button>`
@@ -588,6 +598,7 @@ document.addEventListener('click', async e => {
   if (d.cancel){ if (!confirm('이 일정을 취소할까요?')) return; return act('staff_cancel',{p_token:TOKEN,p_job:+d.cancel},'취소했어요'); }
   if (d.ack){ return act('staff_ack',{p_token:TOKEN,p_job:+d.ack},'확인 완료!'); }
   if (d.collect){ if (!confirm(`${d.how}으로 잔금을 받으셨나요?`)) return; return act('staff_collect',{p_token:TOKEN,p_job:+d.collect,p_how:d.how},'수금 완료로 표시했어요'); }
+  if (d.msub){ mineSub = d.msub; render(); window.scrollTo(0,0); return; }
   if (d.xopen !== undefined){ xOpen = +d.xopen || null; render(); return; }
   if (d.xn){ const f = b.closest('.xform'); f.querySelector('.xname').value = d.xn === '기타' ? '' : d.xn; f.querySelector(d.xn === '기타' ? '.xname' : '.xamt').focus(); return; }
   if (d.xa){ b.closest('.xform').querySelector('.xamt').value = d.xa; return; }

@@ -21,7 +21,12 @@
       if (!r.ok) return; D = await r.json(); opt.onChange(); } catch(_){}
   }
   function css(){ if (document.getElementById('epm-css')) return; const s = document.createElement('style'); s.id = 'epm-css';
-    s.textContent = `.epm{border:1px solid var(--line,#E3E7F0);border-radius:16px;padding:14px;background:var(--card,#fff);margin:6px 0 4px}
+    s.textContent = `.epm-mon{margin-top:12px;border-top:1px dashed var(--line,#E3E7F0);padding-top:10px}
+.epm-mon .h{font-size:13.5px;font-weight:800;margin-bottom:4px}.epm-mon .h small{font-weight:500;color:var(--sub,#6B7385);font-size:11.5px;margin-left:4px}
+.epm-mon>div:not(.h){display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 10px;padding:7px 0;border-top:1px solid var(--line,#EEF1F5);font-size:13.5px}
+.epm-mon>div:nth-child(2){border-top:0}.epm-mon small{color:var(--sub,#6B7385);font-size:11.5px;margin-left:3px}.epm-mon b{text-align:right}
+.epm-mon em{grid-column:2;text-align:right;font-style:normal;font-size:11px;color:#B45309}.epm-mon em.ok{color:#15803D}.epm-mon .cur span{font-weight:800}
+.epm{border:1px solid var(--line,#E3E7F0);border-radius:16px;padding:14px;background:var(--card,#fff);margin:6px 0 4px}
 .epm-k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .epm-k div{border-radius:12px;padding:10px;background:var(--soft,var(--sunk,#F4F6FB))}
 .epm-k span{display:block;font-size:11.5px;opacity:.7}.epm-k b{display:block;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
@@ -58,6 +63,7 @@
         <div class="${D.due > 0 ? 'due' : 'ok'}"><span>안 받은 돈</span><b>${won(D.due)}</b></div></div>
       <div class="epm-pg"><div class="t"><span>이번 달 <b>${cur.n||0}${unit}</b>${pct != null ? ' · 지난달의' : ''}</span><b>${pct != null ? pct + '%' : ''}</b></div>${pct != null ? `<div class="epm-bar"><i style="width:${Math.min(100, pct)}%"></i></div>` : ''}</div>
       <div class="epm-m3">${m3.map((m, i) => `<div class="${i === m3.length - 1 ? 'cur' : ''}"><div class="epm-col"><i style="height:${Math.max(8, Math.round((m.n||0) / mx * 100))}%"></i></div><b>${+m.ym.slice(5)}월</b><span>${m.n||0}${unit}</span></div>`).join('')}</div>
+      <div class="epm-mon"><div class="h">월별 수입 <small>공제 후 · 최근 6달</small></div>${ms.map((m, i) => `<div class="${i === 0 ? 'cur' : ''}"><span>${+m.ym.slice(5)}월 <small>${m.n||0}${unit}</small></span><b>${won(m.net)}</b>${(m.net||0) > (m.received||0) ? `<em>안 받음 ${won((m.net||0) - (m.received||0))}</em>` : '<em class="ok">다 받음</em>'}</div>`).join('') || '<div><span>아직 기록이 없어요</span></div>'}</div>
       <div class="epm-f"><span>${chips.map(c => `<i>${c}</i>`).join('')}</span><button class="epm-more" type="button" data-epm="1">${open ? '접기 ▴' : '입금 내역 ▾'}</button></div>
       ${open ? `<div class="epm-list">${(D.recent||[]).map(r => `<div><span>${String(r.date).slice(5).replace('-','/')} 입금</span><b>${won(r.amount)}</b></div>`).join('') || '<div><span>아직 입금 기록이 없어요</span></div>'}</div>
         <p>${D.team === 'RES' ? '계약 몫(배분율)' : '마감된 현장 지급액'}${D.pay_type==='none'||D.pay_type==='contract'?'':' − 공제'} 기준 · 금액이 다르면 대표님께 1:1로 말씀해주세요</p>` : ''}</div>`;
