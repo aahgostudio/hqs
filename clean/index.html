@@ -205,13 +205,13 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1104q"></script>
+<script src="../status.js?v=1104r"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1104q'</script>
-<script src="../chatkit.js?v=1104q"></script>
-<script src="../chat.js?v=1104q"></script>
-<script src="../mymoney.js?v=1104q"></script>
+<script>window.EP_VER='1104r'</script>
+<script src="../chatkit.js?v=1104r"></script>
+<script src="../chat.js?v=1104r"></script>
+<script src="../mymoney.js?v=1104r"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -554,7 +554,9 @@ function tabbar(){
   if (!D) return;
   const acks = D.jobs.filter(j=>j.need_ack).length, unread = D.notices.filter(n=>!n.read || (n.important && !n.confirmed)).length, ch = EPChat.state;
   const tb = document.getElementById('tabbar'); tb.classList.remove('hidden');
-  const items = [['board','cal','일정판',acks], ch.on ? ['chat','chat','대화',ch.unread] : null, ['mine','check','나',(window.EPMoney && EPMoney.data && EPMoney.data.due > 0) ? '!' : 0], V2() ? ['plus'] : null, ['report','cam',W('사진·보고','촬영·공유'),0],['notice','bell','공지',unread]].filter(Boolean);
+  // 하단 메뉴: 일정판 · 나 · ＋ · 대화 · 공지 (사진은 고객님 방에서 올려서 '사진·보고' 뺌 — 아고 파트너만 '촬영·공유' 남김)
+  const items = [['board','cal','일정판',acks], ['mine','check','나',(window.EPMoney && EPMoney.data && EPMoney.data.due > 0) ? '!' : 0], V2() ? ['plus'] : null,
+    ch.on ? ['chat','chat','대화',ch.unread] : (isAGO() ? ['report','cam','촬영·공유',0] : null), isAGO() && ch.on ? ['report','cam','촬영·공유',0] : null, ['notice','bell','공지',unread]].filter(Boolean);
   tb.querySelector('nav').style.gridTemplateColumns = `repeat(${items.length},1fr)`;
   tb.querySelector('nav').innerHTML = items.map(([k,i,l,b]) => k==='plus' ? `<button class="plus" data-plus="1" aria-label="넣기">${I('plus')}</button>`
     : k==='chat' ? `<button data-chat="1">${I(i)}${l}${b?`<span class="badge">${b>99?'99+':b}</span>`:''}</button>`
