@@ -752,6 +752,9 @@ function viewForm(rec){
         <div class="f"><label for="f-commission">수수료 조건</label>${txt('commission','')}</div>
         <div class="f full"><label for="f-privMemo">내 메모</label><textarea id="f-privMemo" name="privMemo">${v('privMemo')}</textarea></div>
       </fieldset>
+      ${!isNew&&S.data&&S.data.me&&S.data.me.role==='대표'?`<fieldset class="mv"><legend>${ic('user')} 담당자 바꾸기 <span class="muted">(대표만)</span></legend>
+        <div class="f full" style="display:flex;gap:8px;align-items:center"><select id="mv-to" aria-label="새 담당자"><option value="">누구에게 넘길까요?</option>${(S.data.agents||[]).filter(a=>a.name!==(rec.agent||S.data.me.name)).map(a=>`<option value="${esc(a.name)}">${esc(a.name)} ${esc(a.role)}</option>`).join('')}</select><button type="button" class="btn" id="mv-go">넘기기</button></div>
+        <small class="muted">매물번호·사진·메모 그대로 옮겨져요. 저장 안 한 수정은 먼저 저장하세요.</small></fieldset>`:''}
       <div class="err" id="ferr" hidden></div>
       <div class="formbar"><button type="button" class="btn" data-close>취소</button><button type="submit" class="btn primary" ${S.busy?'disabled':''}>${S.busy?'저장 중…':isNew?'등록하기':'저장하기'}</button></div>
     </form>
@@ -881,6 +884,11 @@ function bind(){
     S.bulk=null;S.view='mine';S.mineFilter='전체';render();toast(`${todo.length-fail}건 등록했어요${fail?` · ${fail}건 실패`:''}. 보류된 매물은 열어서 빈칸을 채워 주세요`)};
   root.querySelectorAll('[data-new]').forEach(b=>b.onclick=e=>{e.stopPropagation();S.open=null;S.edit=newEdit();render()});
   root.querySelectorAll('[data-open]').forEach(c=>{c.onclick=e=>{if(e.target.closest('[data-check],[data-edit]'))return;S.open=c.dataset.open;render()};c.onkeydown=e=>{if(e.key==='Enter'){S.open=c.dataset.open;render()}}});
+  const mvb=document.getElementById('mv-go');
+  if(mvb)mvb.onclick=async()=>{const to=document.getElementById('mv-to').value,id=S.edit&&S.edit.id;if(!to||!id){toast('넘길 담당자를 골라 주세요');return}
+    if(!confirm(id+' 매물을 '+to+' 님에게 넘길까요?'))return;mvb.disabled=true;mvb.textContent='넘기는 중…';
+    try{S.data=await call('moveListing',{id,to});S.edit=null;S.open=null;render();toast(id+' → '+to+' 님에게 넘겼어요')}
+    catch(x){mvb.disabled=false;mvb.textContent='넘기기';toast('넘기지 못했어요: '+(x&&x.message||x))}};
   root.querySelectorAll('[data-close]').forEach(b=>b.onclick=e=>{if(e.target!==b&&!e.target.closest('button[data-close]'))return;if(S.bulk&&S.bulk.busy)return;draftAsk();S.open=null;S.edit=null;S.bulk=null;render()});
   root.querySelectorAll('[data-check]').forEach(b=>b.onclick=async e=>{e.stopPropagation();await act('markChecked',b.dataset.check,'오늘 확인으로 기록했어요')});
   root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=allRows().mine.find(x=>x.id===b.dataset.edit);S.open=null;S.edit={...r};render()});
