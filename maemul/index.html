@@ -630,7 +630,7 @@ function card(r,withActions){
     <div class="specs">${r.rooms!==''?`<span>방 <span class="num">${esc(r.rooms)}</span>${r.baths!==''?` · 욕실 <span class="num">${esc(r.baths)}</span>`:''}</span>`:''}${r.floor!==''?`<span>${ic('floor')}<span class="num">${esc(r.floor)}</span>${r.totalFloor!==''?`/<span class="num">${esc(r.totalFloor)}</span>`:''}층</span>`:''}${r.area!==''?`<span>${ic('area')}<span class="num">${esc(r.area)}</span>㎡ · <span class="num">${pyeong(r.area)}</span>평</span>`:''}${r.moveIn?`<span>${ic('cal')}${esc(r.moveIn)}</span>`:''}</div>
     ${r.feature?`<div class="feat">${esc(r.feature)}</div>`:''}
     <div class="card-foot">담당 ${esc(r.agent)}${stale?`<span class="stale">${age>900?'확인 기록 없음':age+'일 전 확인'}</span>`:`<span class="fresh">${r.checked?short(r.checked)+' 확인':''}</span>`}</div>
-    ${withActions?`<div class="actions"><button class="btn" data-check="${esc(r.id)}">${ic('check')}오늘 확인</button><button class="btn" data-edit="${esc(r.id)}">${ic('edit')}수정</button></div>`:''}
+    ${withActions?`<div class="actions"><button class="btn" data-check="${esc(r.id)}">${ic('check')}오늘 확인</button><button class="btn" data-edit="${esc(r.id)}">${ic('edit')}수정</button>${S.data&&S.data.me&&S.data.me.role==='대표'?`<button class="btn" data-del="${esc(r.id)}" style="color:var(--bad)">${ic('x')}삭제</button>`:''}</div>`:''}
   </article>`;
 }
 const emptyBox=(t,s)=>`<div class="empty"><b>${t}</b>${s}</div>`;
@@ -661,7 +661,7 @@ function viewDetail(id){
     ${me?`<div class="lockbox"><h3>${ic('lock')}나만 보는 정보</h3><dl class="dl" style="margin:0">
       ${row('소유주·임대인',esc(r.owner))}${row('연락처',esc(r.phone))}${row('정확한 주소',esc(r.addr),1)}${row('출입 방법',esc(r.access),1)}${row('수수료 조건',esc(r.commission))}${row('내 메모',esc(r.privMemo),1)}
     </dl></div>
-    <div class="actions"><button class="btn" data-check="${esc(r.id)}">${ic('check')}오늘 확인</button><button class="btn primary" data-edit="${esc(r.id)}">${ic('edit')}수정</button></div>`
+    <div class="actions"><button class="btn" data-check="${esc(r.id)}">${ic('check')}오늘 확인</button><button class="btn primary" data-edit="${esc(r.id)}">${ic('edit')}수정</button>${S.data&&S.data.me&&S.data.me.role==='대표'?`<button class="btn" data-del="${esc(r.id)}" style="color:var(--bad)">${ic('x')}삭제</button>`:''}</div>`
     :`<div class="contact">${ic('user')}<div>이 매물은 <b>${esc(r.agent)}</b> 담당이에요. 매물번호 <b class="num">${esc(r.id)}</b>로 공동중개를 요청하세요.</div></div>`}
   </section></div>`;
 }
@@ -890,6 +890,9 @@ function bind(){
     try{S.data=await call('moveListing',{id,to});S.edit=null;S.open=null;render();toast(id+' → '+to+' 님에게 넘겼어요')}
     catch(x){mvb.disabled=false;mvb.textContent='넘기기';toast('넘기지 못했어요: '+(x&&x.message||x))}};
   root.querySelectorAll('[data-close]').forEach(b=>b.onclick=e=>{if(e.target!==b&&!e.target.closest('button[data-close]'))return;if(S.bulk&&S.bulk.busy)return;draftAsk();S.open=null;S.edit=null;S.bulk=null;render()});
+  root.querySelectorAll('[data-del]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const id=b.dataset.del;
+    if(!confirm(id+' 매물을 지울까요?\n(지운 내용은 공용 파일 \'삭제 기록\'에 남아서 되살릴 수 있어요)'))return;
+    b.disabled=true;try{S.data=await call('deleteListing',{id});S.open=null;S.edit=null;render();toast(id+' 지웠어요')}catch(x){b.disabled=false;toast('지우지 못했어요: '+(x&&x.message||x))}});
   root.querySelectorAll('[data-check]').forEach(b=>b.onclick=async e=>{e.stopPropagation();await act('markChecked',b.dataset.check,'오늘 확인으로 기록했어요')});
   root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=allRows().mine.find(x=>x.id===b.dataset.edit);S.open=null;S.edit={...r};render()});
   root.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{S.mineFilter=b.dataset.mf;render()});
