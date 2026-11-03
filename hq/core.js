@@ -177,6 +177,7 @@ H.bKind = st => ({'내근중':'office','근무중':'office','외근중':'out','�
 H.bossChip = () => {
   const b = H.S.boss || {state:'근무중'}, k = H.bKind(b.state);
   const until = H.untilTxt(b.until);
+  if (H.S.owner && b.state === '근무중' && !b.punch) return `<button class="bstat bk" data-a="bossSheet" title="눌러서 출근 찍기" style="border-color:#10B981;background:#ECFDF3">${H.bIco('office')}출근 찍기 ▾</button>`;
   return H.S.owner ? `<button class="bstat bk" data-a="bossSheet" title="직원 화면 오른쪽 위에 보여요">${H.bIco(k)}${H.BK[k][0]}${H.esc(until)} ▾</button>`
     : `<span class="bstat bk" title="대표님 상태">${H.bIco(k)}대표님 ${H.BK[k][0]}${H.esc(until)}</span>`;
 };

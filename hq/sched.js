@@ -129,6 +129,7 @@ function bossDay(day){
 function bossBox(day){
   const b = bossDay(day), on = st().open === 'boss';
   const restBtn = `<button class="btn ghost sm" data-a="bossRest" data-d="${day}">${b && b.rest ? '휴무 표시 빼기' : '이날 대표 휴무로 표시'}</button>`;
+  if (!b && day === ymd(H.today()) && !H.S.noV36) return `<div class="dbx boss" data-a="bossSheet"><div class="dt"><b>대표 · 아직 출근 안 찍음</b><em>눌러서 찍기</em></div><div class="ds">사무실·현장·외근·퇴근을 찍으면 내 출근부에 쌓여요</div></div>`;
   if (!b) return '';
   if (!b.p.length) return `<div class="dbx brest"><div class="dt"><b>대표 휴무</b></div><div class="ds">직원 달력에 분홍 점으로 보여요</div></div>`;
   const parts = [['office','사무실'],['site','현장'],['out','외근']].filter(([k]) => b.seg[k]).map(([k,l]) => l + ' ' + hmM(b.seg[k]));
