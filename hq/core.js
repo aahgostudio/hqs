@@ -207,7 +207,7 @@ H.ACT.modeSwap = () => { try { if (H.S.owner) localStorage.setItem('hq_preview_m
 // 폰: 어느 화면에서든 [＋] → 바로 올리기
 H.ACT.quickAdd = () => { const S = H.S;
   H.open(`<h3>무엇을 올릴까요?</h3><div class="qadd">
-    ${S.owner ? `<button class="qa" data-a="bossSheet"><b>🕘 출근 · 퇴근 찍기</b><small>사무실 · 현장 · 외근 · 퇴근</small></button>
+    ${S.owner ? `<button class="qa" data-a="bossSheet"><b>🕘 내 상태 · 출퇴근</b><small>사무실 · 현장 · 외근 · 통화불가 · 휴무 · 퇴근</small></button>
     <button class="qa" data-a="bossPast"><b>🗓 지난 출퇴근 넣기</b><small>깜빡한 날 시간 직접 넣기</small></button>` : ''}
     <button class="qa" data-a="jobNew" data-paste="1"><b>🧹 클린 현장</b><small>예약글 붙여넣으면 자동으로 채워져요</small></button>
     <button class="qa" data-a="evNew"><b>📅 내 일정</b><small>계약 · 잔금 · 안내 · 미팅 · 견적</small></button>
@@ -249,27 +249,35 @@ H.ACT.logout = async () => { await sb.auth.signOut(); location.reload(); };
 /* ---------- 대표 상태 ---------- */
 H.loadBossStatus = async () => { try { H.S.boss = await H.q(sb.rpc('boss_status')); } catch(_){} };
 H.ACT.bossSheet = async () => { if (!H.S.owner) return H.toast('대표 상태는 대표님만 바꿀 수 있어요'); await H.loadPunchToday();
-  const b = H.S.boss || {state:'근무중'};
+  const b = H.S.boss || {state:'근무중'}, cur = b.punch || b.state !== '근무중' ? H.bKind(b.state) : null;
+  const P = (H.S.punchToday||[]);
+  const log = P.map(x => `${H.hm(x.at)} ${H.BK[x.kind][0]}`).join(' → ');
+  const K = ['office','site','out','busy','rest','off'];
+  H.open(`<h3>지금 상태</h3><p class="note" style="margin:-6px 0 10px">누르면 바로 바뀌고 시간이 기록돼요.</p>
+    <div class="pk3">${K.map(k => `<button type="button" class="pkb ${cur===k?'on':''}" data-a="bossTap" data-k="${k}">${H.bIco(k,26)}<b>${H.BK[k][0]}</b></button>`).join('')}</div>
+    ${log ? `<div class="pklog"><b>오늘</b> ${log}</div>` : ''}
+    <div class="sacts"><button type="button" class="btn ghost" data-a="bossMemo">메모·시간 정하기</button><button type="button" class="btn" data-a="close">닫기</button></div>`);
+};
+// 1104R: 상태 누르면 바로 — 사무실·현장·외근·퇴근 = 시간 기록 / 통화불가·휴무 = 오늘 끝까지 표시
+H.ACT.bossTap = async el => { const k = el.dataset.k, b = H.S.boss || {};
+  const eod = () => { const u = new Date(); u.setHours(23,59,0,0); return u.toISOString(); };
+  try {
+    if (k === 'busy' || k === 'rest') await H.q(sb.from('settings').upsert({key:'boss_status', value:{state: k === 'busy' ? 'Busy' : '휴가중', memo: b.memo||'', until: eod()}}));
+    else { await H.q(sb.from('boss_punch').insert({kind:k}));
+      if (b.state && b.state !== '근무중' && !b.punch) await H.q(sb.from('settings').upsert({key:'boss_status', value:{state:'근무중', memo:b.memo||'', until:null}})); }
+  } catch(e){ return H.toast('저장 못 했어요 · ' + String(e.message||e).slice(0, 80)); }
+  H.close(); H.toast(k === 'off' ? '퇴근 · 오늘도 수고하셨어요' : H.BK[k][0] + ' · 직원 화면에 바로 보여요');
+  await H.loadPunchToday(); H._dirty = Date.now(); await H.refresh(); };
+H.ACT.bossMemo = () => { const b = H.S.boss || {state:'근무중'};
   const states = ['근무중','Busy','휴가중','부재'];
   const u = b.until ? new Date(b.until) : null;
   const loc = u ? new Date(u.getTime() - u.getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
-  const P = (H.S.punchToday||[]);
-  const PK = [['office','사무실 출근','사무실에서 일해요'],['site','현장','청소 현장에 나가 있어요'],['out','외근','미팅·임장·볼일'],['off','퇴근','오늘 기록 마감']];
-  const lastK = P.length ? P[P.length-1].kind : null;
-  const log = P.map(x => `${H.hm(x.at)} ${H.BK[x.kind][0]}`).join(' → ');
-  H.open(`<h3>지금 어디세요?</h3><p class="note" style="margin:-6px 0 10px">누르는 대로 시간이 기록되고, 직원 화면 칩도 바로 바뀌어요.</p>
-    <div class="pk">${PK.map(([k,t,d]) => `<button type="button" class="pkb ${lastK===k?'on':''}" data-a="bossPunch" data-k="${k}">${H.bIco(k,24)}<span><b>${k==='office'&&lastK&&lastK!=='off'?'사무실':t}</b><small>${d}</small></span></button>`).join('')}</div>
-    ${log ? `<div class="pklog"><b>오늘</b> ${log}</div>` : ''}
-    <hr style="border:0;border-top:1px dashed var(--line);margin:14px 0">
-    <form data-f="boss"><h3 style="font-size:15px">직접 고르기 (통화불가·휴무 등)</h3>
-    <p class="note" style="margin:-4px 0 12px">고르면 끝나는 시간까지 이게 먼저 보여요. '자동'으로 두면 위에서 찍은 대로 보여요.</p>
-    <div class="chips" style="margin-bottom:12px">${states.map(s=>`<label><input type="radio" name="state" value="${s}" ${b.state===s?'checked':''}><span>${s==='근무중'?'자동':s==='Busy'?'통화불가':s==='휴가중'?'휴무':s}</span></label>`).join('')}</div>
+  H.open(`<form data-f="boss"><h3>메모·시간 정하기</h3>
+    <div class="chips" style="margin-bottom:12px">${states.map(s=>`<label><input type="radio" name="state" value="${s}" ${b.state===s?'checked':''}><span>${s==='근무중'?'자동 (찍은 대로)':s==='Busy'?'통화불가':s==='휴가중'?'휴무':s}</span></label>`).join('')}</div>
     <div class="fg"><div class="field full"><label>한 줄 메모 (직원에게 보임)</label><input name="memo" value="${H.esc(b.memo||'')}" placeholder="예) 급한 건 전화 · 신봉진 실장에게"></div>
     <div class="field"><label>언제까지</label><input type="datetime-local" name="until" value="${loc}"></div>
     <div class="field"><label>&nbsp;</label><div class="chips">${[['1h','1시간'],['3h','3시간'],['eod','오늘 끝까지']].map(([k,l])=>`<label><input type="radio" name="quick" value="${k}"><span>${l}</span></label>`).join('')}</div></div></div>
-    <p class="note">통화불가로 두면 직원 화면에 "통화불가 ~시간"으로 보여요. 본사 홈은 잠기지 않아요.</p>
-    ${H.sacts('저장')}</form>`);
-};
+    ${H.sacts('저장')}</form>`); };
 H.hm = t => { const d = new Date(t); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
 H.loadPunchToday = async () => { try { const d0 = new Date(); d0.setHours(0,0,0,0);
   H.S.punchToday = await H.q(sb.from('boss_punch').select('id,at,kind').gte('at', d0.toISOString()).order('at')); } catch(_){ H.S.punchToday = []; } };

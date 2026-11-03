@@ -518,3 +518,7 @@ html.chatapp .fab{display:none}
 
 /* 1104P 폰에선 오른쪽 아래 ＋ 하나만 */
 @media(max-width:900px){.only-pc{display:none!important}}
+
+/* 1104R 상태 6칸 바로 누르기 */
+.pk3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pk3 .pkb{flex-direction:column;justify-content:center;gap:6px;padding:16px 6px;text-align:center}.pk3 .pkb b{font-size:14.5px}
