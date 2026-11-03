@@ -29,7 +29,7 @@ H.view('sched', {label:'일정',
           ${items.slice(0,4).map(x=>x.ev).join('')}${items.length>4?`<div class="ev more">+${items.length-4}</div>`:''}</td>`;
         if (d.getDay() === 6) h += '</tr>';
       }
-      body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:#E5E7EB"></i>내 일정</span><span>끝난 현장: 홍보✓ / 2/5 / 사진 없음</span></div>`;
+      body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:#E5E7EB"></i>내 일정</span><span>👥1/3 = 다가오는 현장 인원 · 📣2/5 = 끝난 현장 홍보 진행 · 📷 없음 = 사진 못 받음</span></div>`;
     } else {
       const days = {}; for (let d = new Date(v.anchor); d.getMonth() === v.anchor.getMonth(); d = addDays(d,1)) { const s = ymd(d); const its = dayItems(s); if (its.length) days[s] = its; }
       body = Object.keys(days).map(s => `<div class="ptitle" style="${s===today?'color:var(--info)':''}">${md(s)}${s===today?' · 오늘':''}</div>` + dayCards(s)).join('') || '<p class="empty">이 달 일정이 없어요</p>';
@@ -52,8 +52,8 @@ function jobEv(j){
   let em = '';
   if (j.job_date <= today && j.status !== 'cancelled' && j.status !== 'quote') {
     const p = H.promoState(j);
-    em = p.photo <= 0 && !H.photosOf(j.id).length ? '<em>사진 없음</em>' : p.done ? '<em>홍보✓</em>' : `<em>${p.cnt}/${p.total}</em>`;
-  } else if (j.status === 'open' && ap < j.headcount) em = `<em>${ap}/${j.headcount}</em>`;
+    em = p.photo <= 0 && !H.photosOf(j.id).length ? '<em title="홍보용 사진을 아직 못 받았어요">📷 없음</em>' : p.done ? '<em title="홍보 끝">📣✓</em>' : `<em title="홍보 ${p.cnt}/${p.total} 완료 (사진·블로그·인스타·당근·릴스)">📣${p.cnt}/${p.total}</em>`;   // 끝난 현장 = 홍보 진행
+  } else if (j.status === 'open' && ap < j.headcount) em = `<em title="확정 ${ap}명 / 필요 ${j.headcount}명">👥${ap}/${j.headcount}</em>`;   // 다가오는 현장 = 인원
   const pre = j.status==='quote' ? '견적 ' : (ap >= j.headcount && j.status !== 'done' ? '완 ' : '');
   return `<div class="ev ${cls}" title="${esc(j.title)}">${em}${pre}${j.start_time?j.start_time.slice(0,5)+' ':''}${j.series_id?'🔁':''}${esc(j.title)}</div>`;
 }
