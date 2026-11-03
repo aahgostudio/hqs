@@ -81,7 +81,7 @@ function siteCard(x){
   const c = j.cs || {}, bad = !!(c.claim || c.revisit);
   return `<div class="tm-site ${x.warn.length?'warn':x.partner?'prt':x.state}${bad?' cs':''}">
     <div class="r1"><b>${esc(j.title)}</b><span class="tm">${hm(j.start_time)||'시간 미정'}~ <a href="#sched" class="go">일정 ›</a></span></div>
-    <div class="ldr">👑 그날 팀장 <b>${x.lead ? esc(x.lead.name) + (x.lead.role ? ' ' + esc(x.lead.role) : '') : x.boss || j.boss_on ? '대표' : '<span class="no">수금 담당 없음</span>'}</b></div>
+    <div class="ldr">🧑‍💼 현장 책임자 <b>${x.lead ? esc(x.lead.name) + (x.lead.role ? ' ' + esc(x.lead.role) : '') : x.boss || j.boss_on ? '대표' : '<span class="no">수금 담당 없음</span>'}</b></div>
     <div class="ppl">${x.boss ? '<i class="lead">대표 현장</i>' : x.partner ? '<span class="tg prt">도급 파트너</span> ' + x.ppl.map(p => call(p.name, p.phone, '', esc(p.name))).join('')
       : `<span class="n">${x.crewN}${j.headcount?'/'+j.headcount:''}인</span>${extra}${x.ppl.map(p => call(p.name, p.phone, p===lead&&!j.boss_on?'lead':'', `${esc(p.name)}${p.role&&p===lead?' '+esc(p.role):''}`)).join('')}${empty?`<i class="empty">+${empty} 비었음</i>`:''}`}</div>
     <div class="st"><span class="tg ${tc}">${x.state==='done'?'✅ '+tl+' '+clock(x.done):tl}</span>${!x.done && (x.partner || x.boss || (j.headcount && x.crewN >= j.headcount)) ? '<span class="tg okc">👥 인원 확정</span>' : ''}${x.warn.map(w => `<span class="tg bad">⚠ ${esc(w)}</span>`).join('')}
@@ -202,7 +202,7 @@ function statsBox(){
       <div class="kpi ${d.badN ? 'bad' : ''}"><small>사고 (클레임·재방문)</small><b>${d.badN}<i>곳</i></b></div><div class="kpi"><small>사고율</small><b>${pct(d.badN, d.total)}<i>%</i></b></div></div>
     <div class="leads">${bossCard}${leadCards}</div>
     <div class="pairs"><div><h4>👥 잘 맞는 짝 <small>사고 0 · 많이 간 순</small></h4>${plist(d.good, true)}</div><div><h4>⚠ 살펴볼 짝 <small>사고 있었던 짝</small></h4>${plist(d.watch, false)}</div></div>
-    <p class="tm-foot">취소·견적 중 현장은 빼요 · 팀장 = 그날 수금 담당, 없으면 같이 간 팀장·실장 · 대표님·실장·팀장도 남의 현장에선 팀원으로 셈 · 사고 = 현장판에서 ⚠ 사고 체크한 현장 · 막대 빨강 = 그중 사고</p></section>`;
+    <p class="tm-foot">취소·견적 중 현장은 빼요 · 현장 책임자 = 그날 수금 담당, 없으면 같이 간 팀장·실장 · 대표님·실장·팀장도 남이 책임자인 현장에선 팀원으로 셈 · 사고 = 현장판에서 ⚠ 사고 체크한 현장 · 막대 빨강 = 그중 사고</p></section>`;
 }
 H.ACT.tmMon = async el => { H.S.tmMon = +el.dataset.v; H.S.tmStats = null; H.render(); await loadMonthStats(); H.render(); };
 })(window.HQ);
