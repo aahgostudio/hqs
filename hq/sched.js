@@ -166,10 +166,10 @@ H.ACT.bossDelDayOk = async el => { const d = el.dataset.d, ids = (bossDay(d) || 
   if (ids.length) await H.q(sb.from('boss_punch').delete().in('id', ids));
   H.close(); H.toast('삭제했어요'); st().open = null; await H.loadBossStatus(); H._dirty = Date.now(); H.render(); };
 H.ACT.bossFix = el => { const d = el.dataset.d, b = bossDay(d) || {p: []};
-  const row = (x, i) => `<div class="fg" style="grid-template-columns:1fr 1fr auto;align-items:end;margin-bottom:6px"><div class="field"><label>${i === 0 ? '시간' : '&nbsp;'}</label><input type="time" name="t_${x.id||'n'+i}" value="${x.at ? H.hm(x.at) : ''}"></div>
-    <div class="field"><label>${i === 0 ? '어디' : '&nbsp;'}</label><select name="k_${x.id||'n'+i}">${['office','site','out','off'].map(k => `<option value="${k}" ${x.kind===k?'selected':''}>${H.BK[k][0]}</option>`).join('')}</select></div>
+  const row = (x, i) => `<div class="fg" style="grid-template-columns:1fr 1fr auto;align-items:end;margin-bottom:6px"><div class="field"><label>${i === 98 ? '출근 시간' : i === 99 ? (b.p.length ? '추가 (예: 퇴근)' : '퇴근 시간') : i === 0 ? '시간' : '&nbsp;'}</label><input type="time" name="t_${x.id||'n'+i}" value="${x.at ? H.hm(x.at) : ''}"></div>
+    <div class="field"><label>${i === 0 || i === 98 || (i === 99 && b.p.length) ? '어디' : '&nbsp;'}</label><select name="k_${x.id||'n'+i}">${['office','site','out','off'].map(k => `<option value="${k}" ${x.kind===k?'selected':''}>${H.BK[k][0]}</option>`).join('')}</select></div>
     ${x.id ? `<label style="font-size:12.5px;padding-bottom:10px;color:#DC2626;font-weight:700;white-space:nowrap"><input type="checkbox" name="del_${x.id}"> 삭제</label>` : '<span></span>'}</div>`;
-  H.open(`<form data-f="bossFix" data-d="${d}"><h3>${md(d)} 출퇴근 고치기</h3>${b.p.map(row).join('')}${b.p.length ? '' : row({kind:'office'}, 98)}${row({kind: 'off'}, 99)}
+  H.open(`<form data-f="bossFix" data-d="${d}"><h3>${md(d)} 출퇴근 ${b.p.length ? '고치기' : '넣기'}</h3>${b.p.map(row).join('')}${b.p.length ? '' : row({kind:'office'}, 98)}${row({kind: 'off'}, 99)}
     <p class="note">빈 줄은 새로 넣기예요 (예: 출근 08:00 · 퇴근 19:30). 중간에 현장 간 시간도 넣으려면 저장 후 한 번 더 열어 추가하세요. 비워두면 안 넣어요.</p>${H.sacts('저장')}</form>`); };
 H.FORM.bossFix = async (v, f) => { const d = f.dataset.d, b = bossDay(d) || {p: []};
   const at = t => { const [h, mi] = t.split(':').map(Number); const x = parse(d); x.setHours(h, mi, 0, 0); return x.toISOString(); };
