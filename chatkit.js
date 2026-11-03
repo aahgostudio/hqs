@@ -18,6 +18,11 @@
     if (document.getElementById('kit-css')) return;
     const s = document.createElement('style'); s.id = 'kit-css';
     s.textContent = `
+.kit-q{display:block;border-left:3px solid currentColor;opacity:.85;padding:2px 0 3px 8px;margin:0 0 6px;font-size:12px;line-height:1.35;cursor:pointer;max-width:240px}
+.kit-q b{display:block;font-size:11.5px}.kit-q span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85}
+.kit-rp{display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:12.5px;border-top:1px solid rgba(0,0,0,.08);background:rgba(127,127,127,.08)}
+.kit-rp .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kit-rp button{border:0;background:none;font:inherit;font-weight:700;cursor:pointer;color:inherit;opacity:.7}
+.kit-hl{animation:kitHl 1.4s ease}@keyframes kitHl{0%,40%{box-shadow:0 0 0 3px #F59E0B}100%{box-shadow:0 0 0 0 transparent}}
 .kit-bar{position:relative;flex:none;background:var(--kit-card,#fff);border-top:1px solid var(--kit-line,#E3E7F0);padding:6px 10px calc(6px + env(safe-area-inset-bottom));color:var(--kit-ink,#141A2A)}
 .kit-bar textarea{display:block;width:100%;box-sizing:border-box;border:0;outline:none;background:transparent;color:inherit;resize:none;font:inherit;font-size:16px;line-height:1.4;padding:10px 6px 6px;min-height:44px;max-height:120px}
 .kit-bar textarea::placeholder{color:var(--kit-mute,#8A92A3)}
@@ -291,5 +296,13 @@
     return id;
   }
   const SEEN_TAG = '<span style="color:#0284C7;font-weight:700">고객님 읽음</span>';
-  window.EPKit = {shrink, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
+  // 답장(댓글): 원문 한 줄 · 말풍선 안 인용 · 원문으로 이동
+  function snip(r){ if (!r) return ''; if (r.deleted) return '삭제된 메시지'; const b = (r.body || '').replace(/\s+/g, ' ').trim(); return b ? (b.length > 40 ? b.slice(0, 40) + '…' : b) : (r.photo ? '📷 사진' : ''); }
+  function quote(r){ if (!r) return ''; const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    return `<span class="kit-q" data-kitjump="${+r.id}"><b>↩ ${e(r.name || '')}</b><span>${e(snip(r))}</span></span>`; }
+  function replyBar(r){ if (!r) return ''; const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    return `<div class="kit-rp"><span class="t">↩ <b>${e(r.name || '')}</b>에게 답장 · ${e(snip(r))}</span><button type="button" data-kitrpx="1">취소</button></div>`; }
+  document.addEventListener('click', e => { const q = e.target.closest('[data-kitjump]'); if (!q) return; e.preventDefault(); e.stopPropagation();
+    const el = document.querySelector(`[data-mid="${q.dataset.kitjump}"]`); if (!el) return; el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.remove('kit-hl'); void el.offsetWidth; el.classList.add('kit-hl'); }, true);
+  window.EPKit = {snip, quote, replyBar, shrink, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();

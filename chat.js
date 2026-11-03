@@ -194,19 +194,20 @@
       const prev = GM[i-1], cont = prev && prev.who === m.who && dayKey(prev.at) === dayKey(m.at) && (new Date(m.at) - new Date(prev.at)) < 180000;
       const u = Math.max(...(m.ids || [m.id]).map(id => unreadMap[id] || 0));
       const body = m.photos ? `<div class="epc-b" style="padding:3px">${K().grid(m.photos, pub, {own: m.mine})}</div>` : m.deleted ? `<div class="epc-b del">삭제된 메시지예요</div>`
-        : `<div class="epc-b" data-mid="${m.id}" ${m.mine ? `data-own="${m.id}"` : ''}>${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
+        : `<div class="epc-b" data-mid="${m.id}" ${m.mine ? `data-own="${m.id}"` : ''}>${m.reply ? K().quote(m.reply) : ''}${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
       out += `<div class="epc-m ${m.mine ? 'mine' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
         <div class="epc-col">${!m.mine && !cont ? `<span class="epc-nm">${esc(m.name)}</span>` : ''}
         <div class="epc-line">${body}<span class="epc-meta">${cUp && m.id === cUp ? K().SEEN_TAG : ''}${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}<span>${tm(m.at)}</span></span></div></div></div>`;
     });
     const n = (room.room.members || []).length + 1;
-    const oldIn = w.querySelector('.kit-bar'), edKey = editing ? String(editing.id) : '';
+    const oldIn = w.querySelector('.kit-bar'), edKey = editing ? String(editing.id) : replying ? 'r' + replying.id : '';
     const keepIn = oldIn && w.dataset.room === String(room.room.id) && w.dataset.ed === edKey;   // 글 쓰는 중엔 입력칸 유지 (키보드 안 닫히게)
     const html = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
       ${room.room.kind==='cust'?'<div class="epc-note" style="text-align:center;background:#FFF7E6;color:#92400E;padding:6px 10px;margin:0">🙋 고객님도 보는 방이에요 · 고객님에겐 \'리츠종합클린 현장팀\'으로만 보여요</div>':''}
       ${room.room.kind==='cust' ? K().seenLine(cseen) + custBar() : ''}
       <div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
       ${editing ? `<div class="epc-edit"><span>✏️ 메시지 수정 중</span><button data-epccancel="1">취소</button></div>` : ''}
+      ${!editing && replying ? K().replyBar(replying) : ''}
       ${K().bar({id:'epc-t'})}`;
     if (keepIn) {   // 입력칸은 그대로(움직이면 키보드 닫힘) · 위쪽 줄과 메시지만 바꿈
       const tmp = document.createElement('div'); tmp.innerHTML = html;
@@ -226,10 +227,12 @@
     K().attach(w.querySelector('.kit-bar'), {members: memList, onSend: send,
       onMedia: k => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); }, k === 'album' ? 'alb' : null)});
     if (editing) { t.value = editing.body || ''; K().sync(t); t.focus(); }
+    else if (replying) t.focus();
     bindBox(box);
   }
   const K = () => window.EPKit;
-  let mark = null;   // '여기까지 읽으셨습니다' 위치 (방에 있는 동안)
+  let mark = null;
+  let replying = null;   // 답장(댓글) 중인 원문   // '여기까지 읽으셨습니다' 위치 (방에 있는 동안)
   // 멘션 목록: 방 인원(나 빼고) + 대표
   function memList(){
     const meN = home && home.me ? home.me.name : '', ms = ((room && room.room.members) || []).filter(x => x.name !== meN && x.role !== '대표');
@@ -250,17 +253,17 @@
 
   function menu(id, own = true){
     const m = msgs.find(x => x.id === id); if (!m || m.deleted || document.querySelector('.epc-menu')) return;
-    if (!own && !m.body) return;
     const d = document.createElement('div'); d.className = 'epc-menu';
-    d.innerHTML = own ? `<div>${m.body ? '<button data-a="copy">📋 복사</button><button data-a="edit">✏️ 수정</button>' : ''}<button data-a="del" class="warn">🗑 삭제</button>
+    d.innerHTML = own ? `<div><button data-a="reply">↩️ 답장</button>${m.body ? '<button data-a="copy">📋 복사</button><button data-a="edit">✏️ 수정</button>' : ''}<button data-a="del" class="warn">🗑 삭제</button>
       <p>수정·삭제하면 '수정됨', '삭제된 메시지'로 표시돼요.</p><button data-a="x">닫기</button></div>`
-      : `<div><button data-a="copy">📋 복사</button><button data-a="x">닫기</button></div>`;
+      : `<div><button data-a="reply">↩️ 답장</button>${m.body ? '<button data-a="copy">📋 복사</button>' : ''}<button data-a="x">닫기</button></div>`;
     document.body.appendChild(d);
     d.onclick = async e => { e.stopPropagation(); const a = e.target.closest('[data-a]'); if (e.target !== d && !a) return; d.remove(); if (!a) return;
       if (a.dataset.a === 'copy') { let ok = false; try { await navigator.clipboard.writeText(m.body); ok = true; } catch(_){
           const t = document.createElement('textarea'); t.value = m.body; t.setAttribute('readonly',''); t.style.cssText = 'position:fixed;top:0;opacity:0'; document.body.appendChild(t); t.select(); t.setSelectionRange(0, 99999); try { ok = document.execCommand('copy'); } catch(_){} t.remove(); }
         const n = document.createElement('div'); n.className = 'epc-copied'; n.textContent = ok ? '복사했어요' : '복사하지 못했어요'; document.body.appendChild(n); setTimeout(() => n.remove(), 1400); }
       if (a.dataset.a === 'edit') { editing = m; drawRoom(true); }
+      if (a.dataset.a === 'reply') { editing = null; replying = {id: m.id, name: m.mine ? '나' : m.name, body: m.body, photo: m.photo}; drawRoom(true); }
       if (a.dataset.a === 'del') { if (!confirm('이 메시지를 삭제할까요?')) return;
         if (opt.demo) { m.deleted = true; return drawRoom(true); }
         try { await rpc('chat_edit', {p_token: opt.token, p_id: id, p_body: null, p_delete: true}); m.deleted = true; drawRoom(true); } catch(_){ alert('삭제하지 못했어요'); } }
@@ -276,7 +279,7 @@
     opt.onState({on: !!(home && home.on), unread}); K().badge(unread);   // 홈 화면 아이콘 숫자
     if (view === 'list') drawList();
   }
-  async function openRoom(id){
+  async function openRoom(id){ replying = null; editing = null;
     view = 'room'; editing = null; cseen = null; const rw = home && home.rooms ? home.rooms.find(x => x.id == id) : null, was = rw ? rw.unread || 0 : 0;
     if (opt.demo) { const d = (opt.demoTeam === 'RES' ? DEMO_RES : DEMO).room[id] || {room:{id, kind:'dm', title:(home.rooms.find(r=>r.id==id)||{}).title || '대화', members:[]}, msgs:[], unread:{}};
       room = d; msgs = d.msgs.slice(); unreadMap = Object.assign({}, d.unread); mark = K().firstUnread(msgs, was); const r = home.rooms.find(x => x.id == id); if (r) r.unread = 0; drawRoom(); K().jump(shell().querySelector('.epc-msgs')); return; }
@@ -321,8 +324,12 @@
         m.body = v; m.edited = true; editing = null; t.value = ''; K().sync(t); drawRoom(true);
       } else {
         t.value = ''; K().sync(t); mark = null;
-        if (opt.demo) { msgs.push({id: Date.now(), who:'me', name: home.me.name, mine:true, body:v, at:new Date().toISOString()}); unreadMap[msgs[msgs.length-1].id] = (room.room.members||[]).length; drawRoom(); }
-        else { await rpc('chat_send', {p_token: opt.token, p_room: room.room.id, p_body: v, p_photo: null}); await refreshRoom(); }
+        if (opt.demo) { msgs.push({id: Date.now(), who:'me', name: home.me.name, mine:true, body:v, at:new Date().toISOString(), reply: replying}); replying = null; unreadMap[msgs[msgs.length-1].id] = (room.room.members||[]).length; drawRoom(); }
+        else { const rp = replying; replying = null;
+          if (rp) { try { await rpc('chat_send_reply', {p_token: opt.token, p_room: room.room.id, p_body: v, p_reply: rp.id}); }
+                    catch(e){ if (/chat_send_reply|function/.test((e && e.message) || '')) await rpc('chat_send', {p_token: opt.token, p_room: room.room.id, p_body: v, p_photo: null}); else throw e; } }
+          else await rpc('chat_send', {p_token: opt.token, p_room: room.room.id, p_body: v, p_photo: null});
+          await refreshRoom(); if (rp) drawRoom(); }
       }
     } catch(_) { alert('보내지 못했어요. 인터넷 연결을 확인해주세요.'); t.value = v; K().sync(t); }
     busy = false;
@@ -388,6 +395,7 @@
     if (b.dataset.send) return send();
     if (b.dataset.photo) return pickMedia(async fs => { for (const f of fs) await sendPhoto(f); });
     if (b.dataset.epccancel) { editing = null; return drawRoom(true); }
+    if (b.dataset.kitrpx) { replying = null; return drawRoom(true); }
   }
   // 📲 대화만 따로 쓰는 앱(홈 화면 아이콘) 만드는 법
   function appGuide(){

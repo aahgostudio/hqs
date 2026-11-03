@@ -85,8 +85,8 @@ function roomHtml(){
     const hist = (m.history||[]).length ? `<details class="ch-hist"><summary>${m.deleted?'삭제됨':'수정됨'} · 이력 ${(m.history||[]).length}</summary>${m.history.map(h => `<div>${dt(h.at)} ${h.act==='delete'?'삭제 전':'수정 전'}: ${esc(h.body||'')}${h.photo?' [사진]':''}</div>`).join('')}</details>` : '';
     out += `<div class="ch-m ${m.mine?'mine':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine?'':`<span class="ch-nm">${esc(m.name)}</span>`}
-      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}"${m.photos?' style="padding:3px"':''}>${m.photos?K.grid(m.photos, pub, {sec: sec && !m.mine}):m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
-      <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?`<i>${u}</i>`:''}${tm(m.at)}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
+      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}" data-mid="${m.id}"${m.photos?' style="padding:3px"':''}>${m.reply?K.quote(m.reply):''}${m.photos?K.grid(m.photos, pub, {sec: sec && !m.mine}):m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
+      <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?`<i>${u}</i>`:''}${tm(m.at)}${typeof m.id === 'number' && !m.deleted && !m.photos ? `<button type="button" class="ch-rp" data-a="chReply" data-id="${m.id}" title="답장">↩</button>` : ''}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
   return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div>${R.kind === 'cust' && C.seen ? `<div data-a="chLive" role="button" title="고객님 방 링크·안내 멘트" style="margin-top:4px;border-radius:8px;overflow:hidden;cursor:pointer">${K.seenLine(C.seen)}</div>` : ''}</div>
@@ -159,6 +159,7 @@ function paint(keep){
     box.addEventListener('scroll', () => { box._nearB = box.scrollHeight - box.scrollTop - box.clientHeight < 120; });
     box.addEventListener('load', fix, true); box.addEventListener('loadedmetadata', fix, true); }
   // 입력줄: 카카오워크식 (PC는 Enter 전송 · 폰은 [↑]로 전송) · @멘션 · 이모지
+  syncReply();
   K.drop(R, fs => (async () => { for (const f of fs) await sendPhoto(f); })());   // PC: 끌어다 놓기 · 붙여넣기
   K.attach(R.querySelector('.kit-bar'), {members: memList, onSend: () => H.ACT.chSend(),
     onMedia: k => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); }, k === 'album' ? 'alb' : null)});
@@ -167,7 +168,16 @@ function paint(keep){
 }
 
 
-async function openRoom(id){
+// 답장(댓글) 줄: 입력칸 바로 위 (입력칸은 그대로 둠)
+function syncReply(){
+  const bar = document.querySelector('#chRoom .kit-bar'); let el = document.getElementById('chRp');
+  if (!C.reply || !bar) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'chRp'; bar.parentNode.insertBefore(el, bar); }
+  el.innerHTML = K.replyBar(C.reply); el.querySelector('[data-kitrpx]').onclick = () => { C.reply = null; syncReply(); };
+}
+H.ACT.chReply = el => { const m = C.msgs.find(x => x.id === +el.dataset.id); if (!m) return;
+  C.reply = {id: m.id, name: m.mine ? '나' : m.name, body: m.body, photo: m.photo}; syncReply(); const t = document.getElementById('chT'); if (t) t.focus(); };
+async function openRoom(id){ C.reply = null;
   const rr = C.home && C.home.rooms.find(x => x.id === id); if (!OWN() && rr && !(rr.mgr && !rr.closed && rr.live)) { C.cur = null; C.room = null; return paint(); }
   const was = rr ? rr.unread || 0 : 0;
   C.cur = id; C.seen = null; C.room = await rpc('chat_admin_load', {p_room: id, p_after: 0, p_before: null, p_limit: 300});
@@ -277,7 +287,11 @@ H.ACT.chSend = async () => {
   t.value = ''; K.sync(t); t.focus(); C.mark = null;
   // 보내자마자 내 말풍선을 맨 아래에 먼저 보여주고 최신 대화로 내림 (서버 응답 기다리지 않음)
   const tmpId = 'tmp' + Date.now(); C.msgs.push({id: tmpId, mine: true, name: '', body: v, at: new Date().toISOString()}); paint(); toBottom();
-  try { await rpc('chat_admin_send', {p_room: C.cur, p_body: v, p_photo: null});
+  const rp = C.reply; C.reply = null; syncReply();
+  if (rp) C.msgs[C.msgs.length - 1].reply = rp;
+  try { if (rp) { try { await rpc('chat_admin_send_reply', {p_room: C.cur, p_body: v, p_reply: rp.id}); }
+                  catch(e){ if (/chat_admin_send_reply|function/.test((e && e.message) || '')) await rpc('chat_admin_send', {p_room: C.cur, p_body: v, p_photo: null}); else throw e; } }
+    else await rpc('chat_admin_send', {p_room: C.cur, p_body: v, p_photo: null});
     C.msgs = C.msgs.filter(m => m.id !== tmpId); await tick(); toBottom();
   } catch(e){ C.msgs = C.msgs.filter(m => m.id !== tmpId); paint(); t.value = v; K.sync(t); H.fail(e); }
 };
