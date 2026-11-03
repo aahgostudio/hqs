@@ -27,7 +27,7 @@ H.view('sched', {label:'일정',
         const ok = av.filter(a=>a.kind==='ok').length, no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').length;
         // 1104D: 칸에는 색 막대만 (카카오워크처럼) — 제목·인원은 아래 하루 목록에서
         const rw = v.f.res ? (S.avail||[]).filter(a => a.day === s && a.kind === 'work' && H.P(a.staff_id).team === 'RES') : [];
-        const bars = (rw.length ? [{cls:'res'}] : []).concat(items);
+        const bars = items;
         h += `<td data-a="schedPick" data-d="${s}" class="${d.getMonth()!==v.anchor.getMonth()?'out':''} ${s===today?'t':''} ${s===v.sel?'sel':''}"><span class="n">${d.getDate()}</span>${v.f.avail&&(ok||no)?`<span class="av">${ok?'○'+ok:''}${no?' <span style="color:var(--warn)">✕'+no+'</span>':''}</span>`:''}
           <div class="bars">${bars.slice(0,4).map(x=>`<i class="${x.cls}"></i>`).join('')}${bars.length>4?`<small>+${bars.length-4}</small>`:''}</div></td>`;
         if (d.getDay() === 6) h += '</tr>';
@@ -68,11 +68,17 @@ function dayItems(s){
     if (e.staff_id && f.res && e.show_boss) out.push({t:e.ev_time||'', cls:'res', k:'e'+e.id, title:`${H.P(e.staff_id).name} · ${e.kind}${e.maemul_id?' '+e.maemul_id:''}`, sub:[e.ev_time?e.ev_time.slice(0,5):'종일', e.title].filter(Boolean).join(' · '), card:()=>evCard(e)});
     if (!e.staff_id && f.me) out.push({t:e.ev_time||'', cls:'me', k:'e'+e.id, title:e.title, sub:e.ev_time?e.ev_time.slice(0,5):'종일', card:()=>evCard(e)});
   });
+  // 1104E: 부동산 출근도 한 사람씩 일정처럼 — 출근 시간 순서대로 섞여 나옴
+  if (f.res) (S.avail||[]).filter(a => a.day === s && a.kind === 'work' && H.P(a.staff_id).team === 'RES').forEach(a => {
+    const [b, e] = String(a.memo||'').split('-');
+    out.push({t:(b||'09:00').padStart(5,'0'), cls:'res', k:'w'+a.staff_id, title:'🏢 출근 · '+H.P(a.staff_id).name, sub:[b,e].filter(Boolean).join(' – ') || '사무실', still:true});
+  });
   if (f.ntc) (S.notices||[]).filter(n=>ymd(new Date(n.created_at))===s).forEach(n=>out.push({t:'00', cls:'ntc', k:'n'+n.id, title:'📢 '+(n.title||n.body.slice(0,20)), sub:'공지', ntc:true}));
   return out.sort((a,b)=>a.t.localeCompare(b.t));
 }
 function dayBox(x){
   const on = st().open === x.k;
+  if (x.still) return `<div class="dbx ${x.cls} rwx"><div class="dt"><b>${esc(x.title)}</b></div><div class="ds">${esc(x.sub)}</div></div>`;
   return `<div class="dbx ${x.cls}${on?' on':''}" data-a="${x.ntc?'schedSide':'dayOpen'}" data-s="ntc" data-k="${x.k}"><div class="dt"><b>${esc(x.title)}</b>${x.badge||''}</div><div class="ds">${esc(x.sub)}</div></div>${on && x.card ? `<div class="dbx-d">${x.card()}</div>` : ''}`;
 }
 
@@ -84,10 +90,9 @@ function daySide(s){
   const ok = av.filter(a=>a.kind==='ok').map(a=>H.P(a.staff_id).name), no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').map(a=>H.P(a.staff_id).name);
   const rw = av.filter(a => a.kind === 'work' && H.P(a.staff_id).team === 'RES');
   const hr = t => String(t||'').split('-').map(x => +x.split(':')[0]).join('–');
-  return `<div class="dhd"><b>${md(s)}</b><span>${items.length}개 일정</span></div>
-    ${rw.length?`<div class="dbx res rwx"><div class="dt"><b>🏢 사무실 출근</b></div><div class="ds">${rw.map(a=>esc(H.P(a.staff_id).name)+' '+hr(a.memo)).join(' · ')}</div></div>`:''}
+  return `<div class="dhd"><b>${md(s)}</b><span>${items.filter(x=>!x.still).length}개 일정</span></div>
     ${items.map(dayBox).join('')}
-    ${!items.length && !rw.length ? '<p class="empty">이날 일정이 없어요</p>' : ''}
+    ${!items.length ? '<p class="empty">이날 일정이 없어요</p>' : ''}
     ${ok.length?`<div class="avl">이날 가능: ${ok.map(esc).join(' · ')}</div>`:''}${no.length?`<div class="avl no">이날 불가: ${no.map(esc).join(' · ')}</div>`:''}
     <div class="acts" style="margin:10px 0 0"><button class="btn sm" data-a="jobNew" data-d="${s}">+ 클린 현장</button><button class="btn sm ghost" data-a="evNew" data-d="${s}">+ 내 일정</button></div>`;
 }
