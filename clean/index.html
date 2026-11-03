@@ -72,6 +72,18 @@ body{background:var(--bg)}
 .addr.lock{background:var(--soft);color:var(--sub)}
 .addr svg.i{width:16px;height:16px;margin-top:3px}
 .addr a{color:inherit}
+.cbox{display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.cbox .cl{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.cbox .cl small,.mbox .ml small{font-size:11.5px;color:var(--sub)}
+.cbox .cl b{font-size:16px}.cbox .cl span{font-size:13px;color:var(--sub)}
+.cact{display:flex;gap:8px}
+.ico{width:48px;height:48px;border-radius:14px;background:var(--soft);display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;color:var(--ink);font-size:18px;line-height:1}
+.ico i{font-style:normal;font-size:10.5px;margin-top:3px;color:var(--sub);font-weight:600}
+.mbox{margin-top:8px;padding:12px;border-radius:12px;background:var(--waitb);color:#7C2D12}
+.mbox .ml{display:flex;flex-direction:column;line-height:1.3}.mbox .ml small{color:#9A5B2E}
+.mbox .ml b{font-size:20px}.mbox .ml span{font-size:12px;opacity:.85}
+.mbox.done{display:flex;align-items:center;justify-content:space-between;background:var(--soft);color:var(--ink)}
+.mact{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.mact .btn{width:100%;min-width:0}
 .money{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--waitb);color:#7C2D12;border-radius:10px;padding:9px 11px;margin-top:8px;font-size:13.5px}
 .money b{font-size:16px}
 .money a{text-decoration:none}
@@ -177,12 +189,12 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1104b"></script>
+<script src="../status.js?v=1104c"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1104b'</script>
-<script src="../chatkit.js?v=1104b"></script>
-<script src="../chat.js?v=1104b"></script>
+<script>window.EP_VER='1104c'</script>
+<script src="../chatkit.js?v=1104c"></script>
+<script src="../chat.js?v=1104c"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -282,13 +294,16 @@ function card(j){
   const addr = j.my_status === 'approved'
     ? `<div class="addr">${I('pin')}<span>${j.address ? `<a href="https://map.kakao.com/link/search/${encodeURIComponent(j.address)}" target="_blank" rel="noopener">${esc(j.address)}</a>` : '주소는 따로 알려드릴게요'}${j.private_note ? `<br><small>${esc(j.private_note)}</small>` : ''}</span></div>`
     : (j.my_status === 'applied' ? `<div class="addr lock">${I('lock')}확정되면 상세 주소가 열려요</div>` : '');
+  const tel = (j.cust_phone||'').replace(/[^0-9+]/g,'');
   const cust = j.collector && (j.cust_name || j.cust_phone)
-    ? `<div class="money"><span>고객 <b>${esc(j.cust_name||'')}</b>${j.cust_phone?`<br><small>${esc(j.cust_phone)}</small>`:''}</span>${j.cust_phone ? `<span style="display:flex;gap:6px"><a class="btn sm" href="tel:${esc(j.cust_phone.replace(/[^0-9+]/g,''))}">📞 전화</a><a class="btn sm ghost" href="sms:${esc(j.cust_phone.replace(/[^0-9+]/g,''))}">💬 문자</a></span>` : ''}</div>` : '';
+    ? `<div class="cbox"><div class="cl"><small>고객</small><b>${esc(j.cust_name||'')}</b>${j.cust_phone?`<span>${esc(j.cust_phone)}</span>`:''}</div>
+        ${tel ? `<div class="cact"><a class="ico" href="tel:${esc(tel)}" aria-label="전화">📞<i>전화</i></a><a class="ico" href="sms:${esc(tel)}" aria-label="문자">💬<i>문자</i></a></div>` : ''}</div>` : '';
   const xs = j.collector ? (j.extras||[]).filter(x => x.agreed !== false) : [];
   const xsum = xs.reduce((a,x) => a + (+x.amount||0), 0);
   const money = j.collector && j.balance != null
-    ? (j.collected_at ? `<div class="money"><span>잔금 ${won(j.balance)}${xsum?` + 추가 ${won(xsum)}`:''}</span><span class="pill p-ok">수금 완료</span></div>`
-       : `<div class="money"><span>현장 잔금 <b>${won(j.balance)}</b>${xsum?`<br><small>+ 추가금 ${won(xsum)} = <b>${won(j.balance+xsum)}</b></small>`:''}</span><span><button class="btn sm" data-collect="${j.id}" data-how="계좌">계좌 확인</button> <button class="btn sm ghost" data-collect="${j.id}" data-how="현금">현금</button></span></div>`) : '';
+    ? (j.collected_at ? `<div class="mbox done"><div class="ml"><small>잔금</small><b>${won(j.balance + xsum)}</b></div><span class="pill p-ok">수금 완료</span></div>`
+       : `<div class="mbox"><div class="ml"><small>현장에서 받을 돈</small><b>${won(j.balance + xsum)}</b>${xsum?`<span>잔금 ${won(j.balance)} + 추가금 ${won(xsum)}</span>`:''}</div>
+          <div class="mact"><button class="btn" data-collect="${j.id}" data-how="계좌">🏦 계좌로 받음</button><button class="btn ghost" data-collect="${j.id}" data-how="현금">💵 현금으로 받음</button></div></div>`) : '';
   // 추가금 (수금 담당이 현장에서 받은 것 직접 적기, v30)
   const xEdit = j.collector && live && j.status !== 'done' && !past;
   const extra = j.collector && (xs.length || xEdit) ? `<div class="xtra">
