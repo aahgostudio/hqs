@@ -3,7 +3,7 @@
 const {esc, md, won, ymd, sb} = H;
 const V = H.V; V.money = {month: new Date(H.today().getFullYear(), H.today().getMonth(), 1), detail: null};
 
-H.view('money', {label:'장부', owner:true,
+H.view('money', {label:'경영', owner:true,
   async load(){
     const [m0, m1] = H.monthRange(V.money.month); const f = ymd(m0), t = ymd(m1);
     const [jobs, deals, shares, rules, ex, pu, staff] = await Promise.all([

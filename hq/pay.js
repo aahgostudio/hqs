@@ -22,6 +22,7 @@ async function loadMonth(){
   P.mJobs = (await H.q(sb.from('jobs').select('id,job_date,title,status,helpers,assignments(*)').gte('job_date', H.ymd(from)).lte('job_date', H.ymd(to)).order('job_date')))
     .filter(j => j.status !== 'cancelled' && j.status !== 'quote');
 }
+const grp = p => p.s.ext ? 2 : p.s.team === 'PRT' ? 1 : 0;
 function monthRows(){
   const by = {}, cur = P.mKeys[2];
   P.mJobs.forEach(j => { const ym = String(j.job_date).slice(0, 7);
@@ -37,7 +38,7 @@ function monthRows(){
     const dd = new Date().getDate(), prevSame = P.mOff === 0 ? netOf(p.items.filter(i => i.ym === P.mKeys[1] && +String(i.j.job_date).slice(8, 10) <= dd)) : mon[1].net;
     return Object.assign(p, {prevSame, cur: ci, mon, n: ci.length, net: netOf(ci), sent: netOf(ci.filter(i => i.paid)), left: netOf(ci.filter(i => !i.paid))}); })
     .filter(p => p.mon.some(m => m.n))
-    .sort((a,b) => (b.left > 0) - (a.left > 0) || b.net - a.net || b.mon[1].net - a.mon[1].net);
+    .sort((a,b) => grp(a) - grp(b) || b.net - a.net || b.mon[1].net - a.mon[1].net);   // 직영·지원 → 도급 → 외부, 그 안에서 많이 받은 순
 }
 function monthBox(){
   const rs = monthRows(), tot = k => rs.reduce((a,r) => a + r[k], 0), tag = s => s.ext ? '외부지원' : (lvOf(s) || s.role || '');
@@ -47,8 +48,8 @@ function monthBox(){
   const chg = d => d == null ? '<span class="pd z">새로</span>' : d === 0 ? '<span class="pd z">±0%</span>' : `<span class="pd ${d > 0 ? 'u' : 'd'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}%</span>`;
   return `<section class="pm"><div class="pm-hd"><button class="pm-nav" data-a="pyMon" data-n="-1">‹</button><div><b>📒 ${P.mLabel||''}월 직원별 정산</b><small>${P.mOff ? '그 달 전체 · ▲▼ 전월 대비' : `오늘(${new Date().getDate()}일)까지 · ▲▼ 전월 같은 기간 대비`}</small></div><button class="pm-nav" data-a="pyMon" data-n="1" ${P.mOff >= 0 ? 'disabled' : ''}>›</button></div>
     <div class="pm-k"><div><span>지급 총액</span><b>${won(totM[2])}</b>${chg(dTot)}</div><div><span>입금 완료</span><b class="g">${won(tot('sent'))}</b></div><div class="${tot('left') > 0 ? 'w' : ''}"><span>남은 돈</span><b>${won(tot('left'))}</b></div></div>
-    <div class="pm-list">${rs.map(r => { const k = r.s.id || r.s.name, op = P.mOpen[k], mx = Math.max(1, ...r.mon.map(m => m.net)), d = diff(r.mon[2].net, r.prevSame);
-      return `<div class="pm-c ${r.left > 0 ? 'due' : ''}">
+    <div class="pm-list">${rs.map((r, ri) => { const gh = ri === 0 || grp(rs[ri-1]) !== grp(r) ? `<div class="pm-g">${['직영 · 지원', '도급', '외부지원'][grp(r)]}</div>` : ''; const k = r.s.id || r.s.name, op = P.mOpen[k], mx = Math.max(1, ...r.mon.map(m => m.net)), d = diff(r.mon[2].net, r.prevSame);
+      return gh + `<div class="pm-c ${r.left > 0 ? 'due' : ''}">
         <button class="pm-top" data-a="pyMonOpen" data-k="${esc(k)}"><span class="av">${esc(r.s.name.length >= 3 ? r.s.name.slice(1) : r.s.name)}</span>
           <span class="nm"><b>${esc(r.s.name)}</b><small>${esc(tag(r.s))}</small></span>
           <span class="am"><b>${won(r.net)}</b>${chg(r.prevSame || r.mon[2].net ? d : 0)}</span></button>
