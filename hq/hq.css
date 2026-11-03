@@ -396,3 +396,6 @@ html.chatapp .fab{display:none}
  .ch-rh{padding-top:calc(10px + env(safe-area-inset-top));background:var(--card)}
  .ch-m{max-width:84%}
 }
+
+/* 밀어서 답장: 양쪽 방향 다 (브라우저가 가로 밀기를 가져가지 않게) */
+.ch-msgs{overflow-x:hidden}.ch-b[data-mid]{touch-action:pan-y}

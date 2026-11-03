@@ -95,7 +95,7 @@
 .epc-b img{display:block;max-width:220px;max-height:280px;border-radius:10px;margin:-3px -5px}
 .epc-meta{flex:none;display:flex;flex-direction:row;align-items:flex-end;gap:3px;font-size:10.5px;color:var(--epc-mute);white-space:nowrap;line-height:1.25}
 .epc-m.mine .epc-meta{align-items:flex-end}
-.epc-msgs{gap:3px}.epc-m{margin-top:8px}.epc-m.cont{margin-top:0}
+.epc-msgs{gap:3px;overflow-x:hidden}.epc-b[data-mid]{touch-action:pan-y}.epc-m{margin-top:8px}.epc-m.cont{margin-top:0}
 .epc-meta .u{color:#D9A400;font-weight:800}
 .epc-in{display:flex;gap:8px;align-items:flex-end;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:var(--epc-card);border-top:1px solid var(--epc-line)}
 .epc-b video{display:block;max-width:240px;max-height:320px;border-radius:12px;background:#000}
