@@ -12,11 +12,13 @@ H.teamData = () => {
   const S = H.S, today = H.ymd(H.today()), now = nowMin();
   const appr = j => (j.assignments||[]).filter(a => a.status === 'approved');
   // 청소 현장
-  const sites = (S.jobs||[]).filter(j => j.job_date === today && j.status !== 'cancelled' && j.status !== 'quote').map(j => {
+  const yday = H.ymd(H.addDays(H.today(), -1));
+  const mk = day => (S.jobs||[]).filter(j => j.job_date === day && j.status !== 'cancelled' && j.status !== 'quote').map(j => {
     const ppl = appr(j).map(a => H.P(a.staff_id));
     const partner = ppl.some(p => p.team === 'PRT');
     const boss = (j.boss_on && !ppl.length) || (!ppl.length && j.status === 'full'); // 대표 현장 (배정 없이 마감)
-    const crewN = H.crewN(j);   // 직원 + 대표님 + 외부지원 (도급 확정이면 정원)
+    const crewN = H.crewN(j);
+    const lead = (j.collector_id && appr(j).some(a => a.staff_id === j.collector_id)) ? H.P(j.collector_id) : (appr(j).map(a => H.P(a.staff_id)).find(p => /팀장|실장/.test(p.role||'')) || null);   // 그날 팀장 = 수금 담당   // 직원 + 대표님 + 외부지원 (도급 확정이면 정원)
     const st = mins(j.start_time), ph = H.photosOf(j.id), done = j.work_done_at || j.done_at;
     const el = st == null ? null : now - st;
     let state = done ? 'done' : (st != null && el >= 0) ? (el > SITE_MIN + 60 ? 'over' : 'on') : 'next';
@@ -25,8 +27,9 @@ H.teamData = () => {
     if (state === 'on' && el >= 60 && !ph.length && !boss) warn.push(`${Math.floor(el/60)}시간째 사진 0장`);
     if (state === 'over') warn.push('끝날 시간 지남 · 작업 끝 안 누름');
     if (j.collector_id && +j.balance_amount && !j.collected_at && done) info.push(`잔금 ${H.won(j.balance_amount)} · 수금 대기`);
-    return {j, ppl, crewN, partner, boss, state, warn, info, ph, done, el, prog: el == null ? 0 : Math.max(0, Math.min(1, el / SITE_MIN))};
+    return {j, ppl, crewN, lead, partner, boss, state, warn, info, ph, done, el, prog: el == null ? 0 : Math.max(0, Math.min(1, el / SITE_MIN))};
   });
+  const sites = mk(today), ysites = mk(yday);
   const rank = s => s.warn.length ? 0 : s.state === 'on' ? 1 : s.state === 'next' ? 2 : 3;
   sites.sort((a,b) => rank(a) - rank(b) || (mins(a.j.start_time)||0) - (mins(b.j.start_time)||0));
   const busy = new Set(sites.flatMap(s => s.ppl.map(p => p.id)));
@@ -64,7 +67,7 @@ H.teamData = () => {
     return {s, icon, now: now_, seen: s.last_seen_at, evN: evs.length};
   });
   const warnN = sites.filter(x => x.warn.length).length + people.filter(p => p.warn).length;
-  return {sites, free, people, partners, warnN};
+  return {sites, ysites, free, people, partners, warnN};
 };
 
 const TONE = {on:['on','작업 중'], next:['mute','예정'], done:['ok','작업 끝'], over:['bad','작업 중']};
@@ -75,13 +78,17 @@ function siteCard(x){
   // 이름 누르면 연락 (v1104) — 대표님 본인은 그냥 표시
   const call = (name, phone, cls, label) => phone ? `<i class="${cls} call" data-a="tmCall" data-n="${esc(name)}" data-p="${esc(phone)}" role="button">${label}</i>` : `<i class="${cls}">${label}</i>`;
   const extra = (j.boss_on ? '<i class="lead">대표</i>' : '') + H.helpers(j).map(h => call(h.name, h.phone, '', `외부 ${esc(h.name)}`)).join('');
-  return `<a class="tm-site ${x.warn.length?'warn':x.partner?'prt':x.state}" href="#sched">
-    <div class="r1"><b>${esc(j.title)}</b><span class="tm">${hm(j.start_time)||'시간 미정'}~</span></div>
+  const c = j.cs || {}, bad = !!(c.claim || c.revisit);
+  return `<div class="tm-site ${x.warn.length?'warn':x.partner?'prt':x.state}${bad?' cs':''}">
+    <div class="r1"><b>${esc(j.title)}</b><span class="tm">${hm(j.start_time)||'시간 미정'}~ <a href="#sched" class="go">일정 ›</a></span></div>
+    <div class="ldr">👑 그날 팀장 <b>${x.lead ? esc(x.lead.name) + (x.lead.role ? ' ' + esc(x.lead.role) : '') : x.boss || j.boss_on ? '대표' : '<span class="no">수금 담당 없음</span>'}</b></div>
     <div class="ppl">${x.boss ? '<i class="lead">대표 현장</i>' : x.partner ? '<span class="tg prt">도급 파트너</span> ' + x.ppl.map(p => call(p.name, p.phone, '', esc(p.name))).join('')
       : `<span class="n">${x.crewN}${j.headcount?'/'+j.headcount:''}인</span>${extra}${x.ppl.map(p => call(p.name, p.phone, p===lead&&!j.boss_on?'lead':'', `${esc(p.name)}${p.role&&p===lead?' '+esc(p.role):''}`)).join('')}${empty?`<i class="empty">+${empty} 비었음</i>`:''}`}</div>
     <div class="st"><span class="tg ${tc}">${x.state==='done'?'✅ '+tl+' '+clock(x.done):tl}</span>${!x.done && (x.partner || x.boss || (j.headcount && x.crewN >= j.headcount)) ? '<span class="tg okc">👥 인원 확정</span>' : ''}${x.warn.map(w => `<span class="tg bad">⚠ ${esc(w)}</span>`).join('')}
       ${x.ph.length?`<span>📸 ${x.ph.length}장 · 마지막 ${clock(x.ph[0].created_at)}</span>`:''}${j.live_views?`<span>👀 고객님 ${j.live_views}번 봄</span>`:''}${x.info.map(t => `<span>${esc(t)}</span>`).join('')}</div>
-    ${x.state==='on'||x.state==='over'?`<div class="bar"><i style="width:${Math.round(x.prog*100)}%"></i></div>`:''}</a>`;
+    ${x.state==='on'||x.state==='over'?`<div class="bar"><i style="width:${Math.round(x.prog*100)}%"></i></div>`:''}
+    <div class="csr"><label class="csk"><input type="checkbox" data-c="tmCsOn" data-j="${j.id}" ${bad?'checked':''}> ⚠ 사고</label>
+      ${bad ? `<input class="in sm csm" data-c="tmCsWhy" data-j="${j.id}" value="${esc(c.claim||'')}" placeholder="사유 (예: 욕실 곰팡이 남았다고 연락 옴)">` : '<span class="cs0">문제 생기면 체크하고 사유를 적어요</span>'}</div></div>`;
 }
 function personRow(p){
   return `<div class="tm-per ${p.warn?'warn':''}">${H.av(p.s, 40)}
@@ -120,6 +127,7 @@ H.view('team', {label:'팀',
     <div class="${S.owner?'g2':''}">
       <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>클린 현장판 <span class="sub">오늘 ${d.sites.length}곳</span></h3><a class="btn sm ghost" href="#sched">일정판 →</a></div>
         <div class="tm-sites">${d.sites.map(siteCard).join('') || '<div class="note">오늘 클린 현장이 없어요</div>'}</div>
+        ${d.ysites.length ? `<details class="tm-yd" ${S.tmYd?'open':''}><summary data-a="tmYd">어제 현장 ${d.ysites.length}곳 · 사고 체크${d.ysites.some(x => x.j.cs && (x.j.cs.claim || x.j.cs.revisit)) ? ' <em>⚠</em>' : ''}</summary><div class="tm-sites" style="margin-top:8px">${d.ysites.map(siteCard).join('')}</div></details>` : ''}
         ${d.free.length?`<div class="tm-free">오늘 일정 없는 사람: ${d.free.map(x => x.ok ? `<b>${esc(x.s.name)} ✓</b>` : esc(x.s.name)).join(' · ')} <span style="opacity:.7">(✓ = 오늘 가능 표시함)</span></div>`:''}</section>
       ${S.owner?`<section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>부동산 사람판 <span class="sub">리츠부동산</span></h3>${S.mcode?`<a class="btn sm ghost" href="../maemul/?k=${encodeURIComponent(S.mcode)}">매물노트 →</a>`:''}</div>
         ${d.people.map(personRow).join('') || '<div class="note">근무 중인 부동산 직원이 없어요</div>'}
@@ -132,6 +140,14 @@ H.view('team', {label:'팀',
   }
 });
 H.ACT.teamRefresh = () => H.refresh();
+H.ACT.tmYd = () => { H.S.tmYd = !H.S.tmYd; };
+// 사고 체크 · 사유 (지금 우리 팀 화면에서만) — 팀별 현황 사고 수로 집계
+const csSave = async (id, patch) => { const j = (H.S.jobs||[]).find(x => x.id === id); if (!j) return; const c = Object.assign({}, j.cs || {}, patch, {at: new Date().toISOString()});
+  await H.q(H.sb.from('jobs').update({cs: c}).eq('id', id)); j.cs = c; };
+H.CHANGE.tmCsOn = async el => { const id = +el.dataset.j;
+  if (el.checked) { await csSave(id, {claim: '사고', revisit: false}); H.toast('사고로 체크했어요 · 사유를 적어주세요'); H.render(); setTimeout(() => { const i = document.querySelector(`.csm[data-j="${id}"]`); if (i) { i.select(); i.focus(); } }, 50); }
+  else { if (!confirm('사고 체크를 풀까요? (사유도 지워져요)')) { el.checked = true; return; } await csSave(id, {claim: '', revisit: false}); H.toast('사고 체크를 풀었어요'); H.render(); } };
+H.CHANGE.tmCsWhy = async el => { await csSave(+el.dataset.j, {claim: el.value.trim() || '사고'}); H.toast('사유를 저장했어요'); };
 H.ACT.tmCall = (el, e) => { if (e) { e.preventDefault(); e.stopPropagation(); }
   const n = el.dataset.n, p = el.dataset.p, d = String(p).replace(/[^0-9+]/g, '');
   H.open(`<h3>${H.esc(n)}</h3><p class="note" style="margin:-4px 0 14px;font-size:15px">${H.esc(p)}</p>
@@ -186,7 +202,7 @@ function statsBox(){
       <div class="kpi ${d.badN ? 'bad' : ''}"><small>사고 (클레임·재방문)</small><b>${d.badN}<i>곳</i></b></div><div class="kpi"><small>사고율</small><b>${pct(d.badN, d.total)}<i>%</i></b></div></div>
     <div class="leads">${bossCard}${leadCards}</div>
     <div class="pairs"><div><h4>👥 잘 맞는 짝 <small>사고 0 · 많이 간 순</small></h4>${plist(d.good, true)}</div><div><h4>⚠ 살펴볼 짝 <small>사고 있었던 짝</small></h4>${plist(d.watch, false)}</div></div>
-    <p class="tm-foot">취소·견적 중 현장은 빼요 · 팀장 = 그날 수금 담당, 없으면 같이 간 팀장·실장 · 대표님·실장·팀장도 남의 현장에선 팀원으로 셈 · 사고 = 운영 › CS·품질에 클레임·재방문 적은 현장 · 막대 빨강 = 그중 사고</p></section>`;
+    <p class="tm-foot">취소·견적 중 현장은 빼요 · 팀장 = 그날 수금 담당, 없으면 같이 간 팀장·실장 · 대표님·실장·팀장도 남의 현장에선 팀원으로 셈 · 사고 = 현장판에서 ⚠ 사고 체크한 현장 · 막대 빨강 = 그중 사고</p></section>`;
 }
 H.ACT.tmMon = async el => { H.S.tmMon = +el.dataset.v; H.S.tmStats = null; H.render(); await loadMonthStats(); H.render(); };
 })(window.HQ);

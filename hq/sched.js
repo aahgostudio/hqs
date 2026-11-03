@@ -128,7 +128,6 @@ function jobCard(j){
       ${j.status==='quote'?`<button class="btn sm" data-a="quoteConfirm" data-j="${j.id}">확정</button>`:''}
       ${active && j.status!=='quote'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">당일 마감 · 지급액</button>`:''}${j.status==='done'?`<button class="btn ghost sm" data-a="payClose" data-j="${j.id}">지급액 수정</button>`:''}
       <button class="btn ghost sm" data-a="moneySheet" data-j="${j.id}">금액 · 증빙</button>
-      ${j.status!=='quote' && j.job_date <= ymd(H.today()) ? (() => { const c = j.cs||{}, bad = c.claim || c.revisit; return `<button class="btn sm ${bad?'danger':'ghost'}" data-a="csSheet" data-j="${j.id}">${bad ? '⚠ 사고 기록됨' : '⚠ 사고 기록'}</button>`; })() : ''}
       <button class="btn ghost sm" data-a="jobCopy" data-j="${j.id}">직원 안내 멘트</button>${H.S.owner?`<button class="btn sm danger" data-a="jobDel" data-j="${j.id}">🗑 삭제</button>`:""}</div>
     ${showPromo ? H.promoRow(j) : ''}
   </div>`;
@@ -191,21 +190,6 @@ H.ACT.addMenu = () => H.open(`<h3>무엇을 올릴까요?</h3><div style="displa
 H.ACT.ntcGo = () => { H.close(); st().side = 'ntc'; if (H.cur() !== 'sched') H.go('sched'); else H.render(); };
 H.ACT.repChk = async el => { await H.q(sb.from('reports').update({checked_at:new Date().toISOString()}).eq('id', +el.dataset.id)); H.refresh(); };
 H.ACT.ntcDel = async el => { if (!confirm('공지를 지울까요?')) return; await H.q(sb.from('notices').delete().eq('id', +el.dataset.id)); H.refresh(); };
-/* 사고 기록 (클레임·재방문) — 팀별 현황 '사고'로 집계 */
-H.ACT.csSheet = el => { const j = J(el.dataset.j), c = j.cs || {};
-  const kinds = ['청소 불만족','파손','분실','지각·노쇼','태도','기타'];
-  H.open(`<form data-f="cs"><h3>⚠ 사고 기록</h3><p class="note" style="margin:-6px 0 12px">${esc(j.title)} · ${md(j.job_date)}<br>여기 적으면 '지금 우리 팀' 사고 현황에 바로 잡혀요</p>
-    <input type="hidden" name="id" value="${j.id}">
-    <div class="field full"><label>어떤 일이었나요</label><div class="chips">${kinds.map(k => `<label class="pchip" style="cursor:pointer"><input type="radio" name="kind" value="${k}" ${c.kind===k?'checked':''} style="width:auto;margin-right:4px">${k}</label>`).join('')}</div></div>
-    <div class="field full"><label>내용 (고객님 말씀·상황)</label><textarea class="in" name="claim" rows="3" placeholder="예) 욕실 줄눈 곰팡이 남았다고 연락 옴">${esc(c.claim||'')}</textarea></div>
-    <label style="display:flex;gap:8px;align-items:center;margin:10px 0;font-size:14px"><input type="checkbox" name="revisit" ${c.revisit?'checked':''} style="width:auto"> 재방문 필요(했음)</label>
-    <div style="display:flex;gap:8px;margin-top:6px"><button class="btn" type="submit" style="flex:1">저장</button>${c.claim||c.revisit?'<button class="btn ghost" type="button" data-a="csClear" data-j="'+j.id+'">사고 아님 (지우기)</button>':''}<button class="btn ghost" type="button" data-a="close">닫기</button></div></form>`); };
-H.FORM.cs = async v => { const j = J(+v.get('id')), c = Object.assign({}, j.cs || {});
-  c.claim = String(v.get('claim')||'').trim(); c.kind = v.get('kind') || null; c.revisit = v.get('revisit') === 'on'; c.at = new Date().toISOString();
-  if (!c.claim && !c.revisit && c.kind) c.claim = c.kind;
-  await H.q(sb.from('jobs').update({cs: c}).eq('id', j.id)); j.cs = c; H.close(); H.toast(c.claim || c.revisit ? '사고로 기록했어요' : '저장했어요'); H.refresh(); };
-H.ACT.csClear = async el => { const j = J(el.dataset.j); if (!confirm('이 현장 사고 기록을 지울까요?')) return; const c = Object.assign({}, j.cs || {}); c.claim = ''; c.revisit = false; c.kind = null;
-  await H.q(sb.from('jobs').update({cs: c}).eq('id', j.id)); j.cs = c; H.close(); H.toast('지웠어요'); H.refresh(); };
 H.FORM.ntc = async v => {
   await H.q(sb.from('notices').insert({title:H.nn(v.get('title')), body:v.get('body'), team:H.nn(v.get('team')), important:v.get('important')==='on'}));
   H.copy(`[${H.C.BRAND}] 새 공지가 있어요. 일정판 [공지]에서 확인해주세요.`, '공지 올림 · 카톡 알림 문구 복사됐어요'); H.refresh();
