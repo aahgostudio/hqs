@@ -74,6 +74,9 @@ body{background:var(--bg)}
 .addr a{color:inherit}
 .money{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--waitb);color:#7C2D12;border-radius:10px;padding:9px 11px;margin-top:8px;font-size:13.5px}
 .money b{font-size:16px}
+.mates{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
+.mates .mt{font-size:12.5px;color:var(--sub);margin-right:2px}
+.mate{display:inline-flex;align-items:center;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:600;text-decoration:none}
 .xtra{margin-top:8px;display:flex;flex-direction:column;gap:6px}
 .xrow{display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:10px;padding:8px 11px;font-size:13.5px}
 .xrow b{margin-left:auto}
@@ -82,7 +85,7 @@ body{background:var(--bg)}
 .xform .chips{display:flex;flex-wrap:wrap;gap:6px}
 .xform .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13.5px}
 .acts{display:flex;gap:8px;margin-top:12px}
-.acts .btn{flex:1}
+.acts .btn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:10px;padding-right:10px}
 .ack{background:var(--warnb);color:var(--warn);border-radius:10px;padding:9px 11px;margin-top:10px;font-size:13.5px;font-weight:500;display:flex;justify-content:space-between;align-items:center;gap:8px}
 /* report */
 .form{background:var(--card);border-radius:18px;padding:14px;border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
@@ -173,12 +176,12 @@ body{background:var(--bg)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1103g"></script>
+<script src="../status.js?v=1104a"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1103g'</script>
-<script src="../chatkit.js?v=1103g"></script>
-<script src="../chat.js?v=1103g"></script>
+<script>window.EP_VER='1104a'</script>
+<script src="../chatkit.js?v=1104a"></script>
+<script src="../chat.js?v=1104a"></script>
 <script src="../mymoney.js"></script>
 <script>
 (function(){
@@ -271,7 +274,7 @@ function card(j){
   // 고객님 방: 확정되면 날짜 상관없이 바로 들어갈 수 있게 (v30)
   const roomBtn = V2() && live && j.cust_room ? `<button class="btn" data-croom="${j.cust_room}">💬 고객님 방 · 사진·글 올리기${j.photos?` (${j.photos}장)`:''}</button>`
     : shootable ? `<button class="btn" data-shoot="${j.id}">${I('cam')}${W('현장 사진','촬영 사진')}${j.photos?` (${j.photos}장)`:''}</button>` : '';
-  const linkBtn = live && j.collector && j.live ? `<button class="btn ghost" data-clink="${j.id}">🔗 고객님 링크 보내기</button>` : '';
+  const linkBtn = live && j.collector && j.live ? `<button class="btn ghost" data-clink="${j.id}">🔗 링크 보내기</button>` : '';
   const shootBtn = (roomBtn || linkBtn) ? `<div class="acts">${roomBtn}${linkBtn}${j.work_done?'<span class="pill p-ok" style="align-self:center">작업 끝</span>':''}</div>` : '';
 
   const ack = j.need_ack ? `<div class="ack"><span>일정이 바뀌었어요. 확인해주세요</span><button class="btn sm" style="background:var(--warn)" data-ack="${j.id}">확인했어요</button></div>` : '';
@@ -300,12 +303,15 @@ function card(j){
   // 집 스펙 줄 맨 앞에 평수 (제목에서 읽음, v30)
   const py = ((j.title||'').match(/(\d+(?:\.\d+)?)\s*평/)||[])[1];
   const spec = [py && !(j.public_note||'').includes(py+'평') ? py+'평' : '', j.public_note||''].filter(Boolean).join(' · ');
+  // 같이 가는 사람 연락처 (팀장·수금 담당만, v32)
+  const mates = (j.crew_info||[]).filter(x => x.phone);
+  const crewCall = mates.length ? `<div class="mates"><div class="mt">📞 같이 가는 사람</div>${mates.map(x => `<a class="mate" href="tel:${esc(String(x.phone).replace(/[^0-9+]/g,''))}">${x.kind==='ext'?'외부 ':''}${esc(x.name)}</a>`).join('')}</div>` : '';
   const pay = j.my_pay != null ? `<div class="row2"><span>내 정산</span><b>${won(j.my_pay)}</b></div>` : '';
   return `<article class="card ${j.need_ack?'alert':''}">
     <div class="t1"><div><div class="when">${md(j.date)}${j.time ? ' · '+j.time : ''}${j.kind ? ' · '+esc(j.kind) : ''}</div><h4>${esc(j.title)}</h4></div>${statusPill(j)}</div>
     ${spec ? `<div class="note">${esc(spec)}</div>` : ''}
     <div class="row2"><span><b>${j.approved}</b> / ${j.headcount}명 확정</span><span class="crew">${j.crew.map(n=>`<span>${esc(n)}</span>`).join('')}</span></div>
-    ${ack}${addr}${cust}${money}${extra}${pay}${shootBtn}${btn}</article>`;
+    ${ack}${addr}${crewCall}${cust}${money}${extra}${pay}${shootBtn}${btn}</article>`;
 }
 function evCard(e){
   return `<article class="card evc"><div class="t1"><div><div class="when">${md(e.date)}${e.time?' · '+e.time:''} · 내 일정</div><h4>${esc(e.kind)} ${e.maemul?`<span class="pill p-mute">${esc(e.maemul)}</span>`:''} ${esc(e.title)}</h4></div><button class="btn ghost sm" data-evedit="${e.id}">${I('edit')}수정</button></div>
