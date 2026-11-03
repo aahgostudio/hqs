@@ -25,14 +25,14 @@ H.view('sched', {label:'일정',
         const s = ymd(d); const items = dayItems(s);
         const av = v.f.avail ? (S.avail||[]).filter(a=>a.day===s) : [];
         const ok = av.filter(a=>a.kind==='ok').length, no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').length;
-        // v35 부동산 출근표: 부동산 보기 켜져 있으면 날짜 위에 이름표 (보라 '기타' 일정 대신)
+        // 1104D: 칸에는 색 막대만 (카카오워크처럼) — 제목·인원은 아래 하루 목록에서
         const rw = v.f.res ? (S.avail||[]).filter(a => a.day === s && a.kind === 'work' && H.P(a.staff_id).team === 'RES') : [];
-        const rwH = rw.length ? `<div class="rw" title="${rw.map(a => H.P(a.staff_id).name + ' ' + (a.memo||'')).join(' · ')}">🏢 ${rw.map(a => { const n = H.P(a.staff_id).name; return esc(n.length >= 3 ? n.slice(1) : n) + ' ' + String(a.memo||'').split('-').map(t => +t.split(':')[0]).join('–'); }).join(' · ')}</div>` : '';
-        h += `<td data-a="schedPick" data-d="${s}" class="${d.getMonth()!==v.anchor.getMonth()?'out':''} ${s===today?'t':''} ${s===v.sel?'sel':''}"><span class="n">${d.getDate()}</span>${rwH}${v.f.avail&&(ok||no)?`<span class="av">${ok?'가능'+ok:''}${no?' <span style="color:var(--warn)">불가'+no+'</span>':''}</span>`:''}
-          ${items.slice(0,4).map(x=>x.ev).join('')}${items.length>4?`<div class="ev more">+${items.length-4}</div>`:''}</td>`;
+        const bars = (rw.length ? [{cls:'res'}] : []).concat(items);
+        h += `<td data-a="schedPick" data-d="${s}" class="${d.getMonth()!==v.anchor.getMonth()?'out':''} ${s===today?'t':''} ${s===v.sel?'sel':''}"><span class="n">${d.getDate()}</span>${v.f.avail&&(ok||no)?`<span class="av">${ok?'○'+ok:''}${no?' <span style="color:var(--warn)">✕'+no+'</span>':''}</span>`:''}
+          <div class="bars">${bars.slice(0,4).map(x=>`<i class="${x.cls}"></i>`).join('')}${bars.length>4?`<small>+${bars.length-4}</small>`:''}</div></td>`;
         if (d.getDay() === 6) h += '</tr>';
       }
-      body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:#E5E7EB"></i>내 일정</span><span>👥1/3 = 다가오는 현장 인원 · 📣2/5 = 끝난 현장 홍보 진행 · 📷 없음 = 사진 못 받음</span></div>`;
+      body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:#C9CED6"></i>내 일정</span></div>`;
     } else {
       const days = {}; for (let d = new Date(v.anchor); d.getMonth() === v.anchor.getMonth(); d = addDays(d,1)) { const s = ymd(d); const its = dayItems(s); if (its.length) days[s] = its; }
       body = Object.keys(days).map(s => `<div class="ptitle" style="${s===today?'color:var(--info)':''}">${md(s)}${s===today?' · 오늘':''}</div>` + dayCards(s)).join('') || '<p class="empty">이 달 일정이 없어요</p>';
@@ -47,42 +47,49 @@ H.view('sched', {label:'일정',
   after(){ if (st().side === 'rep') loadRepPhotos(); }
 });
 
-function jobEv(j){
+function jobMeta(j){
   const ap = H.crewN(j);   // 확정 직원 + 대표 + 외부지원
   const today = ymd(H.today());
-  let cls = j.status==='quote' ? 'quote' : H.isPartner(j) ? 'prt' : (j.status==='open' && ap < j.headcount) ? 'open' : '';
+  let cls = j.status==='quote' ? 'quote' : H.isPartner(j) ? 'prt' : (j.status==='open' && ap < j.headcount) ? 'open' : 'clean';
   if (j.status === 'cancelled') cls += ' cancelled'; if (j.status === 'done') cls += ' done';
-  let em = '';
-  if (j.job_date <= today && j.status !== 'cancelled' && j.status !== 'quote') {
+  let badge = '';
+  if ((j.job_date < today || j.status === 'done') && j.status !== 'cancelled' && j.status !== 'quote') {
     const p = H.promoState(j);
-    em = p.photo <= 0 && !H.photosOf(j.id).length ? '<em title="홍보용 사진을 아직 못 받았어요">📷 없음</em>' : p.done ? '<em title="홍보 끝">📣✓</em>' : `<em title="홍보 ${p.cnt}/${p.total} 완료 (사진·블로그·인스타·당근·릴스)">📣${p.cnt}/${p.total}</em>`;   // 끝난 현장 = 홍보 진행
-  } else if (j.status === 'open' && ap < j.headcount) em = `<em title="확정 ${ap}명 / 필요 ${j.headcount}명">👥${ap}/${j.headcount}</em>`;   // 다가오는 현장 = 인원
-  const pre = j.status==='quote' ? '견적 ' : (ap >= j.headcount && j.status !== 'done' ? '완 ' : '');
-  return `<div class="ev ${cls}" title="${esc(j.title)}">${em}${pre}${j.start_time?j.start_time.slice(0,5)+' ':''}${j.series_id?'🔁':''}${esc(j.title)}</div>`;
+    badge = p.photo <= 0 && !H.photosOf(j.id).length ? '<em class="w">📷 사진 없음</em>' : p.done ? '<em>📣 홍보 끝</em>' : `<em>📣 홍보 ${p.cnt}/${p.total}</em>`;
+  } else if (j.status === 'open' && ap < j.headcount) badge = `<em class="w">👥 ${ap}/${j.headcount}</em>`;
+  else if (j.status !== 'cancelled' && j.status !== 'quote') badge = `<em>👥 ${ap}명 완료</em>`;
+  const st2 = j.status==='quote' ? '견적 중' : j.status==='cancelled' ? '취소' : j.status==='done' ? '마감' : H.isPartner(j) ? '도급' : ap >= j.headcount ? '인원 완료' : '모집 중';
+  return {cls, badge, st: st2};
 }
 function dayItems(s){
   const S = H.S, f = st().f, out = [];
-  if (f.clean) (S.jobs||[]).filter(j=>j.job_date===s).forEach(j=>out.push({t:j.start_time||'', ev:jobEv(j)}));
+  if (f.clean) (S.jobs||[]).filter(j=>j.job_date===s).forEach(j=>{ const m = jobMeta(j); out.push({t:j.start_time||'', cls:m.cls, k:'j'+j.id, title:(j.series_id?'🔁 ':'')+j.title, sub:[j.start_time?j.start_time.slice(0,5):'', m.st].filter(Boolean).join(' · '), badge:m.badge, card:()=>jobCard(j)}); });
   (S.events||[]).filter(e=>e.ev_date===s).forEach(e=>{
-    if (e.staff_id && f.res && e.show_boss) out.push({t:e.ev_time||'', ev:`<div class="ev res">${e.ev_time?e.ev_time.slice(0,5)+' ':''}${esc(H.P(e.staff_id).name)} ${esc(e.kind)}${e.maemul_id?' '+esc(e.maemul_id):''}</div>`});
-    if (!e.staff_id && f.me) out.push({t:e.ev_time||'', ev:`<div class="ev me">${e.ev_time?e.ev_time.slice(0,5)+' ':''}${esc(e.title)}</div>`});
+    if (e.staff_id && f.res && e.show_boss) out.push({t:e.ev_time||'', cls:'res', k:'e'+e.id, title:`${H.P(e.staff_id).name} · ${e.kind}${e.maemul_id?' '+e.maemul_id:''}`, sub:[e.ev_time?e.ev_time.slice(0,5):'종일', e.title].filter(Boolean).join(' · '), card:()=>evCard(e)});
+    if (!e.staff_id && f.me) out.push({t:e.ev_time||'', cls:'me', k:'e'+e.id, title:e.title, sub:e.ev_time?e.ev_time.slice(0,5):'종일', card:()=>evCard(e)});
   });
-  if (f.ntc) (S.notices||[]).filter(n=>ymd(new Date(n.created_at))===s).forEach(n=>out.push({t:'00', ev:`<div class="ev ntc">📢 ${esc(n.title||n.body.slice(0,14))}</div>`}));
+  if (f.ntc) (S.notices||[]).filter(n=>ymd(new Date(n.created_at))===s).forEach(n=>out.push({t:'00', cls:'ntc', k:'n'+n.id, title:'📢 '+(n.title||n.body.slice(0,20)), sub:'공지', ntc:true}));
   return out.sort((a,b)=>a.t.localeCompare(b.t));
+}
+function dayBox(x){
+  const on = st().open === x.k;
+  return `<div class="dbx ${x.cls}${on?' on':''}" data-a="${x.ntc?'schedSide':'dayOpen'}" data-s="ntc" data-k="${x.k}"><div class="dt"><b>${esc(x.title)}</b>${x.badge||''}</div><div class="ds">${esc(x.sub)}</div></div>${on && x.card ? `<div class="dbx-d">${x.card()}</div>` : ''}`;
 }
 
 /* ---------- 하루 패널 ---------- */
 function daySide(s){
   const S = H.S;
-  const jobs = (S.jobs||[]).filter(j=>j.job_date===s);
-  const evs = (S.events||[]).filter(e=>e.ev_date===s && (!e.staff_id || e.show_boss));
+  const items = dayItems(s);
   const av = (S.avail||[]).filter(a=>a.day===s);
-  const ok = av.filter(a=>a.kind==='ok').map(a=>H.P(a.staff_id).name), no = av.filter(a=>a.kind==='no').map(a=>H.P(a.staff_id).name);
-  return `<div class="acts" style="margin:0 0 10px"><button class="btn sm" data-a="jobNew" data-d="${s}">+ 클린 현장</button><button class="btn sm ghost" data-a="evNew" data-d="${s}">+ 내 일정</button><button class="btn sm ghost" data-a="schedSide" data-s="ntc">+ 공지</button></div>
+  const ok = av.filter(a=>a.kind==='ok').map(a=>H.P(a.staff_id).name), no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').map(a=>H.P(a.staff_id).name);
+  const rw = av.filter(a => a.kind === 'work' && H.P(a.staff_id).team === 'RES');
+  const hr = t => String(t||'').split('-').map(x => +x.split(':')[0]).join('–');
+  return `<div class="dhd"><b>${md(s)}</b><span>${items.length}개 일정</span></div>
+    ${rw.length?`<div class="dbx res rwx"><div class="dt"><b>🏢 사무실 출근</b></div><div class="ds">${rw.map(a=>esc(H.P(a.staff_id).name)+' '+hr(a.memo)).join(' · ')}</div></div>`:''}
+    ${items.map(dayBox).join('')}
+    ${!items.length && !rw.length ? '<p class="empty">이날 일정이 없어요</p>' : ''}
     ${ok.length?`<div class="avl">이날 가능: ${ok.map(esc).join(' · ')}</div>`:''}${no.length?`<div class="avl no">이날 불가: ${no.map(esc).join(' · ')}</div>`:''}
-    ${jobs.map(jobCard).join('')}
-    ${evs.map(evCard).join('')}
-    ${!jobs.length && !evs.length ? '<p class="empty">이날 일정이 없어요</p>' : ''}`;
+    <div class="acts" style="margin:10px 0 0"><button class="btn sm" data-a="jobNew" data-d="${s}">+ 클린 현장</button><button class="btn sm ghost" data-a="evNew" data-d="${s}">+ 내 일정</button></div>`;
 }
 function dayCards(s){ const S = H.S, f = st().f;
   return (f.clean ? (S.jobs||[]).filter(j=>j.job_date===s).map(jobCard).join('') : '') + (S.events||[]).filter(e=>e.ev_date===s && ((e.staff_id && f.res && e.show_boss) || (!e.staff_id && f.me))).map(evCard).join(''); }
@@ -183,7 +190,8 @@ H.ACT.schedNav = async el => { const n = +el.dataset.n; const v = st();
   v.anchor = n === 0 ? new Date(H.today().getFullYear(), H.today().getMonth(), 1) : new Date(v.anchor.getFullYear(), v.anchor.getMonth()+n, 1);
   if (n === 0) v.sel = ymd(H.today()); else v.sel = ymd(v.anchor);
   H._dirty = Date.now(); H.render(); };
-H.ACT.schedPick = el => { st().sel = el.dataset.d; st().side = 'day'; H.render(); if (window.innerWidth < 1100) setTimeout(()=>document.getElementById('dayside').scrollIntoView({behavior:'smooth'}), 50); };
+H.ACT.schedPick = el => { st().sel = el.dataset.d; st().side = 'day'; st().open = null; H.render(); };
+H.ACT.dayOpen = el => { st().open = st().open === el.dataset.k ? null : el.dataset.k; H.render(); };
 H.ACT.schedSide = el => { st().side = el.dataset.s; H.render(); };
 H.ACT.addMenu = () => H.open(`<h3>무엇을 올릴까요?</h3><div style="display:flex;flex-direction:column;gap:8px">
   <button class="btn" data-a="jobNew" data-d="${st().sel}">클린 현장 (일정)</button>

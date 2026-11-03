@@ -471,3 +471,23 @@ html.chatapp .fab{display:none}
 .prt-k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}.prt-k>div{border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff}.prt-k small{font-size:11.5px;color:var(--sub)}.prt-k b{display:block;font-size:18px}
 .prt-k .s b{color:#1D4ED8}.prt-k .r b{color:#047857}.prt-t td,.prt-t th{white-space:nowrap}
 .rw{font-size:10.5px;color:#0F7A55;background:#E7F7EF;border-radius:5px;padding:1px 5px;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 1104D 달력: 칸엔 색 막대만, 아래 하루 목록 */
+.cal td{height:74px}.cal td .bars{display:flex;flex-direction:column;gap:3px;margin:5px 4px 0}
+.cal td .bars i{display:block;height:4px;border-radius:3px;background:var(--clean)}
+.cal td .bars i.open{background:var(--cleanl)}.cal td .bars i.prt{background:var(--prt)}.cal td .bars i.res{background:var(--res)}.cal td .bars i.ntc{background:var(--notice)}.cal td .bars i.me{background:#C9CED6}
+.cal td .bars i.quote{background:repeating-linear-gradient(90deg,#94A3B8 0 4px,transparent 4px 7px)}.cal td .bars i.done{opacity:.55}.cal td .bars i.cancelled{opacity:.25}
+.cal td .bars small{font-size:9.5px;color:var(--sub);line-height:1}
+.cal td.t .n{background:#111;color:#fff;border-radius:999px;padding:1px 6px}
+.cal td.sel{box-shadow:none;background:#F1F4F9}
+.dhd{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 10px}.dhd b{font-size:15px}.dhd span{font-size:12.5px;color:var(--sub)}
+.dbx{border-radius:14px;padding:11px 14px;margin-bottom:8px;cursor:pointer;background:#EEF2FD;border-left:4px solid var(--clean)}
+.dbx .dt{display:flex;align-items:center;gap:8px}.dbx .dt b{font-size:14.5px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dbx .dt em{font-style:normal;font-size:11px;font-weight:700;background:#fff;border-radius:99px;padding:2px 8px;color:#374151;flex-shrink:0}.dbx .dt em.w{color:#B45309}
+.dbx .ds{font-size:12.5px;color:#5B6472;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dbx.open{background:repeating-linear-gradient(135deg,#EEF2FD 0 8px,#E3E9FA 8px 16px);border-left-color:var(--cleanl)}
+.dbx.prt{background:#FDF3E7;border-left-color:var(--prt)}.dbx.res{background:#F3EEFD;border-left-color:var(--res)}.dbx.ntc{background:#E8F5F3;border-left-color:var(--notice)}.dbx.me{background:#F3F4F6;border-left-color:#9CA3AF}
+.dbx.quote{background:#fff;border:1px dashed #CBD5E1;border-left:4px dashed #94A3B8}.dbx.done{opacity:.8}.dbx.cancelled{opacity:.5}.dbx.cancelled b{text-decoration:line-through}
+.dbx.rwx{cursor:default}.dbx.on{box-shadow:0 0 0 2px var(--clean) inset}
+.dbx-d{margin:-2px 0 10px}
+@media(max-width:600px){.cal td{height:56px}.cal td .bars{margin:4px 3px 0;gap:2px}.cal td .bars i{height:3.5px}}
