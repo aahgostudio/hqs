@@ -63,11 +63,16 @@ function listHtml(){
   const nClosed = rs.filter(r => r.closed).length;
   // 작업 끝난 현장은 맨 아래 '작업 끝' 묶음으로 (고객님·직원 새 글이 있으면 위에 그대로 — 놓치지 않게)
   const dn = vis.filter(r => ['cust','site'].includes(r.kind) && isDone(r)).sort((a, b) => (b.job_date||'').localeCompare(a.job_date||''));
+  // 다가오는 현장(모레 이후)은 접어둠 — 새 글·안 읽은 글이 있으면 위에 그대로
+  const tmr = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+  const isLater = r => ['cust','site'].includes(r.kind) && !isDone(r) && r.job_date && r.job_date > tmr && !r.unread && !r.last;
+  const lt = vis.filter(isLater).sort((a, b) => (a.job_date||'').localeCompare(b.job_date||''));
   const due = !OWN() ? [] : rs.filter(r => r.kind === 'dm' && r.left_at && !r.keep && (Date.now() - new Date(r.left_at)) > 365*864e5);
   const dueHtml = due.map(r => `<div class="ch-due">⏳ <b>${esc(r.title)}</b> 퇴사 1년 지남 · 1:1 대화 ${r.count}건<span><button class="btn sm" data-a="chKeepId" data-id="${r.id}">장기 보관</button><button class="btn sm ghost" data-a="chPurge" data-id="${r.id}">정리</button></span></div>`).join('');
   return `${OWN() && C.pushReady && K.needPush() ? '<button class="ch-due" data-a="chPushOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>알림 받기</b> · 눌러서 [허용] 한 번 · 앱을 닫아도 새 메시지가 바로 와요</button>' : ''}${K.needBadgeOk() && !(OWN() && C.pushReady && K.needPush()) ? '<button class="ch-due" data-a="chBadgeOk" style="width:100%;border:1px solid #FCD34D;cursor:pointer;text-align:left">🔔 <b>아이콘에 안 읽은 숫자 보이기</b> · 눌러서 [허용] 한 번</button>' : ''}${dueHtml}<div class="ch-lh"><input class="inp" placeholder="방 이름 찾기" value="${esc(C.q)}" data-chq="1">${OWN()?'<button class="btn sm" data-a="chNew">＋ 새 방</button>':''}</div>${OWN()?'':'<p class="note" style="margin:2px 4px 6px">관리자 참여 방만 보여요 · 방 만들기·닫기는 대표님만</p>'}
     ${C.showClosed ? `<div class="ch-sec">보관함 (닫은 방) <button class="link" data-a="chClosed">← 돌아가기</button></div>${vis.map(row).join('') || '<p class="note" style="padding:10px">닫은 방이 없어요</p>'}`
-      : grp.map(([l, f]) => { const a = l === '1:1' ? recent(vis.filter(f)) : l === '현장' ? byJobDay(vis.filter(f).filter(r => !isDone(r))) : tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
+      : grp.map(([l, f]) => { const a = l === '1:1' ? recent(vis.filter(f)) : l === '현장' ? byJobDay(vis.filter(f).filter(r => !isDone(r) && !isLater(r))) : tree(byOrd(vis.filter(f)).map(r => (delete r._kid, delete r._kids, r))); return a.length ? `<div class="ch-sec">${l} <span>${a.length}</span></div>${a.map(row).join('')}` : ''; }).join('')
+        + (lt.length ? `<button class="ch-closed" data-a="chLater" style="margin-top:14px">📅 다가오는 현장 ${lt.length}개 (모레부터) ${C.showLater ? '▴ 접기' : '▾ 보기'}</button>${C.showLater ? lt.map(row).join('') : ''}` : '')
         + (dn.length ? `<button class="ch-closed" data-a="chDone" style="margin-top:14px">✅ 작업 끝난 현장 ${dn.length}개 ${C.showDone ? '▴ 접기' : '▾ 보기'}</button>${C.showDone ? dn.map(row).join('') : ''}` : '')
         + (OWN() ? `<button class="ch-closed" data-a="chClosed">🗄 보관함 · 닫은 방 ${nClosed}개</button>` : '')
         + `<p class="note" style="text-align:center;font-size:11px;opacity:.5;margin:10px 0 4px">버전 ${esc(window.EP_VER || '')}</p>`}`;
@@ -294,6 +299,7 @@ H.ACT.chPurge = async el => { const r = C.home.rooms.find(x => x.id === +el.data
   if (!confirm(`${r.title}님과의 1:1 대화 ${r.count}건을 완전히 지울까요?\n되돌릴 수 없어요. 필요하면 먼저 [내보내기]로 PDF를 받아두세요.`)) return;
   await rpc('chat_admin_purge', {p_id: r.id}); if (C.cur === r.id) { C.cur = null; C.room = null; } await loadHome(); paint(); H.toast('정리했어요'); };
 H.ACT.chClosed = () => { C.showClosed = !C.showClosed; paint(true); };
+H.ACT.chLater = () => { C.showLater = !C.showLater; paint(true); };
 H.ACT.chDone = () => { C.showDone = !C.showDone; paint(true); };
 H.ACT.chSend = async () => {
   const t = document.getElementById('chT'); const v = (t && t.value || '').trim(); if (!v || !C.cur) return;

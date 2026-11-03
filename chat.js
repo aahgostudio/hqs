@@ -145,7 +145,9 @@
     const P = (ICONS && ICONS._parent) || {};
     // 작업 끝난 현장은 맨 아래 접힌 묶음으로 (새 글이 있으면 '내 현장'에 그대로)
     const sites = g(['cust','site']).sort((a,b)=>(b.job_date||'').localeCompare(a.job_date||''));
-    const live = sites.filter(r => !r.job_done || r.unread), done = sites.filter(r => r.job_done && !r.unread);
+    const tmr = new Date(Date.now() + 9*36e5 + 864e5).toISOString().slice(0,10);   // 내일 (한국 시간)
+    const later = sites.filter(r => !r.job_done && r.job_date && r.job_date > tmr && !r.unread && !r.last).sort((a,b)=>(a.job_date||'').localeCompare(b.job_date||''));   // 모레부터는 접어둠
+    const live = sites.filter(r => (!r.job_done || r.unread) && !later.includes(r)), done = sites.filter(r => r.job_done && !r.unread);
     const gt = k => { const a = g(k), ids = new Set(a.map(r => r.id)), out = [];   // 하위 방은 윗방 바로 밑에
       a.forEach(r => { const p = P[r.id]; if (p && ids.has(+p) && !P[p]) return; out.push(r); a.filter(x => +P[x.id] === r.id).forEach(x => out.push(Object.assign({}, x, {_kid: true}))); }); return out; };
     w.innerHTML = `<div class="epc-h">${APP ? '' : '<button class="epc-back" data-close="1" aria-label="닫기">←</button>'}<span class="sp"><b>${APP ? '어닝톡' : '대화'}</b>${total ? `<small>안 읽음 ${total}</small>` : ''}</span>${APP ? '' : '<button class="epc-back" data-appadd="1" aria-label="홈 화면에 대화 앱 추가" style="width:auto;padding:0 10px;font-size:13px;font-weight:700">📲 앱으로</button>'}</div>
@@ -154,6 +156,7 @@
         ${g(['dm']).length ? `<div class="epc-sec">1:1</div>${g(['dm']).map(row).join('')}` : ''}
         ${g(['all','team','custom']).length ? `<div class="epc-sec">함께하는 방</div>${gt(['all','team','custom']).map(row).join('')}` : ''}
         ${pushReady && K().needPush() ? '<button class="epc-row" data-pushok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>알림 받기</b><p>눌러서 [허용] 한 번 · 새 메시지가 바로 와요</p></span></button>' : K().needBadgeOk() ? '<button class="epc-row" data-badgeok="1" style="background:#FFF8E1"><span class="epc-ic">🔔</span><span class="t"><b>아이콘에 안 읽은 숫자 보이기</b><p>눌러서 [허용]을 한 번만 눌러주세요</p></span></button>' : ''}
+        ${later.length ? `<button class="epc-row" data-showlater="1" style="justify-content:center;color:var(--epc-mute);font-weight:700;font-size:13px">📅 다가오는 현장 ${later.length}개 (모레부터) ${showLater ? '▴ 접기' : '▾ 보기'}</button>${showLater ? later.map(row).join('') : ''}` : ''}
         ${done.length ? `<button class="epc-row" data-showdone="1" style="justify-content:center;color:var(--epc-mute);font-weight:700;font-size:13px">✅ 작업 끝난 현장 ${done.length}개 ${showDone ? '▴ 접기' : '▾ 보기'}</button>${showDone ? done.map(row).join('') : ''}` : ''}
         <p class="epc-note">🔒 내가 속한 방만 보여요.${g(['cust','site']).length ? ' 현장 방은 작업 끝 7일 뒤 목록에서 빠져요 · 초록 = 작업 중, 빨강 = 작업 끝' : ''}<br>대화와 사진은 업무 기록으로 보관돼요.</p>
       </div>`;
@@ -234,6 +237,7 @@
   }
   const K = () => window.EPKit;
   let mark = null;
+  let showLater = false;
   let replying = null;   // 답장(댓글) 중인 원문   // '여기까지 읽으셨습니다' 위치 (방에 있는 동안)
   // 멘션 목록: 방 인원(나 빼고) + 대표
   function memList(){
@@ -401,6 +405,7 @@
     if (b.dataset.pushok) return K().pushOn(pushKey, pushSave, true).then(r => { if (r !== 'ok') alert(r === 'denied' ? '알림이 꺼져 있어요. 폰 설정 → 알림 → 어닝톡에서 켜주세요' : '이 폰에서는 알림을 켤 수 없어요. 카톡 알림으로 계속 받아요'); drawList(); loadHome(); });
     if (b.dataset.list) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }
     if (b.dataset.showdone) { showDone = !showDone; return drawList(); }
+    if (b.dataset.showlater) { showLater = !showLater; return drawList(); }
     if (b.dataset.room) return openRoom(+b.dataset.room);
     if (b.dataset.cdone) return custConfirm(+b.dataset.cdone);
     if (b.dataset.send) return send();
