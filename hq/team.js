@@ -79,7 +79,7 @@ function siteCard(x){
     <div class="r1"><b>${esc(j.title)}</b><span class="tm">${hm(j.start_time)||'시간 미정'}~</span></div>
     <div class="ppl">${x.boss ? '<i class="lead">대표 현장</i>' : x.partner ? '<span class="tg prt">도급 파트너</span> ' + x.ppl.map(p => call(p.name, p.phone, '', esc(p.name))).join('')
       : `<span class="n">${x.crewN}${j.headcount?'/'+j.headcount:''}인</span>${extra}${x.ppl.map(p => call(p.name, p.phone, p===lead&&!j.boss_on?'lead':'', `${esc(p.name)}${p.role&&p===lead?' '+esc(p.role):''}`)).join('')}${empty?`<i class="empty">+${empty} 비었음</i>`:''}`}</div>
-    <div class="st"><span class="tg ${tc}">${x.state==='done'?'✅ '+tl+' '+clock(x.done):tl}</span>${x.warn.map(w => `<span class="tg bad">⚠ ${esc(w)}</span>`).join('')}
+    <div class="st"><span class="tg ${tc}">${x.state==='done'?'✅ '+tl+' '+clock(x.done):tl}</span>${!x.done && (x.partner || x.boss || (j.headcount && x.crewN >= j.headcount)) ? '<span class="tg okc">👥 인원 확정</span>' : ''}${x.warn.map(w => `<span class="tg bad">⚠ ${esc(w)}</span>`).join('')}
       ${x.ph.length?`<span>📸 ${x.ph.length}장 · 마지막 ${clock(x.ph[0].created_at)}</span>`:''}${j.live_views?`<span>👀 고객님 ${j.live_views}번 봄</span>`:''}${x.info.map(t => `<span>${esc(t)}</span>`).join('')}</div>
     ${x.state==='on'||x.state==='over'?`<div class="bar"><i style="width:${Math.round(x.prog*100)}%"></i></div>`:''}</a>`;
 }
@@ -149,32 +149,43 @@ async function loadMonthStats(){
 }
 function monthStats(){
   const st = H.S.tmStats; if (!st) return null;
-  const isLead = p => /팀장|실장/.test(p.role || '');
-  const boss = {n: 0, with: {}, bad: 0}, pair = {}, pairBad = {}, lead = {}; let badN = 0;
+  const isLead = p => /팀장|실장/.test(p.role || '') || p.team === 'PRT';
   const add = (o, k) => o[k] = (o[k] || 0) + 1;
+  const boss = {n: 0, bad: 0, w: {}, wb: {}}, pair = {}, pairBad = {}, lead = {}; let badN = 0;
   st.rows.forEach(j => {
     const ppl = (j.assignments || []).filter(a => a.status === 'approved').map(a => H.P(a.staff_id)).filter(p => p && p.name !== '?');
     const names = ppl.map(p => p.name).concat((j.helpers || []).map(h => '외부 ' + h.name));
-    const bad = !!(j.cs && (j.cs.claim || j.cs.revisit)); if (bad) badN++;   // 사고 = 클레임 or 재방문 (운영 > CS·품질)
-    if (j.boss_on) { boss.n++; if (bad) boss.bad++; names.forEach(n => add(boss.with, n)); }
+    const bad = !!(j.cs && (j.cs.claim || j.cs.revisit)); if (bad) badN++;   // 사고 = 클레임 or 재방문 (운영 › CS·품질)
+    if (j.boss_on) { boss.n++; if (bad) boss.bad++; names.forEach(n => { add(boss.w, n); if (bad) add(boss.wb, n); }); }
     for (let a = 0; a < names.length; a++) for (let b = a + 1; b < names.length; b++) { const k = [names[a], names[b]].sort().join(' · '); add(pair, k); if (bad) add(pairBad, k); }
     const coll = ppl.find(p => p.id === j.collector_id && isLead(p)), ld = coll || ppl.find(isLead);
-    if (ld) { const L = lead[ld.name] = lead[ld.name] || {n: 0, with: {}, bad: 0}; L.n++; if (bad) L.bad++; names.filter(n => n !== ld.name).forEach(n => add(L.with, n)); }
+    if (ld) { const L = lead[ld.name] = lead[ld.name] || {p: ld, n: 0, bad: 0, w: {}, wb: {}}; L.n++; if (bad) L.bad++;
+      names.filter(n => n !== ld.name).forEach(n => { add(L.w, n); if (bad) add(L.wb, n); }); }
   });
-  const top = (o, k) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, k || 99);
-  return {m: st.m, off: st.off, total: st.rows.length, badN, pairBad, boss, pairs: top(pair, 8), leads: Object.entries(lead).sort((a, b) => b[1].n - a[1].n), top};
+  const pairs = Object.entries(pair).map(([k, c]) => ({k, c, b: pairBad[k] || 0}));
+  return {m: st.m, off: st.off, total: st.rows.length, badN, boss,
+    good: pairs.filter(x => !x.b && x.c >= 2).sort((a, b) => b.c - a.c).slice(0, 5),
+    watch: pairs.filter(x => x.b).sort((a, b) => b.b - a.b || b.c - a.c).slice(0, 5),
+    leads: Object.values(lead).sort((a, b) => b.n - a.n)};
 }
 function statsBox(){
   const d = monthStats(); if (!d) return `<section class="box"><div class="note">함께한 현장 숫자 불러오는 중…</div></section>`;
-  const own = H.S.owner, bd = n => n ? ` <em class="bad">⚠${n}</em>` : '';
-  const chips = (arr, badMap) => arr.length ? arr.map(([n, c]) => `<span class="tc">${esc(n)} <b>${c}</b>${badMap ? bd(badMap[n]) : ''}</span>`).join('') : '<span class="note">없음</span>';
-  return `<section class="box tm-stat"><div class="bh"><h3>📊 ${d.m}월 함께한 현장 <span class="sub">대표님·관리자만 · ${d.off ? '지난달 전체' : '오늘까지'} ${d.total}곳${d.badN ? ` · <em class="bad">⚠ 사고 ${d.badN}곳</em>` : ''}</span></h3>
-      <span style="display:flex;gap:6px"><button class="btn sm ${d.off ? 'ghost' : ''}" data-a="tmMon" data-v="0">이번 달</button><button class="btn sm ${d.off ? '' : 'ghost'}" data-a="tmMon" data-v="-1">지난달</button></span></div>
-    <div class="tm-sg">
-      <div><h4>🧹 ${own ? '나랑' : '대표님이랑'} 같이 간 사람 <small>대표님 현장 ${d.boss.n}곳${bd(d.boss.bad)}</small></h4><div class="tcs">${chips(d.top(d.boss.with))}</div></div>
-      <div><h4>👥 자주 같이 간 짝</h4><div class="tcs">${chips(d.pairs, d.pairBad)}</div></div>
-      <div><h4>🧑‍✈️ 팀장별 · 누구랑 갔나</h4>${d.leads.length ? d.leads.map(([n, L]) => `<div class="tm-ld"><b>${esc(n)}</b> <small>${L.n}곳${bd(L.bad)}</small><div class="tcs">${chips(d.top(L.with))}</div></div>`).join('') : '<span class="note">팀장이 간 현장이 없어요</span>'}</div>
-    </div><p class="tm-foot">취소·견적 중 현장은 빼고 셌어요 · 팀장 = 그날 수금 담당(팀장·실장), 없으면 같이 간 팀장·실장 · ⚠ = 사고(운영 › CS·품질에 클레임·재방문 적은 현장)</p></section>`;
+  const own = H.S.owner, pct = (b, n) => n ? Math.round(b / n * 100) : 0;
+  const row = (n, c, b, max) => `<div class="sr"><span class="nm">${esc(n)}</span><span class="sb"><i style="width:${(c - b) / (max || 1) * 100}%"></i><i class="b" style="width:${b / (max || 1) * 100}%"></i></span><span class="c">${c}${b ? `<em>⚠${b}</em>` : ''}</span></div>`;
+  const bars = (w, wb, max, prt) => { const e = Object.entries(w).sort((a, b) => b[1] - a[1]); return e.length ? e.map(([n, c]) => row(n, c, wb[n] || 0, max)).join('') : `<p class="note">${prt ? '도급 — 자기 팀 인원으로 가요' : '아직 없어요'}</p>`; };
+  const card = (title, sub, n, bad, w, wb, av, prt) => `<div class="lc"><div class="top">${av}<div class="t"><b>${title}</b><small>${sub}</small></div>
+      <div class="rate ${bad ? 'warn' : 'ok'}"><b>${bad ? '⚠ ' + bad : '0'}</b><small>사고 ${pct(bad, n)}%</small></div></div>
+      <div class="mem">${bars(w, wb, n, prt)}</div></div>`;
+  const bossCard = card(own ? '나 (대표)' : '대표님', `${d.boss.n}곳 같이 감`, d.boss.n, d.boss.bad, d.boss.w, d.boss.wb, '<span class="av me">대표</span>');
+  const leadCards = d.leads.map(L => card(`${esc(L.p.name)} ${esc(L.p.team === 'PRT' ? '도급' : (L.p.role || ''))}`, `${L.n}곳 맡음`, L.n, L.bad, L.w, L.wb, H.av(L.p, 40), L.p.team === 'PRT')).join('');
+  const plist = (arr, good) => arr.length ? arr.map(x => `<div class="pair"><span class="n">${esc(x.k)}</span><b>${x.c}</b><span class="tag ${good ? 'g' : ''}">${good ? '사고 0' : '⚠ ' + x.b}</span></div>`).join('') : `<p class="note">${good ? '2번 이상 같이 간 짝이 아직 없어요' : '사고 난 짝이 없어요 👍'}</p>`;
+  return `<section class="box tm-stat"><div class="bh"><h3>📊 ${d.m}월 함께한 현장 <span class="sub">대표님·관리자만 보여요</span></h3>
+      <div class="seg"><button class="${d.off ? '' : 'on'}" data-a="tmMon" data-v="0">이번 달</button><button class="${d.off ? 'on' : ''}" data-a="tmMon" data-v="-1">지난달</button></div></div>
+    <div class="kpis"><div class="kpi"><small>${d.off ? '지난달' : '이번 달'} 현장</small><b>${d.total}<i>곳</i></b></div><div class="kpi"><small>대표님 간 현장</small><b>${d.boss.n}<i>곳</i></b></div>
+      <div class="kpi ${d.badN ? 'bad' : ''}"><small>사고 (클레임·재방문)</small><b>${d.badN}<i>곳</i></b></div><div class="kpi"><small>사고율</small><b>${pct(d.badN, d.total)}<i>%</i></b></div></div>
+    <div class="leads">${bossCard}${leadCards}</div>
+    <div class="pairs"><div><h4>👥 잘 맞는 짝 <small>사고 0 · 많이 간 순</small></h4>${plist(d.good, true)}</div><div><h4>⚠ 살펴볼 짝 <small>사고 있었던 짝</small></h4>${plist(d.watch, false)}</div></div>
+    <p class="tm-foot">취소·견적 중 현장은 빼요 · 팀장 = 그날 수금 담당(팀장·실장·도급), 없으면 같이 간 팀장·실장 · 사고 = 운영 › CS·품질에 클레임·재방문 적은 현장 · 막대 빨강 = 그중 사고</p></section>`;
 }
 H.ACT.tmMon = async el => { H.S.tmMon = +el.dataset.v; H.S.tmStats = null; H.render(); await loadMonthStats(); H.render(); };
 })(window.HQ);
