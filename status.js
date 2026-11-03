@@ -9,13 +9,13 @@
   const KAKAO = 'http://pf.kakao.com/_hZqWX/chat';
 
   const LOOK = {
-    '현장 근무중': {i:'👷', n:'현장', t:'field', busy:true},
-    '내근중':      {i:'💻', n:'사무실', t:'ok'},
-    '근무중':      {i:'💻', n:'사무실', t:'ok'},
+    '현장 근무중': {i:'🦺', n:'현장', t:'field', busy:true},
+    '내근중':      {i:'📋', n:'사무실', t:'ok'},
+    '근무중':      {i:'📋', n:'사무실', t:'ok'},
     '회의중':      {i:'💬', t:'busy', busy:true},
-    '견적 외근중': {i:'🚙', n:'외근', t:'away', busy:true},
+    '견적 외근중': {i:'💼', n:'외근', t:'away', busy:true},
     '부동산 외근중':{i:'🏠', t:'away', busy:true},
-    '외근중':      {i:'🚙', n:'외근', t:'away', busy:true},
+    '외근중':      {i:'💼', n:'외근', t:'away', busy:true},
     '일정 중':     {i:'📌', t:'away', busy:true},
     '휴가중':      {i:'🌴', t:'off', busy:true},
     '부재':        {i:'⏸', t:'off', busy:true},
