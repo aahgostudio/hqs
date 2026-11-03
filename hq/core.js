@@ -274,7 +274,7 @@ H.loadPunchToday = async () => { try { const d0 = new Date(); d0.setHours(0,0,0,
 H.ACT.bossPunch = async el => { const k = el.dataset.k;
   try { await H.q(sb.from('boss_punch').insert({kind:k}));
     const b = H.S.boss || {}; if (['외근중','현장','휴가중','부재'].includes(b.state)) await H.q(sb.from('settings').upsert({key:'boss_status', value:{state:'근무중', memo:b.memo||'', until:null}}));
-  } catch(e){ return H.toast(String(e.message||e).includes('boss_punch') ? 'SQL v36을 먼저 돌려주세요' : '저장 못 했어요'); }
+  } catch(e){ return H.toast('저장 못 했어요 · ' + String(e.message||e).slice(0, 80)); }
   H.close(); H.toast(k==='off' ? '퇴근 찍었어요 · 오늘도 수고하셨어요' : H.BK[k][0] + ' 찍었어요 · 직원 화면에 바로 보여요');
   await H.loadPunchToday(); H._dirty = Date.now(); await H.refresh(); };
 H.FORM.boss = async v => {
