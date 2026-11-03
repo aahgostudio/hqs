@@ -25,7 +25,11 @@
 
   function av(name, size, o){
     o = o || {}; size = size || 34; const p = map[name];
-    const st = `width:${size}px;height:${size}px;font-size:${Math.round(size*.36)}px`;
+    // o.tint: 사람마다 연한 색 (이름으로 고정 — 늘 같은 사람 = 같은 색)
+    const TINT = [['#EDE7FB','#5B3FA8'],['#E3F1FB','#1F5F8B'],['#E5F5EC','#1E7A4C'],['#FDF0E1','#9A5A12'],['#FCE8EF','#A3345E'],['#E8F4F3','#1F6E69'],['#F1F0E4','#6B6421'],['#EAEAF4','#3F4280']];
+    let h = 0; for (const c of String(name||'')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const tc = o.tint && !p ? TINT[h % TINT.length] : null;
+    const st = `width:${size}px;height:${size}px;font-size:${Math.round(size*.36)}px${tc ? `;background:${tc[0]};color:${tc[1]}` : ''}`;
     const inner = p ? `<img src="${esc(pub(p))}" alt="" loading="lazy">` : esc(two(name));
     const tag = o.me ? 'button' : 'span';
     return `<${tag} ${o.me?'type="button" data-epprof="1" title="내 프로필 사진 바꾸기"':''} class="ep-av ${p?'has':''} ${o.cls||''}" style="${st}">${inner}${o.me?'<i class="ep-cam">📷</i>':''}</${tag}>`;
