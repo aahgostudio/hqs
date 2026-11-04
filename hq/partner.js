@@ -20,9 +20,13 @@ H.loadPartners = async () => {
   const [p, r, x] = await Promise.all([
     H.q(sb.from('partners').select('*').order('created_at')),
     H.q(sb.from('referrals').select('*').order('created_at', {ascending:false}).limit(1000)),
-    H.q(sb.from('partner_payouts').select('*').order('due_month', {ascending:false}).limit(2000))
+    (H.S.owner || H.S.needV42) ? H.q(sb.from('partner_payouts').select('*').order('due_month', {ascending:false}).limit(2000)) : Promise.resolve([])
   ]);
   Object.assign(H.S, {partners: p, refs: r, ppays: x});
+  // v42: 입금 계좌는 대표만 읽는 partner_private 표 (관리자 계정은 서버에서 막힘)
+  H.S.pbank = {};
+  if (H.S.owner) { if (H.S.needV42) p.forEach(a => { if (a.bank) H.S.pbank[a.id] = a.bank; });
+    else (await H.q(sb.from('partner_private').select('*'))).forEach(b => { H.S.pbank[b.partner_id] = b.bank; }); }
   H.S.pmsgs = H.S.needV41 ? [] : await H.q(sb.from('partner_msgs').select('*').order('created_at', {ascending:false}).limit(1500));
 };
 H.pUnread = () => (H.S.pmsgs||[]).filter(m => !m.from_hq && !m.hq_read_at).length;
@@ -105,6 +109,7 @@ H.ACT.refDel = async el => { if (!confirm('이 소개를 지울까요? (수수�
 
 // 계약 성사 → 수수료 회차 만들기 (입금 안 한 줄만 다시 계산)
 const makePays = async r => {
+  if (!H.S.needV42) return -1;   // v42부터는 서버(트리거)가 수수료 회차를 만듦 — 관리자가 처리해도 생김
   const p = PT(r.partner_id); if (!p.id) return 0;
   const old = (H.S.ppays||[]).filter(x => x.referral_id === r.id);
   const unpaid = old.filter(x => !x.paid_on).map(x => x.id);
@@ -129,7 +134,7 @@ H.FORM.refEdit = async v => { const id = +v.get('id'), r0 = R(id);
   if (up.status === 'won' && !up.amount && !(up.recurring && up.monthly)) return H.toast('계약 성사면 계약금액(또는 정기 월 금액)을 넣어 주세요');
   await H.q(sb.from('referrals').update(up).eq('id', id));
   const n = await makePays({...r0, ...up, id});
-  H.close(); H.toast(up.status === 'won' ? `계약 성사 · 수수료 ${n}줄 만들었어요` : '저장했어요 · 파트너 화면에도 바로 보여요'); H.refresh(); };
+  H.close(); H.toast(up.status === 'won' ? (n < 0 ? '계약 성사 · 수수료는 자동으로 잡혔어요' : `계약 성사 · 수수료 ${n}줄 만들었어요`) : '저장했어요 · 파트너 화면에도 바로 보여요'); H.refresh(); };
 
 H.ACT.refNew = () => H.open(`<form data-f="refNew"><h3>본사 입력 · 소개 접수</h3><p class="note" style="margin:-6px 0 10px">파트너가 전화·카톡으로 알려준 소개를 대신 넣어요.</p>
   <div class="fg"><div class="field full"><label>소개한 파트너</label><select name="partner_id" required>${(H.S.partners||[]).filter(p=>p.status!=='end').map(p => `<option value="${p.id}">${esc(p.name)} · ${PK[p.kind]}</option>`).join('')}</select></div>
@@ -169,15 +174,17 @@ H.ACT.ptEdit = el => { const p = el.dataset.p ? PT(+el.dataset.p) : {kind:'refer
     <div class="field"><label>상태</label><select name="status">${Object.entries(PS).map(([k,l]) => `<option value="${k}" ${p.status===k?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="field"><label>소개 링크 코드</label><input name="ref_code" value="${esc(p.ref_code||'')}" placeholder="비우면 자동"></div>
     <div class="field full"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="signed" ${p.signed?'checked':''} style="width:auto">파트너 계약서 서명 완료</label></div>
-    ${H.S.owner ? `<div class="field full"><label>입금 계좌 (대표만 봄)</label><input name="bank" value="${esc(p.bank||'')}" placeholder="은행 · 계좌번호 · 예금주"></div>` : ''}
+    ${H.S.owner ? `<div class="field full"><label>입금 계좌 (대표만 봄)</label><input name="bank" value="${esc((H.S.pbank||{})[p.id]||'')}" placeholder="은행 · 계좌번호 · 예금주"></div>` : ''}
     <div class="field full"><label>메모</label><input name="memo" value="${esc(p.memo||'')}"></div></div>
     ${H.sacts('저장')}<input type="hidden" name="id" value="${p.id||''}"></form>`, true); };
 H.FORM.ptEdit = async v => { const id = H.nnum(v.get('id'));
   const code = (v.get('ref_code')||'').trim().replace(/[^A-Za-z0-9_-]/g,'') || (id && PT(id).ref_code) || H.rnd(6);
   const row = {name: v.get('name').trim(), phone: H.nn(v.get('phone')), kind: v.get('kind'), job: H.nn(v.get('job')), rate: +v.get('rate')||10, months: +v.get('months')||3,
     status: v.get('status'), ref_code: code, signed: v.get('signed') === 'on', memo: H.nn(v.get('memo'))};
-  if (H.S.owner) row.bank = H.nn(v.get('bank'));
-  if (id) await H.q(sb.from('partners').update(row).eq('id', id)); else await H.q(sb.from('partners').insert(row));
+  if (H.S.owner && H.S.needV42) row.bank = H.nn(v.get('bank'));
+  let pid = id;
+  if (id) await H.q(sb.from('partners').update(row).eq('id', id)); else pid = (await H.q(sb.from('partners').insert(row).select('id').single())).id;
+  if (H.S.owner && !H.S.needV42) await H.q(sb.from('partner_private').upsert({partner_id: pid, bank: H.nn(v.get('bank')), updated_at: new Date().toISOString()}));
   H.close(); H.toast(id ? '저장했어요' : '파트너를 추가했어요 · [링크 보내기]로 개인 링크를 보내세요'); H.refresh(); };
 H.ACT.ptLink = el => { const p = PT(+el.dataset.p);
   const msg = `${p.name}님, 리츠종합클린 영업파트너가 되신 걸 환영해요 :)\n\n① 내 파트너 화면 (소개 접수 · 진행 현황 · 내 수수료)\n${H.partnerUrl(p)}\n\n② 고객님께 보내는 소개 링크 (여기로 문의하면 ${p.name}님 소개로 자동 기록)\n${H.refUrl(p)}\n\n궁금한 건 010-7193-2246 으로 편하게 연락 주세요!`;
@@ -235,7 +242,7 @@ H.partnerFee = () => {
     const col = !r.job_id ? '<span class="pill p-mute">현장 미연결</span>' : !j ? '<span class="pill p-mute">기간 밖</span>' : j.collected_at ? '<span class="pill p-ok">잔금 받음</span>' : '<span class="pill p-warn">잔금 미수</span>';
     return `<tr${x.paid_on?' style="opacity:.6"':''}><td><b>${esc(p.name)}</b></td><td>${esc(r.customer||'')}${x.due_month < m ? ' <span class="pill p-warn">밀림</span>' : ''}</td><td>${x.rounds > 1 ? `정기 ${x.round}/${x.rounds}` : '1회'}</td>
       <td class="num">${won(x.base)}</td><td class="num">${won(x.fee)}</td><td class="num">${won(x.tax)}</td><td class="num"><b>${won(x.pay)}</b></td><td>${col}</td>
-      <td style="white-space:nowrap">${p.bank ? `<button class="btn sm ghost" data-a="ptCopyOne" data-t="${esc(p.bank)}">계좌</button> ` : ''}${x.paid_on ? `<span class="pill p-ok">${md(x.paid_on)} 입금</span> <button class="btn sm ghost" data-a="ppUndo" data-x="${x.id}">취소</button>` : `<button class="btn sm" data-a="ppPaid" data-x="${x.id}">입금 완료</button>`}</td></tr>`; }).join('');
+      <td style="white-space:nowrap">${H.S.pbank[p.id] ? `<button class="btn sm ghost" data-a="ptCopyOne" data-t="${esc(H.S.pbank[p.id])}">계좌</button> ` : ''}${x.paid_on ? `<span class="pill p-ok">${md(x.paid_on)} 입금</span> <button class="btn sm ghost" data-a="ppUndo" data-x="${x.id}">취소</button>` : `<button class="btn sm" data-a="ppPaid" data-x="${x.id}">입금 완료</button>`}</td></tr>`; }).join('');
   return `<section class="box"><div class="bh"><h3>파트너 수수료 · ${H.V.ops.month.getFullYear()}년 ${H.V.ops.month.getMonth()+1}월</h3><span class="sub">잔금 받은 현장만 지급 · 3.3% 원천징수</span></div>
     <div class="pt-kpis" style="margin-bottom:12px"><div><small>수수료 합계</small><b>${won(sum('fee'))}</b></div><div><small>3.3% 공제</small><b>${won(sum('tax'))}</b></div><div><small>보낼 돈</small><b style="color:var(--wait)">${won(list.filter(x=>!x.paid_on).reduce((a,x)=>a+x.pay,0))}</b></div><div><small>입금 완료</small><b>${list.filter(x=>x.paid_on).length}<i>/ ${list.length}건</i></b></div></div>
     <div class="tbl"><table><thead><tr><th>파트너</th><th>고객</th><th>구분</th><th class="num">기준금액</th><th class="num">수수료</th><th class="num">3.3%</th><th class="num">보낼 돈</th><th>현장</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="9" class="empty">이번 달 지급할 수수료가 없어요</td></tr>'}</tbody></table></div>
