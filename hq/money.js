@@ -23,13 +23,13 @@ H.view('money', {label:'경영', owner:true,
     return `<div class="bh" style="margin:0"><div style="display:flex;gap:6px;align-items:center"><button class="btn ghost sm" data-a="monNav" data-n="-1">${H.I('left')}</button><b>${m.getFullYear()}년 ${m.getMonth()+1}월</b><button class="btn ghost sm" data-a="monNav" data-n="1">${H.I('right')}</button></div><span class="note">세금·공제는 기본 계산이에요 · 신고 전 세무사 확인</span></div>
     <section class="box money"><div class="bh"><h3>${m.getMonth()+1}월 전체 수익</h3><button class="btn sm ghost" data-a="monXlsx">엑셀 받기 (세무사용)</button></div>
       <div class="mrow">
-        <div><span>총 매출</span><b>${won(R.rev)}</b><small> 클린 ${won(R.cleanRev)} · 부동산 ${won(R.resRev)}</small></div>
-        <div><span>− 클린 인건비</span><b style="font-size:20px">${won(R.labor)}</b></div>
+        <div><span>확정 매출 <small style="opacity:.75">끝난 현장 ${R.doneN}건</small></span><b>${won(R.revDone)}</b><small> 클린 ${won(R.cleanRevDone)} · 부동산 ${won(R.resRevDone)}${R.planN ? ` · 예정 ${R.planN}건 +${won(R.rev - R.revDone)}` : ''}</small></div>
+        <div><span>− 클린 인건비</span><b style="font-size:20px">${won(R.laborDone)}</b></div>
         <div><span>− 부동산 배분</span><b style="font-size:20px">${won(R.shareTot)}</b></div>
         <div><span>− 외주 · 매입</span><b style="font-size:20px">${won(R.puTot)}</b></div>
         <div><span>− 운영비</span><b style="font-size:20px">${won(R.exTot)}</b></div>
         <div><span>미수금</span><b style="font-size:20px;color:#FCA5A5">${won(R.unpaid)}</b></div>
-        <div class="net"><span>순수익</span><b>${won(R.net)}</b></div>
+        <div class="net"><span>순수익 <small style="opacity:.75">확정</small></span><b>${won(R.netDone)}</b>${R.planN ? `<small style="display:block;opacity:.8;margin-top:2px">이 달 일정 다 끝나면 예상 ${won(R.net)}</small>` : ''}</div>
       </div></section>
     <nav class="mtabs">${[['sum','요약'],['clean','클린 정산'],['res','부동산 정산'],['cost','운영비 · 매입']].map(([k,l])=>`<button data-a="monSec" data-k="${k}" aria-pressed="${sec===k}">${l}</button>`).join('')}</nav>
     ${sec==='sum' ? `<div class="g2">
@@ -165,7 +165,15 @@ H.calcMonth = () => {
   R.rev = R.cleanRev + R.resRev;
   R.unpaid = jobs.filter(j=>j.job_date<today).reduce((n,j)=>n + (j.balance_amount && !j.collected_at && j.contract_mode!=='A' ? +j.balance_amount : 0) + (+j.deposit_amount && !j.deposit_paid ? +j.deposit_amount : 0), 0)
     + deals.reduce((n,d)=>n+(d.sides||[]).filter(x=>x.paid===false).reduce((a,x)=>a+(+x.amount||0),0),0);
-  R.net = R.rev - R.labor - R.shareTot - R.puTot - R.exTot;
+  R.net = R.rev - R.labor - R.shareTot - R.puTot - R.exTot;   // 이 달 일정 전부 (예정 포함)
+  // 1104Y: 확정 = 작업 끝난 현장 · 받은 부동산 수수료만 — 아직 안 한 현장은 '예정'으로만
+  const done = x => x.j.status === 'done' || !!x.j.work_done_at;
+  R.doneN = R.cleanJobs.filter(done).length; R.planN = R.cleanJobs.length - R.doneN;
+  R.cleanRevDone = R.cleanJobs.filter(done).reduce((n,x)=>n+x.rev,0);
+  R.laborDone = R.cleanJobs.filter(done).reduce((n,x)=>n+x.lab,0);
+  R.resRevDone = deals.reduce((n,d)=>n+(d.sides||[]).filter(x=>x.paid!==false).reduce((a,x)=>a+(+x.amount||0),0),0);
+  R.revDone = R.cleanRevDone + R.resRevDone;
+  R.netDone = R.revDone - R.laborDone - R.shareTot - R.puTot - R.exTot;
   return R;
 };
 
@@ -218,7 +226,7 @@ H.ACT.monXlsx = async () => {
   if (!window.XLSX) await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
   const S = H.S, R = H.calcMonth(), m = V.money.month, wb = XLSX.utils.book_new();
   const add = (name, rows) => XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), name);
-  add('요약', [['항목','금액'],['클린 매출',R.cleanRev],['부동산 매출',R.resRev],['클린 인건비',R.labor],['부동산 배분',R.shareTot],['외주·매입',R.puTot],['운영비',R.exTot],['순수익',R.net],['미수금',R.unpaid],[],['클린 증빙 발행',R.clean.issued],['클린 증빙 안 함',R.clean.not],['부동산 증빙 발행',R.res.issued],['부동산 증빙 안 함',R.res.not]]);
+  add('요약', [['항목','금액'],['클린 매출',R.cleanRev],['부동산 매출',R.resRev],['클린 인건비',R.labor],['부동산 배분',R.shareTot],['외주·매입',R.puTot],['운영비',R.exTot],['확정 순수익',R.netDone],['예상 순수익 (예정 포함)',R.net],['미수금',R.unpaid],[],['클린 증빙 발행',R.clean.issued],['클린 증빙 안 함',R.clean.not],['부동산 증빙 발행',R.res.issued],['부동산 증빙 안 함',R.res.not]]);
   const cl = [['날짜','현장','계약금액','도급','예약금','예약금 결제','예약금 증빙','예약금 발행','잔금','잔금 결제','잔금 증빙','잔금 발행','추가금','추가금 내역','본사 매출','인건비','외주']];
   R.cleanJobs.forEach(({j,rev,lab,pu}) => cl.push([j.job_date, j.title, j.total_amount||0, j.contract_mode||'', j.deposit_amount||0, j.deposit_how||'', j.deposit_proof||'', j.deposit_issued?'O':'', j.balance_amount||0, j.balance_how||'', j.balance_proof||'', j.balance_issued?'O':'', H.extrasSum(j), (j.extras||[]).map(x=>`${x.name} ${x.amount}${x.issued?'(발행)':''}`).join(', '), rev, lab, pu]));
   add('클린 매출', cl);
