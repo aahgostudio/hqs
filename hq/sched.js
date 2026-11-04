@@ -24,7 +24,7 @@ H.view('sched', {label:'일정',
         if (d.getDay() === 0) h += '<tr>';
         const s = ymd(d); const items = dayItems(s);
         const av = v.f.avail ? (S.avail||[]).filter(a=>a.day===s) : [];
-        const ok = av.filter(a=>a.kind==='ok').length, no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').length;
+        const ok = av.filter(a=>a.kind==='ok' && H.P(a.staff_id).team !== 'RES').length, no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').length;
         // 1104D: 칸에는 색 막대만 (카카오워크처럼) — 제목·인원은 아래 하루 목록에서
         const rw = v.f.res ? (S.avail||[]).filter(a => a.day === s && a.kind === 'work' && H.P(a.staff_id).team === 'RES') : [];
         const bd = H.S.owner ? bossDay(s) : null;
@@ -70,9 +70,9 @@ function dayItems(s){
     if (!e.staff_id && f.me) out.push({t:e.ev_time||'', cls:'me', k:'e'+e.id, title:e.title, sub:e.ev_time?e.ev_time.slice(0,5):'종일', card:()=>evCard(e)});
   });
   // 1104E: 부동산 출근도 한 사람씩 일정처럼 — 출근 시간 순서대로 섞여 나옴
-  if (f.res) (S.avail||[]).filter(a => a.day === s && a.kind === 'work' && H.P(a.staff_id).team === 'RES').forEach(a => {
+  if (f.res) (S.avail||[]).filter(a => a.day === s && (a.kind === 'work' || a.kind === 'ok') && H.P(a.staff_id).team === 'RES').forEach(a => {
     const [b, e] = String(a.memo||'').split('-');
-    out.push({t:(b||'09:00').padStart(5,'0'), cls:'res', k:'w'+a.staff_id, title:'🏢 출근 · '+H.P(a.staff_id).name, sub:[b,e].filter(Boolean).join(' – ') || '사무실', card:()=>attCard(a.staff_id, s)});
+    out.push({t:(b||'09:00').padStart(5,'0'), cls:'res', k:'w'+a.staff_id, title:'🏢 출근 · '+H.P(a.staff_id).name, sub:[b,e].filter(Boolean).join(' – ') || '시간 미정', card:()=>attCard(a.staff_id, s)});
   });
   if (f.ntc) (S.notices||[]).filter(n=>ymd(new Date(n.created_at))===s).forEach(n=>out.push({t:'00', cls:'ntc', k:'n'+n.id, title:'📢 '+(n.title||n.body.slice(0,20)), sub:'공지', ntc:true}));
   return out.sort((a,b)=>a.t.localeCompare(b.t));
@@ -181,7 +181,7 @@ function daySide(s){
   const S = H.S;
   const items = dayItems(s);
   const av = (S.avail||[]).filter(a=>a.day===s);
-  const ok = av.filter(a=>a.kind==='ok').map(a=>H.P(a.staff_id).name), no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').map(a=>H.P(a.staff_id).name);
+  const ok = av.filter(a=>a.kind==='ok' && H.P(a.staff_id).team !== 'RES').map(a=>H.P(a.staff_id).name), no = av.filter(a=>a.kind==='no' && H.P(a.staff_id).team !== 'RES').map(a=>H.P(a.staff_id).name);
   const rw = av.filter(a => a.kind === 'work' && H.P(a.staff_id).team === 'RES');
   const hr = t => String(t||'').split('-').map(x => +x.split(':')[0]).join('–');
   return `<div class="dhd"><b>${md(s)}</b><span>${items.filter(x=>x.k[0]!=='w').length}개 일정</span></div>

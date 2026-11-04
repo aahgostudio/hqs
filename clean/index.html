@@ -219,13 +219,13 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1104g"></script>
+<script src="../status.js?v=1104h"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1104g'</script>
-<script src="../chatkit.js?v=1104g"></script>
-<script src="../chat.js?v=1104g"></script>
-<script src="../mymoney.js?v=1104g"></script>
+<script>window.EP_VER='1104h'</script>
+<script src="../chatkit.js?v=1104h"></script>
+<script src="../chat.js?v=1104h"></script>
+<script src="../mymoney.js?v=1104h"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -535,7 +535,7 @@ function closeSheet(){ const d = document.getElementById('sheetbg'); if (d) d.re
 function plusMenu(){
   const todayShoot = D.jobs.find(j => j.my_status === 'approved' && j.date === ymd(today) && j.status !== 'cancelled');
   sheet(`<h3>무엇을 넣을까요?</h3><div class="menu">
-    <button data-paint="1">🗓<span>${isRES()?'출근 가능·불가일 알려주기':'일할 수 있는 날 알려주기'}<small>가능·불가일을 한 번에 칠해요</small></span></button>
+    ${isRES() ? '' : `<button data-paint="1">🗓<span>일할 수 있는 날 알려주기<small>가능·불가일을 한 번에 칠해요</small></span></button>`}
     <button data-evnew="1">📌<span>내 일정 추가<small>${isRES()?'계약 · 잔금 · 안내 · 기타 (매물번호 연결)':isAGO()?'촬영 · 라이브 · 미팅 · 교육 · 기타':'개인 일정 · 메모'}</small></span></button>
     ${todayShoot?`<button data-shoot="${todayShoot.id}">📷<span>${W('오늘 현장 사진 올리기','오늘 촬영 사진 올리기')}<small>${esc(todayShoot.title)}</small></span></button>`:''}
     <button data-tab="report">📝<span>${W('현장 보고','작업 공유')}<small>${W('한 줄 보고 · 사진','진행 상황 · 결과물 · 메모')}</small></span></button></div>`);
