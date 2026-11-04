@@ -191,10 +191,13 @@ H.ACT.prtDone = async el => { const p = (H.calcMonth().prt||[]).find(x => x.s.id
   const open = p.items.filter(i => !i.done && (i.send || i.recv)), sS = open.reduce((a,i)=>a+i.send,0), sR = open.reduce((a,i)=>a+i.recv,0);
   if (!confirm(`${p.s.name} 사장님 정산을 끝낼까요?${sS ? `\n💸 보낸 돈 ${won(sS)}` : ''}${sR ? `\n📥 받은 돈 ${won(sR)}` : ''}`)) return;
   for (const i of open) await H.q(sb.from('assignments').update({paid: true}).match({job_id: i.j.id, staff_id: p.s.id}));
-  H.toast('도급 정산을 끝냈어요'); H.refresh(); };
+  if (sS) await H.payNotify(p.s.id, sS, null, '도급 정산');
+  H.toast(sS ? '도급 정산 끝 · 1:1 대화에 입금 알림 보냈어요' : '도급 정산을 끝냈어요'); H.refresh(); };
 H.ACT.payDone = async el => { const p = H.calcMonth().payBy[el.dataset.s]; if (!p || !confirm(`${p.s.name}님 ${V.money.month.getMonth()+1}월 정산을 지급 완료로 바꿀까요?`)) return;
+  const open = p.items.filter(({a}) => !a.paid), g = open.reduce((n,{a}) => n + (+a.pay_amount||0) + (+a.extra_amount||0), 0);
   for (const {j} of p.items) await H.q(sb.from('assignments').update({paid:true}).match({job_id:j.id, staff_id:el.dataset.s}));
-  H.toast('지급 완료로 바꿨어요 · 직원 정산 화면에도 보여요'); H.refresh(); };
+  if (g) await H.payNotify(p.s.id, g - H.deduct(p.s.pay_type, g, open.length), null, `${V.money.month.getMonth()+1}월 정산`);
+  H.toast('지급 완료 · 1:1 대화에 입금 알림 보냈어요'); H.refresh(); };
 H.ACT.payDetail = el => { const R = H.calcMonth(); const p = R.payBy[el.dataset.s]; if (!p) return;
   H.open(`<h3>${esc(p.s.name)} · ${V.money.month.getMonth()+1}월 정산</h3><p class="note">${H.PT[p.s.pay_type]} · 직원이 '내 정산'에서 보는 것과 같은 내역이에요</p>
     <div class="tbl"><table><thead><tr><th>날짜</th><th>현장</th><th class="num">기본</th><th class="num">추가</th><th>메모</th><th>지급</th></tr></thead><tbody>
@@ -210,7 +213,8 @@ H.ACT.resDetail = el => { const S = H.S, R = H.calcMonth(); const r = R.res.rows
 H.ACT.resPaid = async el => { const deals = (H.S.mDeals||[]).filter(d=>(d.agents||[]).includes(el.dataset.s)); if (!confirm('이 달 배분을 지급 완료로 바꿀까요?')) return;
   for (const d of deals) { const sh = (H.S.mShares||[]).find(x=>x.deal_id===d.id && x.staff_id===el.dataset.s);
     await H.q(sb.from('deal_shares').upsert({deal_id:d.id, staff_id:el.dataset.s, contrib: sh ? sh.contrib : 100/(d.agents.length||1), rate: sh ? sh.rate : null, paid:true})); }
-  H.toast('지급 완료로 바꿨어요'); H.refresh(); };
+  const r = (H.calcMonth().res.rows||[]).find(x => x.s.id === el.dataset.s); if (r && !r.paid && r.inc) await H.payNotify(r.s.id, r.inc - r.ded, null, `${V.money.month.getMonth()+1}월 배분`);
+  H.toast('지급 완료 · 1:1 대화에 입금 알림 보냈어요'); H.refresh(); };
 H.ACT.shareSheet = el => { const S = H.S; const d = S.mDeals.find(x=>x.id==el.dataset.id); const ag = d.agents||[];
   H.open(`<form data-f="share"><h3>배분 · ${esc(d.title)}</h3><p class="note">중개보수 ${won(H.dealTotal(d))}원 · 기여는 합이 100%가 되게 · 배분율을 비우면 직원 기본값</p>
     ${ag.map(a=>{ const sh = (S.mShares||[]).find(x=>x.deal_id===d.id && x.staff_id===a); const def = (S.payRules||[]).find(p=>p.staff_id===a);

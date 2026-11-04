@@ -72,13 +72,7 @@ H.ACT.stlPaid = async el => {
   }
   const s = H.P(el.dataset.s), n = +el.dataset.n;
   if (!confirm(`${s.name}님께 ${won(n)}원 입금하셨어요?\n입금 기록으로 남겨요.`)) return;
-  const chatOn = await sb.from('settings').select('value').eq('key', 'chat_on').maybeSingle();
-  const dm = (chatOn.data && String(chatOn.data.value) === 'true') ? await sb.from('chat_rooms').select('id').eq('kind', 'dm').eq('staff_id', s.id).maybeSingle() : {data: null};
-  if (dm.data && SD.d === H.ymd(new Date())) {   // 대화가 열려 있으면 1:1로 알림 → 자동 기록
-    const {error} = await sb.rpc('chat_admin_send', {p_room: dm.data.id, p_body: `${nick(s)}님 ${amtTxt(n)} 넣었어요\n고맙습니다`, p_photo: null}); if (error) throw error;
-  } else {
-    await H.q(sb.from('payouts').insert({staff_id: s.id, amount: n, paid_on: SD.d, source: 'manual', body: `${md(SD.d)} 정산`}));
-  }
+  await H.payNotify(s.id, n, SD.d, SD.d === H.ymd(new Date()) ? '' : `${md(SD.d)} 정산`);
   H.toast(`${s.name}님 입금 기록 완료`); SD = await load(SD.d); draw();
 };
 H.ACT.stlCopy = () => { const C = calc(SD);

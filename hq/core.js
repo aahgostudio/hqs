@@ -91,6 +91,25 @@ H.jobProofSplit = j => {
   return r;
 };
 // 공제 계산 (세무사 확인 전 기본값)
+/* 1104g: 어디서든 [입금 완료] → 1:1 대화에 "OO님 7 넣었어요" 자동 + 입금 기록 (대화 꺼져 있으면 기록만)
+   지난 날 정산이면 기록 날짜를 그날로 맞춤 */
+H.payNotify = async (staffId, amount, onDate, label) => {
+  const s = H.P(staffId), n = Math.round(+amount || 0); if (!n || !s || !s.id) return 'skip';
+  const today = H.ymd(new Date()), d = onDate || today;
+  const nk = s.name.length >= 3 ? s.name.slice(1) : s.name, amt = n % 10000 === 0 ? String(n / 10000) : H.won(n) + '원';
+  try {
+    const on = await H.sb.from('settings').select('value').eq('key','chat_on').maybeSingle();
+    if (on.data && String(on.data.value) === 'true' && !H.S.needV9) {
+      const dm = await H.sb.from('chat_rooms').select('id').eq('kind','dm').eq('staff_id', s.id).maybeSingle();
+      if (dm.data) {
+        const r = await H.sb.rpc('chat_admin_send', {p_room: dm.data.id, p_body: `${nk}님 ${amt} 넣었어요${label ? `\n(${label})` : ''}\n고맙습니다`, p_photo: null});
+        if (!r.error) { if (d !== today && r.data) await H.sb.from('payouts').update({paid_on: d}).eq('msg_id', r.data); return 'chat'; }
+      }
+    }
+  } catch(_){}
+  if (!H.S.needV9) await H.q(H.sb.from('payouts').insert({staff_id: s.id, amount: n, paid_on: d, source: 'manual', body: label || `${H.md(d)} 정산`}));
+  return 'record';
+};
 H.deduct = (type, amount, days) => {
   amount = +amount||0;
   if (type === 'freelance33') return Math.floor(amount * 0.033 / 10) * 10;

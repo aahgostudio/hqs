@@ -151,15 +151,7 @@ H.ACT.pyDone = async el => {
     H._dirty = Date.now(); H.toast(`외부지원 ${p.s.name}님 입금 완료 기록`); await load(P.d); H.render(); return;
   }
   for (const i of p.items) await H.q(sb.from('assignments').update({pay_amount: i.b, paid: true}).match({job_id: i.j.id, staff_id: p.s.id}));
-  if (!H.S.needV9) {
-    let sentViaChat = false;
-    try { const on = await sb.from('settings').select('value').eq('key','chat_on').maybeSingle();
-      if (on.data && String(on.data.value) === 'true' && P.d === H.ymd(new Date())) {
-        const dm = await sb.from('chat_rooms').select('id').eq('kind','dm').eq('staff_id', p.s.id).maybeSingle();
-        if (dm.data) { const n = p.net % 10000 === 0 ? String(p.net / 10000) : won(p.net) + '원';
-          const {error} = await sb.rpc('chat_admin_send', {p_room: dm.data.id, p_body: `${nick(p.s)}님 ${n} 넣었어요\n고맙습니다`, p_photo: null}); if (!error) sentViaChat = true; } } } catch(_){}
-    if (!sentViaChat) await H.q(sb.from('payouts').insert({staff_id: p.s.id, amount: p.net, paid_on: P.d, source: 'manual', body: `${md(P.d)} 정산`}));
-  }
+  await H.payNotify(p.s.id, p.net, P.d, P.d === H.ymd(new Date()) ? '' : `${md(P.d)} 정산`);
   H._dirty = Date.now();   // 홈·다른 화면이 예전 데이터로 '안 눌렀다'고 뜨지 않게
   H.toast(`${p.s.name}님 입금 완료 기록`); await load(P.d); await loadMonth().catch(() => {}); H.render();
 };

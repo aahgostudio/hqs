@@ -110,7 +110,7 @@ function roomHtml(){
     ${K.pinBar && C.pin ? K.pinBar(C.pin, true) : ''}<div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
     ${r.closed ? '<div class="ch-in note" style="justify-content:center">닫은 방이에요 · 직원 화면엔 안 보여요</div>' :
     K.bar({id:'chT', ph:`메시지를 입력해보세요.${matchMedia('(pointer:fine)').matches ? ' (Enter 전송 · Shift+Enter 줄바꿈)' : ''}`,
-      extra: OWN() && R.kind==='dm' && !H.S.needV9 ? '<button type="button" class="kit-x" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''})}`;
+      extra: ''})}`;
 }
 
 // 방 순서: PC에서 끌어다 놓기 (같은 묶음 안에서만)
