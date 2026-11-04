@@ -94,7 +94,7 @@ function roomHtml(){
     const hist = (m.history||[]).length ? `<details class="ch-hist"><summary>${m.deleted?'삭제됨':'수정됨'} · 이력 ${(m.history||[]).length}</summary>${m.history.map(h => `<div>${dt(h.at)} ${h.act==='delete'?'삭제 전':'수정 전'}: ${esc(h.body||'')}${h.photo?' [사진]':''}</div>`).join('')}</details>` : '';
     out += `<div class="ch-m ${m.mine?'mine':''}${cont?' cont':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine||cont?'':`<span class="ch-nm">${esc(m.name)}</span>`}
-      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}" data-mid="${m.id}"${m.photos?' style="padding:3px"':''}>${m.reply?K.quote(m.reply):''}${m.photos?K.grid(m.photos, pub, {sec: sec && !m.mine}):m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
+      <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}" data-mid="${m.id}"${m.photos?' style="padding:3px"':''}>${m.reply?K.quote(m.reply):''}${m.photos?K.grid(m.photos, pub, {sec: sec && !m.mine}):m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}" controls playsinline preload="none"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
       <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?(H.S.owner && typeof m.id === 'number' ? `<i class="ch-u" data-a="chReaders" data-id="${Math.max(...(m.ids || [m.id]))}" title="누가 읽었는지">${u}</i>` : `<i>${u}</i>`):''}${tail?`<span>${tm(m.at)}</span>`:''}${typeof m.id === 'number' && !m.deleted && !m.photos ? `<button type="button" class="ch-rp" data-a="chReply" data-id="${m.id}" title="답장">↩︎</button>` : ''}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${typeof m.id === 'number' ? K.reacts(m) : ''}${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
@@ -269,7 +269,7 @@ async function sendPhoto(f){
   const kd = K.kind(f); if (!kd) return H.toast('사진·동영상·문서(PDF·한글·엑셀·워드·PPT·ZIP)만 보낼 수 있어요');
   if (kd === 'doc') { if (f.size > 50*1024*1024) return H.toast('파일은 50MB까지 보낼 수 있어요');
     try { const ext = (f.name.split('.').pop() || 'bin').toLowerCase(), path = `boss/${C.cur}/${Date.now()}.${ext}`; H.toast('파일 올리는 중…');
-      const {error} = await H.sb.storage.from('chat').upload(path, f, {contentType: f.type || K.docMime(f.name)}); if (error) throw error;
+      const {error} = await H.sb.storage.from('chat').upload(path, f, {contentType: f.type || K.docMime(f.name), cacheControl: '31536000'}); if (error) throw error;
       await rpc('chat_admin_send', {p_room: C.cur, p_body: f.name, p_photo: path}); await tick();
     } catch(e){ H.fail(/mime|type/i.test(e.message || '') ? new Error('문서 보내기는 SQL 업데이트(v16)가 필요해요') : e); } return; }
   const vid = kd === 'vid';
@@ -277,7 +277,7 @@ async function sendPhoto(f){
   if (!vid) f = await K.shrink(f);   // 15MB 넘는 사진은 줄여서 올림
   if (!vid && f.size > 50*1024*1024) return H.toast('사진이 너무 커요 (50MB 넘음)');
   try { const path = `boss/${C.cur}/${Date.now()}.${extOf(f)}`; if (vid) H.toast('동영상 올리는 중…');
-    const {error} = await H.sb.storage.from('chat').upload(path, f, {contentType: f.type || (vid ? 'video/mp4' : 'image/jpeg')}); if (error) throw error;
+    const {error} = await H.sb.storage.from('chat').upload(path, f, {contentType: f.type || (vid ? 'video/mp4' : 'image/jpeg'), cacheControl: '31536000'}); if (error) throw error;
     await rpc('chat_admin_send', {p_room: C.cur, p_body: null, p_photo: path}); await tick();
   } catch(e){ H.fail(e); }
 }

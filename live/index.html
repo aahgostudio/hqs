@@ -127,7 +127,7 @@ function feed(){
   let day = '', out = '';
   items.forEach(it => { const d = md(it.at); if (d !== day) { day = d; out += `<div class="day">${d}</div>`; }
     if (it.k === 'p') out += `<div class="who">리츠종합클린 현장팀 · ${LAB[it.stage]||'작업 사진'}</div><div class="pg"><div class="grid ${it.items.length>=3?'g3':''}">${it.items.map(p=>`<a href="${url(p.path)}" target="_blank" rel="noopener"><img loading="lazy" src="${url(p.path)}" alt="${LAB[p.stage]||'작업 사진'}"></a>`).join('')}</div>${it.memo?`<div class="memo">"${esc(it.memo)}"</div>`:''}<small class="sub" style="display:block;text-align:right;margin-top:2px">${hm(it.last)}</small></div>`;
-    else { const media = it.photo ? (isVid(it.photo) ? `<video src="${curl(it.photo)}" controls playsinline preload="metadata"></video>` : /\.(jpe?g|png|webp|heic|heif|gif)$/i.test(it.photo) ? `<a href="${curl(it.photo)}" target="_blank" rel="noopener"><img loading="lazy" src="${curl(it.photo)}" alt=""></a>` : `<a href="${curl(it.photo)}" target="_blank" rel="noopener">📎 파일 보기</a>`) : '';
+    else { const media = it.photo ? (isVid(it.photo) ? `<video src="${curl(it.photo)}" controls playsinline preload="none"></video>` : /\.(jpe?g|png|webp|heic|heif|gif)$/i.test(it.photo) ? `<a href="${curl(it.photo)}" target="_blank" rel="noopener"><img loading="lazy" src="${curl(it.photo)}" alt=""></a>` : `<a href="${curl(it.photo)}" target="_blank" rel="noopener">📎 파일 보기</a>`) : '';
       out += it.me ? `<div class="bub me">${esc(it.deleted?'삭제된 메시지':it.body||'')}${media}<small>${hm(it.at)}</small></div>`
                    : `<div class="who">리츠종합클린 현장팀</div><div class="bub us">${it.deleted?'삭제된 메시지':esc(it.body||'')}${media}<small>${hm(it.at)}</small></div>`; } });
   return out;
