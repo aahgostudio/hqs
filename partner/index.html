@@ -8,7 +8,7 @@
 <title>리츠 영업파트너</title>
 <link rel="icon" href="../logo.svg">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="../style.css?v=1104l">
+<link rel="stylesheet" href="../style.css?v=1104m">
 <style>
 body{background:#F6F4EF}
 .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
@@ -60,13 +60,18 @@ h2{font-size:15px;font-weight:900;margin:18px 2px 8px}
 .tabs button{position:relative}.tabs .dot{top:2px;right:18%}
 .hcard{display:flex;justify-content:space-between;align-items:center;width:100%;background:#fff;border:0;border-radius:14px;padding:14px;margin-top:10px;font:inherit;font-size:14px;font-weight:900;text-align:left}
 .hcard span{font-size:12px;color:var(--sub);font-weight:700}
+.kg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ka{display:block;border:0;border-radius:14px;background:#fff;padding:0 0 10px;overflow:hidden;font:inherit;text-align:left;cursor:pointer}
+.ka img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#E9E6DF}.ka b{display:block;font-size:13.5px;padding:8px 10px 0}.ka span{font-size:11.5px;color:var(--sub);padding:0 10px}
+.kf{margin:12px 0 0;position:relative}.kf img{width:100%;border-radius:14px;display:block;background:#E9E6DF}
+.kf figcaption{position:absolute;top:10px;left:10px;font-size:12px;font-weight:900;color:#fff;background:rgba(0,0,0,.55);padding:4px 10px;border-radius:20px}.kf figcaption.after{background:#F68B1F}
 .err{max-width:420px;margin:80px auto;text-align:center;padding:20px;color:var(--sub)}
 </style>
 </head>
 <body>
 <div class="app" id="app"><div class="spin"></div></div>
 <div class="toast" id="toast" role="status"></div>
-<script src="../config.js?v=1104l"></script>
+<script src="../config.js?v=1104m"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
@@ -85,7 +90,10 @@ const KINDS = ['준공·인테리어 후','상가·사무실 정기','입주·�
 const ICON = {home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>', add:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>', list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/>', money:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/>', kit:'<path d="M4 4h16v16H4z"/><path d="M4 15l4-4 4 4 3-3 5 5"/>'};
 ICON.chat = '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/>';
 const TABS = [['home','홈'],['add','소개하기'],['list','내 소개'],['chat','대화'],['money','내 돈']];
-let D = null, tab = 'home', room = 'notice', MSG = [], UN = {notice:0, dm:0};
+let D = null, tab = 'home', room = 'notice', MSG = [], UN = {notice:0, dm:0}, KIT = null, ALB = null;
+const PURL = (path, bucket) => `${C.SUPABASE_URL}/storage/v1/object/public/${bucket||'live'}/${path}`;
+const STG = {before:'작업 전', during:'작업 중', after:'작업 후'};
+async function loadKit(){ const r = await sb.rpc('partner_kit', {p_token: K}); KIT = r.error ? [] : (r.data || []); if (tab === 'kit') render(); }
 
 async function load(){
   if (!K) return fail('링크가 맞지 않아요. 받은 카톡 링크로 다시 들어와 주세요.');
@@ -99,6 +107,13 @@ async function loadChat(){ const r = await sb.rpc('partner_chat', {p_token: K, p
   if (r.error) { MSG = null; } else { MSG = r.data || []; UN[room] = 0; }
   if (tab === 'chat') { render(); const e = document.scrollingElement; e.scrollTop = e.scrollHeight; } }
 const hm = t => { const d = new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+async function savePhotos(id, btn){ const a = (KIT||[]).find(x => x.id === id); if (!a) return; btn.disabled = true; const t0 = btn.textContent; btn.textContent = '사진 준비 중…';
+  try {
+    const files = await Promise.all(a.photos.map(async (p, i) => { const b = await (await fetch(PURL(p.path, p.bucket))).blob(); return new File([b], `리츠_${i+1}_${STG[p.stage]||'사진'}.jpg`, {type: 'image/jpeg'}); }));
+    if (navigator.canShare && navigator.canShare({files})) { await navigator.share({files}); }
+    else { files.forEach(f => { const u = URL.createObjectURL(f), l = document.createElement('a'); l.href = u; l.download = f.name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); }); toast('사진을 저장했어요'); }
+  } catch (e) { if (e && e.name !== 'AbortError') toast('저장하지 못했어요 · 사진을 길게 눌러 저장해 주세요'); }
+  btn.disabled = false; btn.textContent = t0; }
 function fail(m){ $('#app').innerHTML = `<div class="err"><b style="font-size:17px;color:var(--ink)">리츠 영업파트너</b><p>${esc(m)}</p></div>`; }
 const money = () => { const P = D.pays||[]; const earned = P.reduce((a,x)=>a+(x.pay||0),0), got = P.filter(x=>x.paid_on).reduce((a,x)=>a+(x.pay||0),0); return {earned, got, left: earned-got}; };
 const refCard = r => `<div class="it"><div class="h"><div><b>${esc(r.customer)}</b><div class="s">${esc([r.kind, r.area].filter(Boolean).join(' · '))} · ${md(r.created_at)} 접수${r.source==='link'?' · 소개 링크':''}</div></div><span class="st ${r.status}">${r.recurring&&r.status==='won'?'정기 계약':ST[r.status]}</span></div>
@@ -115,7 +130,7 @@ const V = {
         <button class="cta" data-go="add"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>고객 소개하기</button>
         <h2>내 소개 진행 상황</h2>${refs.slice(0,3).map(refCard).join('') || '<div class="it" style="text-align:center;color:var(--sub);font-size:13.5px">아직 소개가 없어요. 주변 사장님 한 분부터 시작해 보세요!</div>'}
         ${refs.length>3?'<button class="btn ghost" style="width:100%" data-go="list">전체 보기</button>':''}
-        <button class="hcard" data-go="kit">🎁 홍보 자료함 <span>내 소개 링크 · 카톡 문구 ›</span></button></div>`; },
+        <button class="hcard" data-go="kit">🎁 홍보 자료함 <span>현장 사진 · 소개 링크 · 카톡 문구 ›</span></button></div>`; },
   chat(){ const dm = room === 'dm';
     const th = MSG == null ? '<div class="it" style="text-align:center;color:var(--sub)">대화를 준비 중이에요</div>' : MSG.map(m => `<div class="mm ${m.from_hq?'hq':'me'}"><div class="b">${esc(m.body)}</div><small>${m.from_hq ? esc(m.author||'리츠') + ' · ' : ''}${hm(m.created_at)}</small></div>`).join('') || `<div class="it" style="text-align:center;color:var(--sub);font-size:13.5px">${dm ? '궁금한 건 편하게 물어보세요 · 리츠가 답해드려요' : '아직 공지가 없어요'}</div>`;
     return `<div class="body" style="padding-top:16px;${dm?'padding-bottom:170px':''}"><div class="rooms"><button data-room="notice" aria-pressed="${!dm}">📣 파트너 공지${UN.notice?`<span class="dot">${UN.notice}</span>`:''}</button><button data-room="dm" aria-pressed="${dm}">💬 리츠와 1:1${UN.dm?`<span class="dot">${UN.dm}</span>`:''}</button></div>
@@ -137,13 +152,22 @@ const V = {
     return `<div class="top" style="padding-bottom:20px"><h1 style="margin-top:0">내 돈</h1><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px"><div><span style="font-size:11px;opacity:.8;font-weight:700">번 돈</span><div style="font-size:18px;font-weight:900">${man(m.earned)}</div></div><div><span style="font-size:11px;opacity:.8;font-weight:700">받은 돈</span><div style="font-size:18px;font-weight:900">${man(m.got)}</div></div><div><span style="font-size:11px;color:#FFC07A;font-weight:700">받을 돈</span><div style="font-size:18px;font-weight:900;color:#FFC07A">${man(m.left)}</div></div></div><p style="margin-top:10px;font-size:12px">잔금까지 받은 현장부터 지급 · 3.3% 원천징수 후 입금</p></div>
       <div class="body"><h2 style="margin-top:4px">받을 돈</h2>${due.map(row).join('') || '<div class="it" style="text-align:center;color:var(--sub);font-size:13.5px">아직 없어요 · 계약이 성사되면 여기 생겨요</div>'}
       ${got.length?`<h2>받은 기록</h2>${got.map(row).join('')}`:''}</div>`; },
+  album(){ const a = (KIT||[]).find(x => x.id === ALB); if (!a) { tab = 'kit'; return V.kit(); } const link = D.me.ref_code ? `${location.origin}/r/?c=${D.me.ref_code}` : '';
+    const msg = (a.caption ? a.caption + '\n' : '') + `청소 견적은 무료예요. 아래 링크로 문의 남기시면 바로 연락 와요 :)\n${link}`;
+    return `<div class="body" style="padding-top:14px"><button class="btn ghost sm" data-go="kit" style="margin-bottom:10px">‹ 자료함</button><h2 style="margin:0 0 2px;font-size:19px">${esc(a.title)}</h2><p style="font-size:12.5px;color:var(--sub);margin:0 2px 12px">${esc(a.kind||'')} · ${a.photos.length}장</p>
+      <button class="cta" data-save="${a.id}" style="margin-top:0">📥 사진 ${a.photos.length}장 저장 · 보내기</button>
+      <div class="box2" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center"><b>같이 보낼 문구</b><button class="copy" data-copy="${esc(msg)}">문구 복사</button></div><div class="msg">${esc(msg)}</div></div>
+      ${a.photos.map(p => `<figure class="kf"><img loading="lazy" src="${PURL(p.path, p.bucket)}" alt="${STG[p.stage]||''}"><figcaption class="${p.stage}">${STG[p.stage]||''}</figcaption></figure>`).join('')}
+      <p style="font-size:12px;color:var(--sub);text-align:center;margin-top:10px">사진을 길게 누르면 한 장씩 저장할 수도 있어요</p></div>`; },
   kit(){ const link = D.me.ref_code ? `${location.origin}/r/?c=${D.me.ref_code}` : '';
     const msg = `사장님, 청소 업체 찾으시면 제가 아는 곳 소개해 드릴게요! 상가·사무실·준공청소 잘하는 부산 리츠종합클린이에요. 견적은 무료고, 아래 링크로 문의 남기시면 바로 연락 와요 :)\n${link}`;
     return `<div class="body" style="padding-top:18px"><h2 style="margin-top:0;font-size:19px">홍보 자료함</h2><p style="font-size:13px;color:var(--sub);margin:-4px 2px 12px">지인에게 그대로 보내기만 하세요</p>
       <div class="box2" style="background:var(--navy);color:#fff"><b>내 전용 소개 링크</b><p style="font-size:12px;opacity:.85;margin:4px 0 10px">고객이 이 링크로 문의하면 자동으로 ${esc(D.me.name)}님 소개로 기록돼요</p>
         ${link ? `<div class="link"><code style="background:rgba(255,255,255,.14);color:#fff">${esc(link.replace(/^https?:\/\//,''))}</code><button class="copy" style="background:#F68B1F" data-copy="${esc(link)}">복사</button></div>` : '<p style="font-size:13px">링크 준비 중이에요. 리츠에 말씀해 주세요.</p>'}</div>
       <div class="box2"><div style="display:flex;justify-content:space-between;align-items:center"><b>카톡 소개 문구</b><button class="copy" data-copy="${esc(msg)}">문구 복사</button></div><div class="msg">${esc(msg)}</div></div>
-      <div class="box2"><b>이럴 때 소개하세요</b><div class="msg" style="margin-bottom:0">· 가게·사무실 오픈 (인테리어 끝난 직후)\n· 이사 · 입주 앞둔 지인\n· 사무실 정기청소 업체를 바꾸고 싶은 사장님\n· 외국계 회사 사무실</div></div>
+      <h2 style="margin:18px 2px 8px;font-size:16px">📷 현장 사진 (작업 전·후)</h2><p style="font-size:12.5px;color:var(--sub);margin:-4px 2px 10px">사진 저장 → 카톡에 링크랑 같이 보내면 반응이 훨씬 좋아요</p>
+      ${KIT == null ? '<div class="spin"></div>' : KIT.length ? `<div class="kg">${KIT.map(a => { const cv = a.photos.find(x=>x.stage==='after') || a.photos[0]; return `<button class="ka" data-alb="${a.id}"><img loading="lazy" src="${PURL(cv.path, cv.bucket)}" alt=""><b>${esc(a.title)}</b><span>${esc(a.kind||'')} · ${a.photos.length}장</span></button>`; }).join('')}</div>` : '<div class="it" style="text-align:center;color:var(--sub);font-size:13px">사진 자료를 준비 중이에요</div>'}
+      <div class="box2" style="margin-top:14px"><b>이럴 때 소개하세요</b><div class="msg" style="margin-bottom:0">· 가게·사무실 오픈 (인테리어 끝난 직후)\n· 이사 · 입주 앞둔 지인\n· 사무실 정기청소 업체를 바꾸고 싶은 사장님\n· 외국계 회사 사무실</div></div>
       <p style="font-size:12px;color:var(--sub);text-align:center;margin-top:14px">문의 · 010-7193-2246 (문자 or 전화)</p></div>`; }
 };
 function render(){
@@ -151,7 +175,9 @@ function render(){
   window.scrollTo(0,0);
 }
 document.addEventListener('click', e => {
-  const g = e.target.closest('[data-go]'); if (g) { tab = g.dataset.go; render(); if (tab === 'chat') loadChat(); return; }
+  const g = e.target.closest('[data-go]'); if (g) { tab = g.dataset.go; render(); if (tab === 'chat') loadChat(); if (tab === 'kit' && KIT == null) loadKit(); return; }
+  const al = e.target.closest('[data-alb]'); if (al) { ALB = +al.dataset.alb; tab = 'album'; render(); return; }
+  const sv = e.target.closest('[data-save]'); if (sv) { savePhotos(+sv.dataset.save, sv); return; }
   const rm = e.target.closest('[data-room]'); if (rm) { room = rm.dataset.room; MSG = []; render(); loadChat(); return; }
   const c = e.target.closest('[data-copy]'); if (c) copy(c.dataset.copy, '복사했어요 · 카톡에 붙여넣으세요');
 });

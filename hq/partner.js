@@ -27,6 +27,7 @@ H.loadPartners = async () => {
   H.S.pbank = {};
   if (H.S.owner) { if (H.S.needV42) p.forEach(a => { if (a.bank) H.S.pbank[a.id] = a.bank; });
     else (await H.q(sb.from('partner_private').select('*'))).forEach(b => { H.S.pbank[b.partner_id] = b.bank; }); }
+  H.S.pkit = H.S.needV43 ? [] : await H.q(sb.from('partner_kit').select('*').order('sort', {ascending:false}).order('created_at', {ascending:false}));
   H.S.pmsgs = H.S.needV41 ? [] : await H.q(sb.from('partner_msgs').select('*').order('created_at', {ascending:false}).limit(1500));
 };
 H.pUnread = () => (H.S.pmsgs||[]).filter(m => !m.from_hq && !m.hq_read_at).length;
@@ -250,4 +251,73 @@ H.partnerFee = () => {
 };
 H.ACT.ppPaid = async el => { await H.q(sb.from('partner_payouts').update({paid_on: ymd(H.today())}).eq('id', +el.dataset.x)); H.toast('입금 완료 · 파트너 화면에 바로 보여요'); H.refresh(); };
 H.ACT.ppUndo = async el => { if (!confirm('입금 완료를 취소할까요?')) return; await H.q(sb.from('partner_payouts').update({paid_on: null}).eq('id', +el.dataset.x)); H.refresh(); };
+/* ---------- 사진 자료 (v43) : 파트너가 받아 가는 현장 사진 앨범 ---------- */
+const KURL = (path, bucket) => `${window.EP_CONFIG.SUPABASE_URL}/storage/v1/object/public/${bucket||'live'}/${path}`;
+const STG = {before:'작업 전', during:'작업 중', after:'작업 후'};
+const KINDS2 = ['준공·인테리어 후','상가·사무실 정기','입주·이사','외국계 사무실','특수청소','기타'];
+const KK = id => (H.S.pkit||[]).find(k => k.id === +id);
+H.ACT.v43copy = async () => { const t = await (await fetch('update_v43.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL 복사했어요 · SQL Editor에 붙여넣고 Run'); };
+H.partnerKit = () => {
+  if (H.S.needV40) return needBox();
+  if (H.S.needV43) return `<section class="box"><div class="bh"><h3>사진 자료함 시작하기 (서버 업데이트 한 번)</h3></div>
+    <p class="note" style="line-height:1.7">1. [SQL 복사] → 2. Supabase SQL Editor에 붙여넣고 Run → 3. '업데이트 완료 (v43)'가 보이면 새로고침</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" data-a="v43copy">SQL 복사</button><a class="btn ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></div></section>`;
+  const K = H.S.pkit || [];
+  const tile = k => { const ph = k.photos||[], cv = ph.find(x=>x.stage==='after') || ph[0];
+    return `<div class="kt${k.hidden?' hid':''}">${cv ? `<img loading="lazy" src="${KURL(cv.path, cv.bucket)}" alt="">` : '<div class="kt-e">사진 없음</div>'}
+      <div class="kt-b"><b>${esc(k.title)}</b><span>${esc(k.kind||'')} · ${ph.length}장${k.hidden?' · 숨김':''}</span>
+      <div class="kt-a"><button class="btn sm ghost" data-a="kitEdit" data-k="${k.id}">수정</button><button class="btn sm ghost" data-a="kitHide" data-k="${k.id}">${k.hidden?'보이기':'숨기기'}</button></div></div></div>`; };
+  return `<section class="box"><div class="bh"><h3>파트너 사진 자료 ${K.filter(k=>!k.hidden).length}개</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-a="kitPick">+ 현장 사진에서 고르기</button><button class="btn sm ghost" data-a="kitUp">+ 사진 직접 올리기</button></div></div>
+    <p class="note" style="margin:-4px 0 12px">여기 올린 앨범은 파트너 화면 '홍보 자료함'에 바로 보여요. 파트너는 사진 저장 · 자랑 문구 복사만 할 수 있어요.<br>⚠️ 간판 · 상호 · 사람 얼굴 · 주소가 보이는 사진은 빼 주세요.</p>
+    <div class="kgrid">${K.map(tile).join('') || '<p class="empty">아직 없어요 · 작업 전·후가 잘 나온 현장부터 올려 보세요</p>'}</div></section>`;
+};
+const kitForm = (k, photos, extra) => `<form data-f="kitSave"><input type="hidden" name="id" value="${k.id||''}"><input type="hidden" name="job" value="${k.job_id||''}">
+  <h3>${k.id ? '사진 자료 수정' : '파트너 사진 자료 만들기'}</h3><div class="fg">
+  <div class="field full"><label>제목 (상호 말고 지역·업종으로)</label><input name="title" required value="${esc(k.title||'')}" placeholder="예) 해운대 카페 준공청소"></div>
+  <div class="field full"><label>종류</label><select name="kind">${KINDS2.map(x=>`<option ${x===(k.kind||KINDS2[0])?'selected':''}>${x}</option>`).join('')}</select></div>
+  ${extra||''}
+  ${photos.length ? `<div class="field full"><label>사진 고르기 · 전/후 바꾸기</label><div class="kpick">${photos.map((p,i)=>`<label><input type="checkbox" name="ph" value="${i}" ${p.on?'checked':''}><img loading="lazy" src="${KURL(p.path, p.bucket)}" alt=""><select name="st${i}">${Object.entries(STG).map(([a,b])=>`<option value="${a}" ${a===p.stage?'selected':''}>${b}</option>`).join('')}</select></label>`).join('')}</div></div>` : ''}
+  <div class="field full"><label>자랑 문구 (파트너가 복사해서 보내요)</label><textarea name="cap" rows="3" placeholder="예) 인테리어 끝난 카페, 먼지 하나 없이 오픈 준비 끝! 부산 리츠종합클린">${esc(k.caption||'')}</textarea></div></div>
+  <div class="sacts">${k.id?`<button type="button" class="btn ghost" data-a="kitDel" data-k="${k.id}" style="margin-right:auto;color:#B42318">삭제</button>`:''}<button type="button" class="btn ghost" data-a="close">닫기</button><button class="btn">저장 · 파트너에게 보이기</button></div></form>`;
+H._kitPhotos = [];
+H.ACT.kitPick = async () => {
+  H.open('<h3>현장 사진에서 고르기</h3><div class="spin"></div>', true);
+  const ph = await H.q(sb.from('job_photos').select('id, job_id, path, bucket, stage, hidden, created_at, jobs(title, job_date)').eq('hidden', false).order('created_at', {ascending:false}).limit(600));
+  const by = {}; ph.forEach(p => { (by[p.job_id] = by[p.job_id] || {job: p.jobs||{}, list: []}).list.push(p); });
+  H._kitJobs = by;
+  const used = new Set((H.S.pkit||[]).map(k => k.job_id));
+  const rows = Object.entries(by).map(([id, g]) => { const b = g.list.filter(p=>p.stage==='before').length, a = g.list.filter(p=>p.stage==='after').length;
+    return `<button class="kjob" data-a="kitJob" data-j="${id}"><img loading="lazy" src="${KURL((g.list.find(p=>p.stage==='after')||g.list[0]).path, g.list[0].bucket)}" alt=""><span><b>${esc(g.job.title||'현장')}</b><small>${esc(g.job.job_date||'')} · 전 ${b} · 후 ${a} · 전체 ${g.list.length}장${used.has(+id)?' · 이미 올림':''}</small></span>${b&&a?'<em>전·후 있음</em>':''}</button>`; }).join('');
+  H.open(`<h3>현장 사진에서 고르기</h3><p class="note" style="margin:-6px 0 10px">직원이 현장노트에 올린 사진이에요 (고객 화면에서 숨긴 사진은 빠져요). 전·후가 다 있는 현장이 홍보에 좋아요.</p>
+    <div class="kjobs">${rows || '<p class="empty">아직 현장 사진이 없어요</p>'}</div><div class="sacts"><button class="btn ghost" data-a="close">닫기</button></div>`, true);
+};
+H.ACT.kitJob = el => { const g = H._kitJobs[el.dataset.j]; if (!g) return;
+  H._kitPhotos = g.list.map(p => ({path: p.path, bucket: p.bucket||'live', stage: p.stage, on: p.stage !== 'during'}));
+  H.open(kitForm({job_id: +el.dataset.j, kind: KINDS2[0]}, H._kitPhotos), true); };
+H.ACT.kitEdit = el => { const k = KK(el.dataset.k); if (!k) return;
+  H._kitPhotos = (k.photos||[]).map(p => ({...p, on: true}));
+  H.open(kitForm(k, H._kitPhotos), true); };
+H.ACT.kitUp = () => { H._kitPhotos = [];
+  H.open(kitForm({}, [], `<div class="field full"><label>사진 (여러 장 · 작업 전 사진부터 순서대로)</label><input type="file" name="files" accept="image/*" multiple required></div><div class="field full"><label>올린 사진 구분</label><select name="ust"><option value="pair">앞 절반 작업 전 · 뒤 절반 작업 후</option><option value="after">전부 작업 후</option><option value="before">전부 작업 전</option></select></div>`), true); };
+const shrink = async file => { try { const bmp = await createImageBitmap(file, {imageOrientation:'from-image'}); const s = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width*s); c.height = Math.round(bmp.height*s); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82)); } catch(_) { return file; } };
+H.FORM.kitSave = async v => {
+  const on = new Set(v.getAll('ph').map(Number));
+  let photos = H._kitPhotos.map((p,i) => ({path: p.path, bucket: p.bucket, stage: v.get('st'+i) || p.stage, on: on.has(i)})).filter(p => p.on).map(({on, ...p}) => p);
+  const files = v.getAll('files').filter(f => f && f.size);
+  if (files.length) { H.toast(`사진 ${files.length}장 올리는 중…`); const half = Math.ceil(files.length/2), ust = v.get('ust') || 'after';
+    for (let i = 0; i < files.length; i++) { const b = await shrink(files[i]); const path = `${ymd(H.today()).slice(0,7)}/${Date.now()}_${i}.jpg`;
+      const r = await sb.storage.from('kit').upload(path, b, {contentType: 'image/jpeg'}); if (r.error) return H.toast('사진 올리기 실패 · ' + r.error.message);
+      photos.push({path, bucket: 'kit', stage: ust === 'pair' ? (i < half ? 'before' : 'after') : ust}); } }
+  if (!photos.length) return H.toast('사진을 1장 이상 골라 주세요');
+  const ord = {before:0, during:1, after:2}; photos.sort((a,b) => ord[a.stage]-ord[b.stage]);
+  const row = {title: v.get('title').trim(), kind: v.get('kind'), caption: H.nn((v.get('cap')||'').trim()), photos, job_id: H.nnum(v.get('job'))};
+  const id = H.nnum(v.get('id'));
+  await H.q(id ? sb.from('partner_kit').update(row).eq('id', id) : sb.from('partner_kit').insert(row));
+  H.close(); H.toast('저장했어요 · 파트너 화면 홍보 자료함에 바로 보여요'); H.refresh(); };
+H.ACT.kitHide = async el => { const k = KK(el.dataset.k); await H.q(sb.from('partner_kit').update({hidden: !k.hidden}).eq('id', k.id)); H.toast(k.hidden ? '다시 보여요' : '파트너 화면에서 숨겼어요'); H.refresh(); };
+H.ACT.kitDel = async el => { if (!confirm('이 사진 자료를 지울까요? (현장 사진 원본은 그대로예요)')) return; const k = KK(el.dataset.k);
+  const mine = (k.photos||[]).filter(p => p.bucket === 'kit').map(p => p.path); if (mine.length) await sb.storage.from('kit').remove(mine);
+  await H.q(sb.from('partner_kit').delete().eq('id', k.id)); H.close(); H.toast('지웠어요'); H.refresh(); };
 })(window.HQ);
