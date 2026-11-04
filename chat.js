@@ -105,6 +105,7 @@
 .epc-send{background:var(--epc-acc);color:#fff}.epc-ph{background:var(--epc-bg);color:var(--epc-mute);font-size:24px;font-weight:300}
 .epc-edit{font-size:12px;color:var(--epc-mute);padding:6px 14px;background:var(--epc-card);border-top:1px solid var(--epc-line);display:flex;justify-content:space-between}
 .epc-edit button{border:0;background:none;color:var(--epc-acc);font-weight:700;font:inherit;font-size:12px}
+.epc-menu,.epc-menu *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .epc-menu{position:fixed;inset:0;z-index:210;background:rgba(10,14,25,.4);display:flex;align-items:flex-end;justify-content:center}
 .epc-menu div{background:var(--epc-card);width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:10px 12px calc(14px + env(safe-area-inset-bottom))}
 .epc-col>.kit-rx{align-self:flex-start}.epc-m.mine .epc-col>.kit-rx{align-self:flex-end}
