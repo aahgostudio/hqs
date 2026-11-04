@@ -3,7 +3,7 @@
 const {esc, md, won, ymd, parse, addDays, sb} = H;
 const V = H.V; V.ops = {month: new Date(H.today().getFullYear(), H.today().getMonth(), 1)};
 /* 1104j: '운영' → '영업파트너' 탭. 파트너 3칸이 메인, 예전 운영 메뉴는 오른쪽 '기타 운영'으로 작게 */
-const PSUBS = [['pin','소개 접수함'],['plist','파트너'],['pfee','수수료 정산']];
+const PSUBS = [['pin','소개 접수함'],['pchat','파트너 대화'],['plist','파트너'],['pfee','수수료 정산']];
 const SUBS = [['order','오더·견적'],['match','인력 매칭'],['money','현장 금액'],['deals','부동산 계약'],['buy','외주 지급'],['exp','운영비'],['cs','CS · 품질']];
 const sub = () => { const s = (location.hash.split('/')[1]||''); return PSUBS.some(x=>x[0]===s) || SUBS.some(x=>x[0]===s) ? s : 'pin'; };
 const EXP_CAT = ['광고비','비품비','소모품','차량·유류','통신비','수수료','식대','교육','기타'];
@@ -29,14 +29,15 @@ H.view('ops', {label:'영업파트너',
     Object.assign(H.S, {deals: dl, purchases: pu, expenses: ex, puWait: puw});
     await H.loadPartners();
   },
+  after(){ if (sub()==='pchat' && H.pcScroll) H.pcScroll(); },
   render(){
     const s = sub(), m = V.ops.month;
     const quotes = (H.S.jobs||[]).filter(j=>j.status==='quote').length;
     const newRefs = (H.S.refs||[]).filter(r=>r.status==='new').length;
-    const nav = `<div class="subnav">${PSUBS.filter(([k])=>k!=='pfee'||H.S.owner).map(([k,l])=>`<button data-a="opsSub" data-s="${k}" aria-pressed="${s===k}">${l}${k==='pin'&&newRefs?`<span class="cnt">${newRefs}</span>`:''}</button>`).join('')}</div>
+    const nav = `<div class="subnav">${PSUBS.filter(([k])=>k!=='pfee'||H.S.owner).map(([k,l])=>`<button data-a="opsSub" data-s="${k}" aria-pressed="${s===k}">${l}${k==='pin'&&newRefs?`<span class="cnt">${newRefs}</span>`:''}${k==='pchat'&&H.pUnread&&H.pUnread()?`<span class="cnt">${H.pUnread()}</span>`:''}</button>`).join('')}</div>
       <div class="opsmini"><span>기타 운영</span>${SUBS.map(([k,l])=>`<button data-a="opsSub" data-s="${k}" aria-pressed="${s===k}">${l}${k==='order'&&quotes?` ${quotes}`:''}</button>`).join('')}</div>`;
     const mnav = ['money','deals','buy','exp','pfee'].includes(s) ? `<div style="display:flex;gap:6px;align-items:center"><button class="btn ghost sm" data-a="opsMonth" data-n="-1">${H.I('left')}</button><b>${m.getFullYear()}년 ${m.getMonth()+1}월</b><button class="btn ghost sm" data-a="opsMonth" data-n="1">${H.I('right')}</button></div>` : '';
-    const body = {pin: H.partnerIn, plist: H.partnerList, pfee: H.partnerFee, order, match, money, deals, buy, exp, cs}[s]();
+    const body = {pin: H.partnerIn, pchat: H.partnerChat, plist: H.partnerList, pfee: H.partnerFee, order, match, money, deals, buy, exp, cs}[s]();
     return `<div class="bh opsbar" style="margin:0">${nav}${mnav}</div>${body}`;
   }
 });

@@ -578,3 +578,19 @@ html.chatapp .fab{display:none}
 .pt-dup{font-size:12px;font-weight:700;color:#92400E;background:#FEF3C7;border-radius:8px;padding:5px 8px;margin-top:6px}
 .pt-mini{padding:12px 14px}.pt-mini .bh{margin-bottom:4px}.pt-mini .rw{font-size:12px;padding:4px 0}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+/* 1104k 파트너 대화 */
+.pcx{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;padding:12px}
+@media(max-width:760px){.pcx{grid-template-columns:minmax(0,1fr)}.pc-l{max-height:220px}}
+.pc-l{display:flex;flex-direction:column;gap:4px;overflow:auto;max-height:640px;border-right:1px solid var(--line);padding-right:10px}
+.pc-it{display:grid;grid-template-columns:1fr auto;gap:2px 6px;text-align:left;border:0;background:none;border-radius:10px;padding:9px 10px;font:inherit}
+.pc-it:hover{background:var(--soft)}.pc-it[aria-pressed=true]{background:#EAF0FF}
+.pc-it b{font-size:13.5px}.pc-it small{grid-column:1/-1;font-size:11.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-it .cnt{background:var(--warn);color:#fff;border-radius:999px;font-size:10.5px;padding:0 7px;align-self:center}
+.pc-r{display:flex;flex-direction:column;min-width:0}
+.pc-th{background:#F6F7F9;border-radius:12px;padding:12px;height:440px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.pc-m{max-width:78%;align-self:flex-start;display:flex;flex-direction:column;align-items:flex-start}.pc-m.me{align-self:flex-end;align-items:flex-end}
+.pc-m .b{display:inline-block;text-align:left;background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px 12px;font-size:14px;white-space:pre-wrap;word-break:break-word}
+.pc-m.me .b{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pc-m small{display:block;font-size:11px;color:var(--mute);margin-top:2px}
+.pc-in{display:flex;gap:8px;margin-top:10px;align-items:flex-end}.pc-in textarea{flex:1;min-height:64px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}
+.pc-tp{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}

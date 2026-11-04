@@ -23,7 +23,9 @@ H.loadPartners = async () => {
     H.q(sb.from('partner_payouts').select('*').order('due_month', {ascending:false}).limit(2000))
   ]);
   Object.assign(H.S, {partners: p, refs: r, ppays: x});
+  H.S.pmsgs = H.S.needV41 ? [] : await H.q(sb.from('partner_msgs').select('*').order('created_at', {ascending:false}).limit(1500));
 };
+H.pUnread = () => (H.S.pmsgs||[]).filter(m => !m.from_hq && !m.hq_read_at).length;
 
 const needBox = () => `<section class="box"><div class="bh"><h3>영업파트너 시작하기 (서버 업데이트 한 번)</h3></div>
   <p class="note" style="line-height:1.7">파트너 명부 · 소개 접수 · 수수료 정산 표를 서버에 만들어야 해요.<br>1. [SQL 복사] → 2. Supabase SQL Editor에 붙여넣고 Run → 3. '업데이트 완료 (v40)'가 보이면 새로고침</p>
@@ -184,6 +186,42 @@ H.ACT.ptLink = el => { const p = PT(+el.dataset.p);
     <div class="field" style="margin-top:8px"><label>고객용 소개 링크</label><input readonly value="${esc(H.refUrl(p))}"></div>
     <div class="sacts"><button type="button" class="btn ghost" data-a="ptCopyOne" data-t="${esc(H.refUrl(p))}">소개 링크만 복사</button><button type="button" class="btn" data-a="ptCopyOne" data-t="${esc(msg)}">안내 멘트 복사</button></div>`); };
 H.ACT.ptCopyOne = el => H.copy(el.dataset.t, '복사했어요 · 카톡에 붙여넣으세요');
+
+/* ---------- 파트너 대화 (v41) ---------- */
+H.V.pchat = H.V.pchat || {room: 'notice'};
+const hm = t => { const d = new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+H.partnerChat = () => {
+  if (H.S.needV40) return needBox();
+  if (H.S.needV41) return `<section class="box"><div class="bh"><h3>파트너 대화 시작하기 (서버 업데이트 한 번)</h3></div><p class="note">📣 파트너 공지방 + 💬 1:1 대화 표를 만들어야 해요. [SQL 복사] → Supabase SQL Editor에 붙여넣고 Run → '업데이트 완료 (v41)' 확인 후 새로고침.</p><div style="margin-top:10px"><button class="btn" data-a="v41copy">SQL 복사</button></div></section>`;
+  const M = H.S.pmsgs || [], room = H.V.pchat.room;
+  const ps = (H.S.partners||[]).filter(p => p.status !== 'end').map(p => { const mine = M.filter(m => m.partner_id === p.id); return {p, last: mine[0], un: mine.filter(m => !m.from_hq && !m.hq_read_at).length}; })
+    .sort((a,b) => (b.last ? b.last.created_at : '').localeCompare(a.last ? a.last.created_at : '') || a.p.name.localeCompare(b.p.name));
+  const noticeLast = M.find(m => m.partner_id == null);
+  const item = (key, title, sub, un) => `<button class="pc-it" data-a="pcRoom" data-r="${key}" aria-pressed="${String(room)===String(key)}"><b>${title}</b>${un ? `<span class="cnt">${un}</span>` : ''}<small>${esc(sub||'')}</small></button>`;
+  const list = item('notice', '📣 파트너 공지방', noticeLast ? noticeLast.body.slice(0,30) : '전체 파트너에게 보여요', 0) + ps.map(x => item(x.p.id, '💬 ' + esc(x.p.name), x.last ? x.last.body.slice(0,30) : '아직 대화 없음', x.un)).join('');
+  const msgs = (room === 'notice' ? M.filter(m => m.partner_id == null) : M.filter(m => m.partner_id === +room)).slice().reverse();
+  const P = room === 'notice' ? null : PT(+room);
+  const thread = msgs.map(m => `<div class="pc-m ${m.from_hq ? 'me' : ''}"><div class="b">${esc(m.body)}</div><small>${m.from_hq ? esc(m.author||'리츠') + ' · ' : ''}${hm(m.created_at)}</small></div>`).join('') || `<p class="empty">${room === 'notice' ? '첫 공지를 올려보세요 · 모든 파트너 화면에 보여요' : '아직 대화가 없어요'}</p>`;
+  return `<section class="box pcx"><div class="pc-l">${list}</div><div class="pc-r">
+    <div class="bh" style="margin-bottom:6px"><h3>${room === 'notice' ? '📣 파트너 공지방 <span class="sub" style="font-weight:400">모든 활동 파트너에게 보여요</span>' : '💬 ' + esc(P.name) + ' <span class="sub" style="font-weight:400">' + esc(P.job||'') + '</span>'}</h3>${P && P.phone ? `<a class="btn sm ghost" href="tel:${esc(digits(P.phone))}">전화</a>` : ''}</div>
+    <div class="pc-th" id="pcth">${thread}</div>
+    <form data-f="pcSend" class="pc-in"><textarea name="t" placeholder="${room === 'notice' ? '공지·안내글 (예: 11월 이벤트, 소개 잘 받는 법)' : '메시지'}" required></textarea><input type="hidden" name="room" value="${room}"><button class="btn" type="submit">${room === 'notice' ? '공지 올리기' : '보내기'}</button></form>
+    ${room === 'notice' ? `<div class="pc-tp">${['이번 달 이벤트 안내','소개 잘 받는 법','수수료 지급 안내'].map((t,i) => `<button type="button" class="btn sm ghost" data-a="pcTpl" data-i="${i}">${t}</button>`).join('')}</div>` : ''}</div></section>`;
+};
+H.ACT.v41copy = async () => { const t = await (await fetch('update_v41.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL 복사했어요 · SQL Editor에 붙여넣고 Run'); };
+H.ACT.pcRoom = async el => { H.V.pchat.room = el.dataset.r === 'notice' ? 'notice' : +el.dataset.r;
+  const pid = H.V.pchat.room; if (pid !== 'notice') { const ids = (H.S.pmsgs||[]).filter(m => m.partner_id === pid && !m.from_hq && !m.hq_read_at).map(m => m.id);
+    if (ids.length) { const t = new Date().toISOString(); await H.q(sb.from('partner_msgs').update({hq_read_at: t}).in('id', ids)); H.S.pmsgs.forEach(m => { if (ids.includes(m.id)) m.hq_read_at = t; }); } }
+  H.$('#main').innerHTML = H.views.ops.render(); H.pcScroll(); };
+H.pcScroll = () => { const t = document.getElementById('pcth'); if (t) t.scrollTop = t.scrollHeight; };
+const TPL = ['[이번 달 이벤트]\n이번 달 정기청소 소개는 첫 달 수수료를 ○%로 드려요!\n주변 가게·사무실 사장님께 소개 링크 보내주세요 :)',
+  '[소개 잘 받는 법]\n1. 인테리어 끝난 가게·사무실이 제일 좋아요 (준공청소)\n2. 이사·입주 앞둔 지인\n3. 청소업체 바꾸고 싶은 사장님\n소개 링크로 보내면 자동으로 파트너님 소개로 기록돼요!',
+  '[수수료 지급 안내]\n계약 성사 + 잔금까지 받은 현장은 매월 ○일에 3.3% 공제 후 입금돼요.\n파트너 화면 [내 돈]에서 언제든 확인하세요.'];
+H.ACT.pcTpl = el => { const ta = document.querySelector('.pc-in textarea'); if (ta) { ta.value = TPL[+el.dataset.i].replace(/\\n/g, '\n'); ta.focus(); } };
+H.FORM.pcSend = async v => { const t = (v.get('t')||'').trim(); if (!t) return; const room = v.get('room');
+  const row = {partner_id: room === 'notice' ? null : +room, from_hq: true, author: H.S.name || '리츠', body: t};
+  const r = await H.q(sb.from('partner_msgs').insert(row).select().single()); H.S.pmsgs.unshift(r);
+  H.$('#main').innerHTML = H.views.ops.render(); H.pcScroll(); H.toast(room === 'notice' ? '공지 올렸어요 · 파트너 화면 대화에 보여요' : '보냈어요'); };
 
 /* ---------- 수수료 정산 (대표만) ---------- */
 H.partnerFee = () => {
