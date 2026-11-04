@@ -549,3 +549,6 @@ html.chatapp .fab{display:none}
 /* 1104f 창(시트) 안 글자 꾹 눌러도 복사하기 안 뜨게 (입력칸은 그대로) */
 #sheet,#sheet *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #sheet input,#sheet textarea,#sheet select,#sheet [contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+
+/* 1104i 오늘 챙길 사람 */
+.care{background:#FFFBEB;border-color:#FDE68A}.care-r{font-size:14px;padding:6px 2px;border-top:1px dashed #FDE68A}.care-r:first-of-type{border-top:0}

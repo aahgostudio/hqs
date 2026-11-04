@@ -75,6 +75,7 @@ function staffSheet(s){
     <div class="field"><label>지급 방식</label><select name="pay_type">${Object.entries(H.PT).map(([v,l])=>`<option value="${v}" ${s.pay_type===v?'selected':''}>${l}</option>`).join('')}</select><div class="hint">세금 방식은 세무사 확인 후 정해 주세요</div></div>
     <div class="field"><label>상태</label><select name="status">${[['active','근무'],['leave',H.STL(s).leave+' (링크 유지)'],['left',H.STL(s).left+' (링크 막힘)']].map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="field"><label>입사 · 계약일</label><input type="date" name="joined_on" value="${s.joined_on||''}"></div>
+    ${(H.S.schemaV||0) >= 39 ? `<div class="field"><label>생일 (월-일)</label><input name="birthday" value="${esc(s.birthday||'')}" placeholder="03-15" inputmode="numeric" maxlength="5"></div>` : ''}
     <div class="field"><label>&nbsp;</label><label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink)"><input type="checkbox" name="can_collect" ${s.can_collect?'checked':''} style="width:auto">수금 담당 가능</label></div>
     ${!s.id && S.owner && S.mcode ? `<div class="field full"><label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink)"><input type="checkbox" name="mm" style="width:auto">부동산 직원이면 매물노트 파일·링크도 같이 만들기</label></div>` : ''}
   </div>${H.sacts('저장', s.id?`<button type="button" class="btn ghost" data-a="stToken" data-s="${s.id}" style="flex:0 0 auto">링크 새로 발급</button>`:'')}<input type="hidden" name="id" value="${s.id||''}"></form>`);
@@ -87,6 +88,7 @@ H.ACT.stToken = async el => { if (!confirm('새 링크를 만들면 예전 링�
   await H.q(sb.from('staff').update({token: tok}).eq('id', el.dataset.s)); H.close(); H.toast('새 링크 발급 · [링크 복사]로 다시 보내주세요'); H.refresh(); };
 H.FORM.staff = async v => {
   const row = {name:v.get('name').trim(), team:v.get('team'), role:H.nn(v.get('role')) || (v.get('team')==='AGO' ? '사장님' : null), phone:H.nn(v.get('phone')), partner_area:H.nn(v.get('partner_area')), pay_type:v.get('pay_type'), status:v.get('status'), joined_on:H.nn(v.get('joined_on')), can_collect:v.get('can_collect')==='on'};
+  if ((H.S.schemaV||0) >= 39) { const b = String(v.get('birthday')||'').replace(/[^0-9]/g,''); row.birthday = b.length >= 3 ? (b.length === 3 ? '0' + b : b).replace(/^(\d\d)(\d\d)$/, '$1-$2') : null; }
   const id = v.get('id'); await H.q(id ? sb.from('staff').update(row).eq('id', id) : sb.from('staff').insert(row));
   if (id) await saveLeft(id, row.status);
   if (!id && v.get('mm') === 'on') { try { H.S.mm = await H.maemul('addStaff', [{name: row.name, role: row.role || '사원'}]); H.S.staff = H.rankSort(await H.q(sb.from('staff').select('*').order('created_at'))); await H.syncMaemulCodes(); H.toast('매물노트 파일·링크도 만들었어요'); } catch(e){ H.toast('일정판엔 추가했어요 · 매물노트는 못 만들었어요: ' + e.message); } }
