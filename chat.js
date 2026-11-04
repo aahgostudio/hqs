@@ -90,6 +90,7 @@
 .epc-b{max-width:min(68vw,460px);width:max-content;background:var(--epc-other);border:1px solid var(--epc-line);padding:9px 12px;border-radius:4px 16px 16px 16px;font-size:14.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
 .epc-b{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .epc-copied{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:rgba(17,24,39,.9);color:#fff;padding:9px 16px;border-radius:20px;font-size:14px;z-index:9999;pointer-events:none}
+.epc-b[data-mid],.epc-b[data-mid] *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .epc-m.mine .epc-b{background:var(--epc-me);color:var(--epc-me-ink);border-color:transparent;border-radius:16px 4px 16px 16px}
 .epc-b.del{background:transparent;color:var(--epc-mute);font-style:italic;border-style:dashed}
 .epc-b img{display:block;max-width:220px;max-height:280px;border-radius:10px;margin:-3px -5px}
