@@ -447,7 +447,6 @@ H.ACT.chExport = async () => {
     <table>${rows}</table><script>setTimeout(()=>print(),400)<\/script></body></html>`);
   w.document.close();
 };
-})(window.HQ);
 
 /* 1104Z: 말풍선 꾹 누르면 메뉴 (카카오워크처럼) · 안 읽은 멤버 확인은 대표님만 */
 H.ACT.chMsgMenu = el => { const id = +el.dataset.id, m = (C.msgs||[]).find(x => (x.ids || [x.id]).includes(id)) || {};
@@ -467,3 +466,5 @@ const drawReaders = () => { const d = C.rd || {read: [], unread: []}, L = C.rdTa
     <div class="rd-l">${L.map(n => `<div class="rd-r"><span class="rd-av">${H.esc(String(n).slice(-2))}</span><b>${H.esc(n)}</b></div>`).join('') || '<p class="note" style="padding:16px 4px">없음</p>'}</div>
     <p class="note">대표님 화면에만 보여요.</p><div class="sacts"><button type="button" class="btn" data-a="close">닫기</button></div></div>`); };
 H.ACT.chRdTab = el => { C.rdTab = el.dataset.k; drawReaders(); };
+
+})(window.HQ);
