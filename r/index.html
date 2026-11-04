@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16347A">
+<title>리츠종합클린 · 청소 문의</title>
+<meta name="description" content="부산·울산·경남 상가·사무실·준공·입주 청소 — 리츠종합클린 무료 견적 문의">
+<link rel="icon" href="../logo.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="../style.css?v=1104j">
+<style>
+body{background:#F6F4EF}
+.app{max-width:520px;margin:0 auto;min-height:100vh}
+.top{background:var(--navy);color:#fff;padding:26px 20px 30px}
+.top .b{font-size:13px;font-weight:900;letter-spacing:.5px}.top .b span{color:#F68B1F}
+.top h1{margin:14px 0 6px;font-size:24px;font-weight:900;line-height:1.3}.top p{margin:0;font-size:14px;opacity:.88}
+.f{padding:18px 16px 40px}
+.f label.t{display:block;font-size:13px;font-weight:900;margin:14px 0 6px}
+.f input,.f textarea{width:100%;box-sizing:border-box;border:1.5px solid #D5D2CA;border-radius:12px;padding:12px 14px;font:inherit;font-size:15px;background:#fff}
+.f textarea{min-height:80px;resize:vertical}
+.kc{display:flex;flex-wrap:wrap;gap:8px}.kc label{cursor:pointer}.kc input{position:absolute;opacity:0;pointer-events:none}
+.kc span{display:inline-flex;min-height:40px;align-items:center;padding:0 14px;border-radius:20px;border:1.5px solid #D5D2CA;background:#fff;font-size:14px;font-weight:700}
+.kc input:checked+span{background:var(--navy);border-color:var(--navy);color:#fff}
+.agree{display:flex;gap:10px;align-items:flex-start;background:#fff;border-radius:12px;padding:12px 14px;font-size:13px;margin-top:16px;line-height:1.55}
+.agree input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--navy);flex:none}
+.agree small{display:block;color:var(--sub);font-size:11.5px;margin-top:4px}
+.cta{width:100%;margin-top:16px;border:0;border-radius:14px;background:#F68B1F;color:#fff;font:inherit;font-size:18px;font-weight:900;padding:17px}
+.pts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}.pts div{background:rgba(255,255,255,.12);border-radius:12px;padding:10px;font-size:12px;font-weight:700;text-align:center}
+.done{text-align:center;padding:60px 24px}.done b{display:block;font-size:20px;font-weight:900;margin-bottom:8px}
+.foot{font-size:11.5px;color:var(--sub);text-align:center;padding:0 16px 30px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="app" id="app"><div class="spin"></div></div>
+<div class="toast" id="toast" role="status"></div>
+<script src="../config.js?v=1104j"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+const C = window.EP_CONFIG, sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_KEY);
+const code = new URLSearchParams(location.search).get('c') || '';
+const $ = s => document.querySelector(s);
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('on'), 2800); };
+const KINDS = ['준공·인테리어 후','상가·사무실 정기청소','입주·이사 청소','외국계 사무실','기타'];
+const foot = `<div class="foot">리츠종합클린 · 어닝플레이스 · 부산광역시 수영구 연수로 367, 1층 101호<br>문의 010-7193-2246</div>`;
+const form = () => {
+  $('#app').innerHTML = `<div class="top"><div class="b"><span>RITZ</span> 리츠종합클린</div><h1>청소 무료 견적,<br>연락처만 남겨주세요</h1><p>상담·견적·작업까지 리츠가 책임질게요</p>
+    <div class="pts"><div>상가·사무실</div><div>준공·인테리어 후</div><div>입주·이사</div></div></div>
+    <form class="f" id="f"><label class="t" for="a1">업체명 또는 성함</label><input id="a1" name="customer" required>
+      <label class="t" for="a2">연락처</label><input id="a2" name="phone" inputmode="tel" required placeholder="010-0000-0000">
+      <label class="t" for="a3">지역 (동까지)</label><input id="a3" name="area" placeholder="예) 해운대구 우동">
+      <label class="t">어떤 청소가 필요하세요?</label><div class="kc">${KINDS.map((k,i)=>`<label><input type="radio" name="kind" value="${k}" ${i===0?'checked':''}><span>${k}</span></label>`).join('')}</div>
+      <label class="t" for="a4">남기실 말 (희망 날짜·평수 등)</label><textarea id="a4" name="memo"></textarea>
+      <label class="agree"><input type="checkbox" name="consent" required><span><b>개인정보 수집·이용 동의 (필수)</b><small>수집 항목: 이름·연락처·지역·문의 내용 / 목적: 청소 견적 상담 / 보유 기간: [상담 종료 후 ○개월] 뒤 파기</small></span></label>
+      <button class="cta" type="submit">무료 견적 받기</button></form>${foot}`;
+};
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'f') return; e.preventDefault();
+  const f = new FormData(e.target), b = e.target.querySelector('button'); b.disabled = true;
+  const r = await sb.rpc('ref_link_submit', {p_code: code, p_customer: f.get('customer'), p_phone: f.get('phone'), p_area: f.get('area')||'', p_kind: f.get('kind')||'', p_memo: f.get('memo')||'', p_consent: f.get('consent')==='on'});
+  b.disabled = false;
+  if (r.error) return toast(r.error.message.replace(/^.*?:\s*/,'').slice(0,80) || '접수하지 못했어요. 010-7193-2246으로 연락 주세요');
+  $('#app').innerHTML = `<div class="top" style="padding-bottom:20px"><div class="b"><span>RITZ</span> 리츠종합클린</div></div><div class="done"><b>접수됐어요!</b>담당자가 곧 연락드릴게요.<br>급하시면 010-7193-2246으로 전화 주세요.</div>${foot}`;
+});
+(async () => {
+  if (!code) { $('#app').innerHTML = `<div class="done"><b>링크가 맞지 않아요</b>리츠종합클린 010-7193-2246으로 연락 주세요.</div>${foot}`; return; }
+  const r = await sb.rpc('ref_link_info', {p_code: code});
+  if (r.error || !r.data) { $('#app').innerHTML = `<div class="done"><b>링크가 맞지 않아요</b>리츠종합클린 010-7193-2246으로 연락 주세요.</div>${foot}`; return; }
+  form();
+})();
+})();
+</script>
+</body>
+</html>
