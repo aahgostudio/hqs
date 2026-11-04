@@ -526,3 +526,7 @@ html.chatapp .fab{display:none}
 /* 1104V 고객 전화·문자 */
 .cph{margin:0 4px 0 6px;color:#111;font-variant-numeric:tabular-nums}.cbtn{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line);border-radius:99px;padding:3px 10px;margin-left:4px;font-size:12.5px;font-weight:700;color:#111;text-decoration:none;background:#fff}
 .crow{display:flex;align-items:center;flex-wrap:nowrap;white-space:nowrap}.crow>span:first-child{overflow:hidden;text-overflow:ellipsis;min-width:0}.crow .cbtn{width:32px;height:32px;padding:0;justify-content:center;font-size:15px;flex:none}
+
+/* 1104X 읽음 확인 */
+.ch-u{cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+.rd-g{display:grid;gap:8px;margin:6px 0 10px}.rd-g>div{display:flex;flex-wrap:wrap;gap:6px}.rd-n{border-radius:99px;padding:5px 12px;font-size:13.5px;font-weight:700;background:#F3F4F6}.rd-n.no{background:#FFF7E6;color:#B45309}.rd-n.ok{background:#ECFDF3;color:#0F7A55}

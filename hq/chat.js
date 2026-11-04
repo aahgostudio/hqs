@@ -95,7 +95,7 @@ function roomHtml(){
     out += `<div class="ch-m ${m.mine?'mine':''}${cont?' cont':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine||cont?'':`<span class="ch-nm">${esc(m.name)}</span>`}
       <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}" data-mid="${m.id}"${m.photos?' style="padding:3px"':''}>${m.reply?K.quote(m.reply):''}${m.photos?K.grid(m.photos, pub, {sec: sec && !m.mine}):m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
-      <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?`<i>${u}</i>`:''}${tail?`<span>${tm(m.at)}</span>`:''}${typeof m.id === 'number' && !m.deleted && !m.photos ? `<button type="button" class="ch-rp" data-a="chReply" data-id="${m.id}" title="답장">↩︎</button>` : ''}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
+      <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?(H.S.owner && typeof m.id === 'number' ? `<i class="ch-u" data-a="chReaders" data-id="${Math.max(...(m.ids || [m.id]))}" title="누가 읽었는지">${u}</i>` : `<i>${u}</i>`):''}${tail?`<span>${tm(m.at)}</span>`:''}${typeof m.id === 'number' && !m.deleted && !m.photos ? `<button type="button" class="ch-rp" data-a="chReply" data-id="${m.id}" title="답장">↩︎</button>` : ''}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
   return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div>${R.kind === 'cust' && C.seen ? `<div data-a="chLive" role="button" title="고객님 방 링크·안내 멘트" style="margin-top:4px;border-radius:8px;overflow:hidden;cursor:pointer">${K.seenLine(C.seen)}</div>` : ''}</div>
@@ -442,3 +442,11 @@ H.ACT.chExport = async () => {
   w.document.close();
 };
 })(window.HQ);
+
+/* 1104X: 안 읽은 숫자 누르면 누가 읽었는지 (대표님만) */
+H.ACT.chReaders = async el => {
+  let d; try { d = await H.q(H.sb.rpc('chat_admin_readers', {p_msg: +el.dataset.id})); }
+  catch(e){ return H.toast(String(e.message||e).includes('chat_admin_readers') ? 'SQL v37을 먼저 돌려주세요' : '불러오지 못했어요'); }
+  const li = (a, c) => a.length ? a.map(n => `<span class="rd-n ${c}">${H.esc(n)}</span>`).join('') : '<span class="note">없음</span>';
+  H.open(`<h3>읽음 확인</h3><div class="rd-g"><b>안 읽음 ${d.unread.length}</b><div>${li(d.unread, 'no')}</div><b>읽음 ${d.read.length}</b><div>${li(d.read, 'ok')}</div></div><p class="note">대표님 화면에만 보여요.</p>${H.sacts ? `<div class="sacts"><button type="button" class="btn" data-a="close">닫기</button></div>` : ''}`);
+};
