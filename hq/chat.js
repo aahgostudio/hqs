@@ -169,11 +169,14 @@ function paint(keep){
     box.addEventListener('load', fix, true); box.addEventListener('loadedmetadata', fix, true); }
   // 폰: 말풍선을 옆으로 밀면 답장 (카톡처럼)
   if (box && !box._swipe) { box._swipe = true; let sx = 0, sy = 0, el = null;
-    box.addEventListener('touchstart', e => { el = e.target.closest('.ch-b[data-mid]'); if (!el) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
-    box.addEventListener('touchmove', e => { if (!el) return; const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+    let lp = null; const lpStop = () => { clearTimeout(lp); lp = null; };
+    box.addEventListener('touchstart', e => { el = e.target.closest('.ch-b[data-mid]'); if (!el) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+      const mid = el.dataset.mid; lpStop(); if (/^\d+$/.test(mid) && !e.target.closest('a,video,button')) lp = setTimeout(() => { lp = null; if (el) { el.style.transform = ''; el = null; } if (navigator.vibrate) navigator.vibrate(15); H.ACT.chMsgMenu({dataset:{id: mid}}); }, 480); }, {passive:true});
+    box.addEventListener('contextmenu', e => { const b = e.target.closest('.ch-b[data-mid]'); if (!b || !/^\d+$/.test(b.dataset.mid) || e.target.closest('a,video')) return; e.preventDefault(); H.ACT.chMsgMenu({dataset:{id: b.dataset.mid}}); });
+    box.addEventListener('touchmove', e => { if (!el) return; const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy; if (Math.abs(dx) > 8 || Math.abs(dy) > 8) lpStop();
       if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) { el.style.transform = ''; el = null; return; } if (Math.abs(dx) > 8) el.style.transform = `translateX(${Math.max(-70, Math.min(70, dx))}px)`; }, {passive:true});
-    box.addEventListener('touchcancel', () => { if (el) { el.style.transform = ''; el = null; } }, {passive:true});
-    box.addEventListener('touchend', e => { if (!el) return; const dx = (e.changedTouches[0] || {}).clientX - sx; const b = el; el = null;
+    box.addEventListener('touchcancel', () => { lpStop(); if (el) { el.style.transform = ''; el = null; } }, {passive:true});
+    box.addEventListener('touchend', e => { lpStop(); if (!el) return; const dx = (e.changedTouches[0] || {}).clientX - sx; const b = el; el = null;
       b.style.transition = 'transform .18s'; b.style.transform = ''; setTimeout(() => { b.style.transition = ''; }, 200);
       if (Math.abs(dx) > 45 && b.dataset.mid && /^\d+$/.test(b.dataset.mid)) { if (navigator.vibrate) navigator.vibrate(10); H.ACT.chReply({dataset:{id: b.dataset.mid}}); } }, {passive:true}); }
   // 입력줄: 카카오워크식 (PC는 Enter 전송 · 폰은 [↑]로 전송) · @멘션 · 이모지
@@ -443,10 +446,21 @@ H.ACT.chExport = async () => {
 };
 })(window.HQ);
 
-/* 1104X: 안 읽은 숫자 누르면 누가 읽었는지 (대표님만) */
+/* 1104Z: 말풍선 꾹 누르면 메뉴 (카카오워크처럼) · 안 읽은 멤버 확인은 대표님만 */
+H.ACT.chMsgMenu = el => { const id = +el.dataset.id, m = (C.msgs||[]).find(x => (x.ids || [x.id]).includes(id)) || {};
+  const it = (a, ic, t, extra='') => `<button type="button" class="mm-i" data-a="${a}" data-id="${id}" ${extra}><span>${ic}</span>${t}</button>`;
+  H.open(`<div class="mm">${m.body ? `<div class="mm-pv">${H.esc(String(m.body).slice(0, 80))}</div>` : ''}
+    ${it('chMmReply','↩︎','답장')}${m.body ? it('chMmCopy','⧉','복사') : ''}${H.S.owner ? it('chReaders','👥','안 읽은 멤버 확인') : ''}
+    <button type="button" class="mm-x" data-a="close">닫기</button></div>`); };
+H.ACT.chMmReply = el => { H.close(); H.ACT.chReply({dataset:{id: el.dataset.id}}); };
+H.ACT.chMmCopy = async el => { const id = +el.dataset.id, m = (C.msgs||[]).find(x => (x.ids || [x.id]).includes(id)) || {};
+  try { await navigator.clipboard.writeText(m.body || ''); H.toast('복사했어요'); } catch(_){ H.toast('복사가 안 돼요'); } H.close(); };
 H.ACT.chReaders = async el => {
-  let d; try { d = await H.q(H.sb.rpc('chat_admin_readers', {p_msg: +el.dataset.id})); }
+  let d; try { d = await rpc('chat_admin_readers', {p_msg: +el.dataset.id}); }
   catch(e){ return H.toast(String(e.message||e).includes('chat_admin_readers') ? 'SQL v37을 먼저 돌려주세요' : '불러오지 못했어요'); }
-  const li = (a, c) => a.length ? a.map(n => `<span class="rd-n ${c}">${H.esc(n)}</span>`).join('') : '<span class="note">없음</span>';
-  H.open(`<h3>읽음 확인</h3><div class="rd-g"><b>안 읽음 ${d.unread.length}</b><div>${li(d.unread, 'no')}</div><b>읽음 ${d.read.length}</b><div>${li(d.read, 'ok')}</div></div><p class="note">대표님 화면에만 보여요.</p>${H.sacts ? `<div class="sacts"><button type="button" class="btn" data-a="close">닫기</button></div>` : ''}`);
-};
+  C.rd = d; C.rdTab = 'no'; drawReaders(); };
+const drawReaders = () => { const d = C.rd || {read: [], unread: []}, L = C.rdTab === 'no' ? d.unread : d.read;
+  H.open(`<div class="rd"><h3>안 읽은 멤버 확인</h3><div class="rd-t"><button type="button" data-a="chRdTab" data-k="no" aria-pressed="${C.rdTab==='no'}">안 읽음 ${d.unread.length}</button><button type="button" data-a="chRdTab" data-k="ok" aria-pressed="${C.rdTab==='ok'}">읽음 ${d.read.length}</button></div>
+    <div class="rd-l">${L.map(n => `<div class="rd-r"><span class="rd-av">${H.esc(String(n).slice(-2))}</span><b>${H.esc(n)}</b></div>`).join('') || '<p class="note" style="padding:16px 4px">없음</p>'}</div>
+    <p class="note">대표님 화면에만 보여요.</p><div class="sacts"><button type="button" class="btn" data-a="close">닫기</button></div></div>`); };
+H.ACT.chRdTab = el => { C.rdTab = el.dataset.k; drawReaders(); };

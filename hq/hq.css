@@ -530,3 +530,12 @@ html.chatapp .fab{display:none}
 /* 1104X 읽음 확인 */
 .ch-u{cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
 .rd-g{display:grid;gap:8px;margin:6px 0 10px}.rd-g>div{display:flex;flex-wrap:wrap;gap:6px}.rd-n{border-radius:99px;padding:5px 12px;font-size:13.5px;font-weight:700;background:#F3F4F6}.rd-n.no{background:#FFF7E6;color:#B45309}.rd-n.ok{background:#ECFDF3;color:#0F7A55}
+
+/* 1104Z 내 말풍선 = 연파랑 + 검정 글자 (카카오워크처럼) · 꾹 누르면 메뉴 */
+.ch-m.mine .ch-b{background:#C9DBFD!important;border-color:#C9DBFD!important;color:#111!important}
+.ch-b[data-mid]{-webkit-touch-callout:none}
+.mm{display:grid;gap:4px}.mm-pv{font-size:13px;color:var(--sub);background:#F6F7F9;border-radius:10px;padding:9px 11px;margin-bottom:6px;white-space:pre-wrap;max-height:4.6em;overflow:hidden}
+.mm-i{display:flex;align-items:center;gap:12px;border:0;background:#fff;border-radius:12px;padding:13px 10px;font:inherit;font-size:15px;font-weight:600;color:#111;cursor:pointer;text-align:left}.mm-i:active{background:#F3F4F6}.mm-i span{width:22px;text-align:center;font-size:17px;color:#4B5563}
+.mm-x{border:0;background:none;color:var(--sub);font:inherit;padding:10px;margin-top:4px;cursor:pointer}
+.rd-t{display:flex;gap:18px;border-bottom:1px solid var(--line);margin:4px 0 6px}.rd-t button{border:0;background:none;font:inherit;font-weight:800;font-size:15px;padding:8px 2px;color:#9CA3AF;border-bottom:2px solid transparent;cursor:pointer}.rd-t button[aria-pressed=true]{color:#111;border-bottom-color:#111}
+.rd-l{max-height:50vh;overflow:auto}.rd-r{display:flex;align-items:center;gap:10px;padding:9px 2px}.rd-av{width:34px;height:34px;border-radius:50%;background:#DCE6FB;color:#2453C7;display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
