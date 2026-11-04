@@ -68,6 +68,9 @@
 .kit-grid .sec{position:absolute;right:3px;bottom:3px;border:0;background:rgba(255,255,255,.85);border-radius:8px;font-size:13px;padding:2px 4px;cursor:pointer}
 .kit-view .nav{position:absolute;top:50%;transform:translateY(-50%);border:0;background:rgba(255,255,255,.16);color:#fff;width:46px;height:46px;border-radius:50%;font-size:24px;cursor:pointer}
 .kit-view .cnt{position:absolute;left:0;right:0;top:calc(18px + env(safe-area-inset-top));text-align:center;font-size:14px;font-weight:700;opacity:.85;pointer-events:none}
+.kit-rx{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}.mine .kit-rx,.epc-m.mine .kit-rx{justify-content:flex-end}
+.kit-rx button{border:1px solid #E3E7F0;background:#fff;border-radius:99px;padding:2px 8px;font:inherit;font-size:12.5px;cursor:pointer;color:#111}.kit-rx button.me{border-color:#2453C7;background:#EEF2FD}
+.kit-pin{display:flex;align-items:center;gap:8px;background:#FFFBEB;border-bottom:1px solid #FDE68A;padding:8px 12px;font-size:13px;cursor:pointer}.kit-pin div{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kit-pin button{border:0;background:none;font-size:14px;color:#92400E;cursor:pointer;padding:2px 6px}
 .mine .kit-mn{color:inherit;text-decoration:underline;text-underline-offset:2px}`;
     document.head.appendChild(s);
   }
@@ -304,5 +307,13 @@
     return `<div class="kit-rp"><span class="t">↩︎ <b>${e(r.name || '')}</b>에게 답장 · ${e(snip(r))}</span><button type="button" data-kitrpx="1">취소</button></div>`; }
   document.addEventListener('click', e => { const q = e.target.closest('[data-kitjump]'); if (!q) return; e.preventDefault(); e.stopPropagation();
     const el = document.querySelector(`[data-mid="${q.dataset.kitjump}"]`); if (!el) return; el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.remove('kit-hl'); void el.offsetWidth; el.classList.add('kit-hl'); }, true);
-  window.EPKit = {snip, quote, replyBar, shrink, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
+  // v38: 반응 칩 (👍 2) · 핀 줄
+  const RX = ['👍','✅','🙏','❤️'];
+  function reacts(m){ const rs = m && m.reacts; if (!rs || !rs.length) return '';
+    const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    return `<div class="kit-rx">${rs.map(r => `<button type="button" class="${r.me ? 'me' : ''}" data-kitrx="${m.id}" data-e="${e(r.e)}" title="${e((r.who||[]).join(', '))}">${e(r.e)} ${r.n}</button>`).join('')}</div>`; }
+  function pinBar(p, canX){ if (!p || !p.id) return '';
+    const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    return `<div class="kit-pin" data-kitjump="${p.id}"><span>📌</span><div><b>${e(p.name)}</b> ${e(p.body || (p.photo ? '사진' : ''))}</div>${canX ? `<button type="button" data-kitunpin="1" aria-label="고정 해제">✕</button>` : ''}</div>`; }
+  window.EPKit = {RX, reacts, pinBar, snip, quote, replyBar, shrink, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();

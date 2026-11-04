@@ -95,7 +95,7 @@ function roomHtml(){
     out += `<div class="ch-m ${m.mine?'mine':''}${cont?' cont':''}">${m.mine?'':`<span class="ch-av">${m.avatar?`<img src="${esc(URL_+'/storage/v1/object/public/avatars/'+m.avatar)}" alt="">`:esc(H.two ? H.two(m.name) : m.name.slice(-2))}</span>`}
       <div class="ch-col">${m.mine||cont?'':`<span class="ch-nm">${esc(m.name)}</span>`}
       <div class="ch-line"><div class="ch-b ${m.deleted?'del':''}" data-mid="${m.id}"${m.photos?' style="padding:3px"':''}>${m.reply?K.quote(m.reply):''}${m.photos?K.grid(m.photos, pub, {sec: sec && !m.mine}):m.photo?(K.isDoc(m.photo)?K.docCard(pub(m.photo), m.body):isVid(m.photo)?`<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>`:`<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`):''}${m.body&&!(m.photo&&K.isDoc(m.photo))?`<div>${K.text(m.body, names, OWN()?'대표':'')}</div>`:''}</div>
-      <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?(H.S.owner && typeof m.id === 'number' ? `<i class="ch-u" data-a="chReaders" data-id="${Math.max(...(m.ids || [m.id]))}" title="누가 읽었는지">${u}</i>` : `<i>${u}</i>`):''}${tail?`<span>${tm(m.at)}</span>`:''}${typeof m.id === 'number' && !m.deleted && !m.photos ? `<button type="button" class="ch-rp" data-a="chReply" data-id="${m.id}" title="답장">↩︎</button>` : ''}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${hist}</div></div>`;
+      <span class="ch-meta">${cUp && m.id === cUp ? K.SEEN_TAG + ' ' : ''}${u?(H.S.owner && typeof m.id === 'number' ? `<i class="ch-u" data-a="chReaders" data-id="${Math.max(...(m.ids || [m.id]))}" title="누가 읽었는지">${u}</i>` : `<i>${u}</i>`):''}${tail?`<span>${tm(m.at)}</span>`:''}${typeof m.id === 'number' && !m.deleted && !m.photos ? `<button type="button" class="ch-rp" data-a="chReply" data-id="${m.id}" title="답장">↩︎</button>` : ''}${sec && !m.mine && !m.deleted && !m.photos && typeof m.id === 'number' ? `<button type="button" class="ch-sec" data-a="chSecure" data-id="${m.id}" title="계좌·통장 → 인사카드로 옮기고 대화에서 지우기">🔒</button>` : ''}</span></div>${typeof m.id === 'number' ? K.reacts(m) : ''}${hist}</div></div>`;
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
   return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div>${R.kind === 'cust' && C.seen ? `<div data-a="chLive" role="button" title="고객님 방 링크·안내 멘트" style="margin-top:4px;border-radius:8px;overflow:hidden;cursor:pointer">${K.seenLine(C.seen)}</div>` : ''}</div>
@@ -107,7 +107,7 @@ function roomHtml(){
     ${r.job_id && ['cust','site'].includes(R.kind) && !r.closed ? (r.job_done
       ? `<div style="margin:8px 10px 0;background:#DCFCE7;color:#065F46;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:700;text-align:center">✅ 작업 끝 · ${tm(r.job_done)}</div>`
       : `<button data-a="chWorkDone" style="display:block;width:calc(100% - 20px);margin:8px 10px 0;border:0;border-radius:14px;background:#059669;color:#fff;padding:12px;font:inherit;font-weight:800;font-size:15px;cursor:pointer">✅ 작업 끝 누르기</button>`) : ''}
-    <div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
+    ${K.pinBar && C.pin ? K.pinBar(C.pin, true) : ''}<div class="ch-msgs" id="chMsgs">${out || '<p class="note" style="text-align:center;margin-top:40px">아직 대화가 없어요</p>'}</div>
     ${r.closed ? '<div class="ch-in note" style="justify-content:center">닫은 방이에요 · 직원 화면엔 안 보여요</div>' :
     K.bar({id:'chT', ph:`메시지를 입력해보세요.${matchMedia('(pointer:fine)').matches ? ' (Enter 전송 · Shift+Enter 줄바꿈)' : ''}`,
       extra: OWN() && R.kind==='dm' && !H.S.needV9 ? '<button type="button" class="kit-x" data-a="chPay" title="입금 알림 보내고 기록">💸</button>' : ''})}`;
@@ -159,7 +159,7 @@ function paint(keep){
   const oRh = R.querySelector('.ch-rh'), nRh = tmp.querySelector('.ch-rh'), oM = R.querySelector('#chMsgs'), nM = tmp.querySelector('#chMsgs');
   if (same && newIn && oldIn.querySelector('#chT') && newIn.querySelector('#chT') && oRh && nRh && oM && nM) {
     // 입력칸은 건드리지 않고(움직이기만 해도 키보드가 닫힘) 위쪽 줄과 메시지만 바꿈
-    if (oRh.classList.contains('open')) nRh.classList.add('open'); oRh.replaceWith(nRh); morph(oM, nM);
+    if (oRh.classList.contains('open')) nRh.classList.add('open'); oRh.replaceWith(nRh); morph(oM, nM); const oP = R.querySelector('.kit-pin'), nP = tmp.querySelector('.kit-pin'); if (oP) oP.remove(); if (nP) R.querySelector('#chMsgs').before(nP);
   } else { R.replaceChildren(...tmp.childNodes); }
   R.dataset.room = String(C.cur);
   const box = document.getElementById('chMsgs'); if (box) box.scrollTop = keep && !atB ? top : box.scrollHeight;
@@ -208,6 +208,7 @@ async function openRoom(id){ C.reply = null;
   C.msgs = C.room.msgs; C.unread = C.room.unread || {};
   C.mark = K.firstUnread(C.msgs, was);   // '여기까지 읽으셨습니다' — 이 방에 있는 동안 유지
   const r = C.home.rooms.find(x => x.id === id); if (r) r.unread = 0;
+  C.pin = null; loadPin();
   paint(); K.jump(document.getElementById('chMsgs')); poll();
   if (C.room.room.kind === 'cust') custSeen().then(() => paint(true));
 }
@@ -449,11 +450,61 @@ H.ACT.chExport = async () => {
 };
 
 /* 1104Z: 말풍선 꾹 누르면 메뉴 (카카오워크처럼) · 안 읽은 멤버 확인은 대표님만 */
-H.ACT.chMsgMenu = el => { const id = +el.dataset.id, m = (C.msgs||[]).find(x => (x.ids || [x.id]).includes(id)) || {};
+const MSG = id => (C.msgs||[]).find(x => (x.ids || [x.id]).includes(+id)) || {};
+async function loadPin(){ if (!C.cur) return; try { const id = C.cur, p = await rpc('chat_admin_pin_get', {p_room: id}); if (id === C.cur) { C.pin = p && p.id ? p : null; paint(true); } } catch(_){} }
+async function reloadRoom(){ if (!C.cur) return; try { const d = await rpc('chat_admin_load', {p_room: C.cur, p_after: 0, p_before: null, p_limit: 300}); C.room = d; C.msgs = d.msgs; C.unread = d.unread || {}; paint(true); } catch(_){} }
+const v38 = e => String(e.message||e).match(/chat_admin_(react|edit|pin)/) ? H.toast('SQL v38을 먼저 돌려주세요') : H.toast('안 됐어요 · ' + String(e.message||e).slice(0, 60));
+H.ACT.chMsgMenu = el => { const id = +el.dataset.id, m = MSG(id);
   const it = (a, ic, t, extra='') => `<button type="button" class="mm-i" data-a="${a}" data-id="${id}" ${extra}><span>${ic}</span>${t}</button>`;
-  H.open(`<div class="mm">${m.body ? `<div class="mm-pv">${H.esc(String(m.body).slice(0, 80))}</div>` : ''}
-    ${it('chMmReply','↩︎','답장')}${m.body ? it('chMmCopy','⧉','복사') : ''}${H.S.owner ? it('chReaders','👥','안 읽은 멤버 확인') : ''}
+  const pinned = C.pin && C.pin.id === id;
+  H.open(`<div class="mm"><div class="mm-rx">${K.RX.map(e => `<button type="button" data-a="chRx" data-id="${id}" data-e="${e}">${e}</button>`).join('')}</div>
+    ${m.body ? `<div class="mm-pv">${H.esc(String(m.body).slice(0, 80))}</div>` : ''}
+    ${it('chMmReply','↩︎','답장')}${m.body ? it('chMmCopy','⧉','복사') : ''}
+    ${m.mine && m.body && !m.photo && !m.photos ? it('chMmEdit','✏️','수정') : ''}${m.mine ? it('chMmDel','🗑','삭제', 'style="color:#DC2626"') : ''}
+    ${m.body ? it('chMmNtc','📢','공지로 올리기') + it('chMmEv','📅','일정으로 만들기') : ''}
+    ${it('chMmFwd','➡️','다른 방으로 전달')}${it('chMmPin','📌', pinned ? '고정 해제' : '방 위에 고정')}
+    ${H.S.owner ? it('chReaders','👥','안 읽은 멤버 확인') : ''}
     <button type="button" class="mm-x" data-a="close">닫기</button></div>`); };
+H.ACT.chRx = async el => { H.close(); try { await rpc('chat_admin_react', {p_msg: +el.dataset.id, p_emoji: el.dataset.e}); await reloadRoom(); } catch(e){ v38(e); } };
+document.addEventListener('click', async e => { const b = e.target.closest('[data-kitrx]'); if (b && document.getElementById('chMsgs')) { e.preventDefault(); e.stopPropagation();
+    try { await rpc('chat_admin_react', {p_msg: +b.dataset.kitrx, p_emoji: b.dataset.e}); await reloadRoom(); } catch(x){ v38(x); } return; }
+  const u = e.target.closest('[data-kitunpin]'); if (u && document.getElementById('chMsgs')) { e.preventDefault(); e.stopPropagation();
+    try { await rpc('chat_admin_pin', {p_room: C.cur, p_msg: null}); C.pin = null; paint(true); H.toast('고정 해제했어요'); } catch(x){ v38(x); } } }, true);
+H.ACT.chMmEdit = el => { const id = +el.dataset.id, m = MSG(id);
+  H.open(`<form data-f="chEditMsg" data-id="${id}"><h3>메시지 수정</h3><textarea class="in" name="body" rows="4" required>${H.esc(m.body||'')}</textarea><p class="note">수정하면 '수정됨'으로 표시되고, 원래 글은 이력에 남아요.</p>${H.sacts('수정')}</form>`); };
+H.FORM.chEditMsg = async (v, f) => { try { await rpc('chat_admin_edit', {p_id: +f.dataset.id, p_body: v.get('body'), p_delete: false}); H.close(); H.toast('수정했어요'); await reloadRoom(); } catch(e){ v38(e); } };
+H.ACT.chMmDel = el => H.open(`<h3>이 메시지를 삭제할까요?</h3><p class="note">직원 화면엔 '삭제된 메시지'로 보이고, 원래 글은 이력에 남아요.</p>
+  <div class="sacts"><button type="button" class="btn ghost" data-a="close">취소</button><button type="button" class="btn" style="background:#DC2626" data-a="chMmDelOk" data-id="${el.dataset.id}">삭제</button></div>`);
+H.ACT.chMmDelOk = async el => { try { await rpc('chat_admin_edit', {p_id: +el.dataset.id, p_body: null, p_delete: true}); H.close(); H.toast('삭제했어요'); await reloadRoom(); } catch(e){ v38(e); } };
+H.ACT.chMmNtc = el => { const m = MSG(el.dataset.id), g = (C.room && C.room.room && C.room.room.grp) || '';
+  const def = g === 'res' ? 'RES' : ['clean','prt'].includes(g) ? 'OPS' : '';
+  H.open(`<form data-f="chNtc"><h3>공지로 올리기</h3><input class="in" name="title" placeholder="제목 (선택)" style="margin-bottom:8px"><textarea class="in" name="body" rows="4" required>${H.esc(m.body||'')}</textarea>
+    <div class="chips" style="margin:10px 0">${[['','전체'],['OPS','클린'],['RES','부동산']].map(([k,l]) => `<label><input type="radio" name="team" value="${k}" ${k===def?'checked':''}><span>${l}</span></label>`).join('')}</div>
+    <label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" name="important"> 확인 버튼 (직원이 '확인' 눌러야 함)</label>${H.sacts('공지 올리기')}</form>`); };
+H.FORM.chNtc = async v => { await H.q(H.sb.from('notices').insert({title: H.nn(v.get('title')), body: v.get('body'), team: H.nn(v.get('team')), important: v.get('important') === 'on'}));
+  H.close(); H.toast('공지 올렸어요 · 직원 일정판 [공지]에 보여요'); };
+// 글에서 날짜·시간 찾기: 오늘·내일·모레·11/7·11월 7일·3시·3시 반·15:30·오후 2시
+const parseWhen = t => { const now = H.today(); let d = null, tm = '';
+  if (/모레/.test(t)) d = H.addDays(now, 2); else if (/내일/.test(t)) d = H.addDays(now, 1); else if (/오늘/.test(t)) d = now;
+  let x = t.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/) || t.match(/(?:^|\D)(\d{1,2})\/(\d{1,2})(?!\d)/);
+  if (x) { d = new Date(now.getFullYear(), +x[1] - 1, +x[2]); if (d < H.addDays(now, -60)) d.setFullYear(d.getFullYear() + 1); }
+  const y = t.match(/(\d{1,2}):(\d{2})/); const z = t.match(/(오전|오후|저녁|밤|아침)?\s*(\d{1,2})\s*시\s*(반|(\d{1,2})\s*분)?/);
+  if (y) tm = `${String(y[1]).padStart(2,'0')}:${y[2]}`;
+  else if (z) { let h = +z[2]; if (/오후|저녁|밤/.test(z[1]||'') && h < 12) h += 12; else if (!z[1] && h >= 1 && h <= 7) h += 12;
+    tm = `${String(h).padStart(2,'0')}:${z[3] === '반' ? '30' : String(z[4] || '0').padStart(2,'0')}`; }
+  return {d: d ? H.ymd(d) : H.ymd(now), tm}; };
+H.ACT.chMmEv = el => { const m = MSG(el.dataset.id), w = parseWhen(m.body || ''); H.close();
+  if (!H.evSheet) return H.toast('일정 화면을 한 번 열고 다시 해주세요');
+  setTimeout(() => H.evSheet({ev_date: w.d, ev_time: w.tm, kind: '기타', biz: 'common', title: String(m.body||'').split('\n')[0].slice(0, 40), memo: '대화에서: ' + String(m.body||'').slice(0, 80)}), 30); };
+H.ACT.chMmFwd = el => { const id = +el.dataset.id, rs = ((C.home && C.home.rooms) || []).filter(r => !r.closed && r.id !== C.cur);
+  H.open(`<h3>어느 방으로 보낼까요?</h3><div style="max-height:55vh;overflow:auto;display:grid;gap:4px">${rs.map(r => `<button type="button" class="mm-i" data-a="chFwdTo" data-id="${id}" data-r="${r.id}"><span>${icOf(r)}</span>${H.esc(r.title)}</button>`).join('') || '<p class="note">보낼 방이 없어요</p>'}</div>
+    <div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button></div>`); };
+H.ACT.chFwdTo = async el => { const m = MSG(el.dataset.id), r = +el.dataset.r, head = `↪ 전달 · ${m.name || ''}\n`;
+  try { if (m.photos && m.photos.length) { for (const ph of m.photos) await rpc('chat_admin_send', {p_room: r, p_body: '', p_photo: ph.photo || ph}); if (m.body) await rpc('chat_admin_send', {p_room: r, p_body: head + m.body}); }
+    else await rpc('chat_admin_send', {p_room: r, p_body: m.body ? head + m.body : head.trim(), p_photo: m.photo || null});
+    H.close(); H.toast('전달했어요'); } catch(e){ H.toast('전달 못 했어요 · ' + String(e.message||e).slice(0, 60)); } };
+H.ACT.chMmPin = async el => { const id = +el.dataset.id, off = C.pin && C.pin.id === id;
+  try { await rpc('chat_admin_pin', {p_room: C.cur, p_msg: off ? null : id}); H.close(); H.toast(off ? '고정 해제했어요' : '방 위에 고정했어요'); await loadPin(); if (off) { C.pin = null; paint(true); } } catch(e){ v38(e); } };
 H.ACT.chMmReply = el => { H.close(); H.ACT.chReply({dataset:{id: el.dataset.id}}); };
 H.ACT.chMmCopy = async el => { const id = +el.dataset.id, m = (C.msgs||[]).find(x => (x.ids || [x.id]).includes(id)) || {};
   try { await navigator.clipboard.writeText(m.body || ''); H.toast('복사했어요'); } catch(_){ H.toast('복사가 안 돼요'); } H.close(); };

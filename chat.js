@@ -17,7 +17,7 @@
   let ICONS = null;   // 대표가 고른 방 아이콘 {방번호: 이모지}
   const APP = new URLSearchParams(location.search).get('app') === 'chat';   // 홈 화면 '어닝톡' 앱 모드: 대화만
   let opt = {token:'', demo:false, accent:'#16347A', onState:()=>{}};
-  let home = null, room = null, cseen = null, msgs = [], unreadMap = {}, view = null, pollT = null, homeT = null, busy = false, editing = null, showDone = false;
+  let pin = null, home = null, room = null, cseen = null, msgs = [], unreadMap = {}, view = null, pollT = null, homeT = null, busy = false, editing = null, showDone = false;
 
   async function rpc(fn, args){
     const r = await fetch(`${URL_}/rest/v1/rpc/${fn}`, {method:'POST', headers:Object.assign({'content-type':'application/json'}, H), body:JSON.stringify(args)});
@@ -107,6 +107,8 @@
 .epc-edit button{border:0;background:none;color:var(--epc-acc);font-weight:700;font:inherit;font-size:12px}
 .epc-menu{position:fixed;inset:0;z-index:210;background:rgba(10,14,25,.4);display:flex;align-items:flex-end;justify-content:center}
 .epc-menu div{background:var(--epc-card);width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:10px 12px calc(14px + env(safe-area-inset-bottom))}
+.epc-col>.kit-rx{align-self:flex-start}.epc-m.mine .epc-col>.kit-rx{align-self:flex-end}
+.epc-rx{display:flex;justify-content:space-around;margin:4px 0 6px;padding:6px;background:#F4F6FB;border-radius:14px}.epc-menu .epc-rx button{width:auto;font-size:26px;padding:4px 10px;text-align:center}
 .epc-menu button{display:block;width:100%;border:0;background:none;color:inherit;font:inherit;font-size:15.5px;padding:14px;text-align:left;border-radius:12px}
 .epc-menu button:hover{background:var(--epc-bg)}
 .epc-menu .warn{color:#E5484D}
@@ -203,7 +205,7 @@
         : `<div class="epc-b" data-mid="${m.id}" ${m.mine ? `data-own="${m.id}"` : ''}>${m.reply ? K().quote(m.reply) : ''}${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}#t=0.1" controls playsinline preload="metadata"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
       out += `<div class="epc-m ${m.mine ? 'mine' : ''}${cont ? ' cont' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
         <div class="epc-col">${!m.mine && !cont ? `<span class="epc-nm">${esc(m.name)}</span>` : ''}
-        <div class="epc-line">${body}<span class="epc-meta">${cUp && m.id === cUp ? K().SEEN_TAG : ''}${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}${tail ? `<span>${tm(m.at)}</span>` : ''}</span></div></div></div>`;
+        <div class="epc-line">${body}<span class="epc-meta">${cUp && m.id === cUp ? K().SEEN_TAG : ''}${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}${tail ? `<span>${tm(m.at)}</span>` : ''}</span></div>${typeof m.id === 'number' && K().reacts ? K().reacts(m) : ''}</div></div>`;
     });
     const n = (room.room.members || []).length + 1;
     const oldIn = w.querySelector('.kit-bar'), edKey = editing ? String(editing.id) : replying ? 'r' + replying.id : '';
@@ -211,7 +213,7 @@
     const html = `<div class="epc-h"><button class="epc-back" data-list="1" aria-label="목록">←</button><span class="sp"><b>${esc(room.room.title)}</b>${room.room.kind !== 'dm' ? `<small>${n}명</small>` : ''}</span></div>
       ${room.room.kind==='cust'?'<div class="epc-note" style="text-align:center;background:#FFF7E6;color:#92400E;padding:6px 10px;margin:0">🙋 고객님도 보는 방이에요 · 고객님에겐 \'리츠종합클린 현장팀\'으로만 보여요</div>':''}
       ${room.room.kind==='cust' ? K().seenLine(cseen) + custBar() : ''}
-      <div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
+      ${K().pinBar && pin && pin.room === room.room.id ? K().pinBar(pin.p, false) : ''}<div class="epc-msgs">${out || '<p class="epc-note" style="text-align:center;margin-top:30px">첫 메시지를 남겨보세요 👋</p>'}</div>
       ${editing ? `<div class="epc-edit"><span>✏️ 메시지 수정 중</span><button data-epccancel="1">취소</button></div>` : ''}
       ${!editing && replying ? K().replyBar(replying) : ''}
       ${K().bar({id:'epc-t'})}`;
@@ -270,14 +272,16 @@
   function menu(id, own = true){
     const m = msgs.find(x => x.id === id); if (!m || m.deleted || document.querySelector('.epc-menu')) return;
     const d = document.createElement('div'); d.className = 'epc-menu';
-    d.innerHTML = own ? `<div><button data-a="reply">↩️ 답장</button>${m.body ? '<button data-a="copy">📋 복사</button><button data-a="edit">✏️ 수정</button>' : ''}<button data-a="del" class="warn">🗑 삭제</button>
+    const rx = K().RX ? `<p class="epc-rx">${K().RX.map(e => `<button data-a="rx" data-e="${e}">${e}</button>`).join('')}</p>` : '';
+    d.innerHTML = own ? `<div>${rx}<button data-a="reply">↩️ 답장</button>${m.body ? '<button data-a="copy">📋 복사</button><button data-a="edit">✏️ 수정</button>' : ''}<button data-a="del" class="warn">🗑 삭제</button>
       <p>수정·삭제하면 '수정됨', '삭제된 메시지'로 표시돼요.</p><button data-a="x">닫기</button></div>`
-      : `<div><button data-a="reply">↩️ 답장</button>${m.body ? '<button data-a="copy">📋 복사</button>' : ''}<button data-a="x">닫기</button></div>`;
+      : `<div>${rx}<button data-a="reply">↩️ 답장</button>${m.body ? '<button data-a="copy">📋 복사</button>' : ''}<button data-a="x">닫기</button></div>`;
     document.body.appendChild(d);
     d.onclick = async e => { e.stopPropagation(); const a = e.target.closest('[data-a]'); if (e.target !== d && !a) return; d.remove(); if (!a) return;
       if (a.dataset.a === 'copy') { let ok = false; try { await navigator.clipboard.writeText(m.body); ok = true; } catch(_){
           const t = document.createElement('textarea'); t.value = m.body; t.setAttribute('readonly',''); t.style.cssText = 'position:fixed;top:0;opacity:0'; document.body.appendChild(t); t.select(); t.setSelectionRange(0, 99999); try { ok = document.execCommand('copy'); } catch(_){} t.remove(); }
         const n = document.createElement('div'); n.className = 'epc-copied'; n.textContent = ok ? '복사했어요' : '복사하지 못했어요'; document.body.appendChild(n); setTimeout(() => n.remove(), 1400); }
+      if (a.dataset.a === 'rx') return react(id, a.dataset.e);
       if (a.dataset.a === 'edit') { editing = m; drawRoom(true); }
       if (a.dataset.a === 'reply') { editing = null; replying = {id: m.id, name: m.mine ? '나' : m.name, body: m.body, photo: m.photo}; drawRoom(true); }
       if (a.dataset.a === 'del') { if (!confirm('이 메시지를 삭제할까요?')) return;
@@ -285,6 +289,12 @@
         try { await rpc('chat_edit', {p_token: opt.token, p_id: id, p_body: null, p_delete: true}); m.deleted = true; drawRoom(true); } catch(_){ alert('삭제하지 못했어요'); } }
     };
   }
+
+  // v38: 반응 · 고정 글
+  async function react(id, e){ if (opt.demo) return; try { await rpc('chat_react', {p_token: opt.token, p_msg: id, p_emoji: e}); await reloadFull(); } catch(_){} }
+  async function reloadFull(){ if (!room) return; try { const d = await rpc('chat_load', {p_token: opt.token, p_room: room.room.id, p_after: 0, p_before: null}); msgs = d.msgs; unreadMap = d.unread || {}; drawRoom(true); } catch(_){} }
+  async function loadPin(id){ if (opt.demo) return; try { const p = await rpc('chat_pin_get', {p_token: opt.token, p_room: id}); pin = p && p.id ? {room: id, p} : null; if (room && room.room.id === id) drawRoom(true); } catch(_){ pin = null; } }
+  document.addEventListener('click', e => { const b = e.target.closest('[data-kitrx]'); if (!b || !document.querySelector('.epc-msgs')) return; e.preventDefault(); e.stopPropagation(); react(+b.dataset.kitrx, b.dataset.e); }, true);
 
   /* ---------- 데이터 ---------- */
   async function loadHome(){
@@ -300,7 +310,7 @@
     if (opt.demo) { const d = (opt.demoTeam === 'RES' ? DEMO_RES : DEMO).room[id] || {room:{id, kind:'dm', title:(home.rooms.find(r=>r.id==id)||{}).title || '대화', members:[]}, msgs:[], unread:{}};
       room = d; msgs = d.msgs.slice(); unreadMap = Object.assign({}, d.unread); mark = K().firstUnread(msgs, was); const r = home.rooms.find(x => x.id == id); if (r) r.unread = 0; drawRoom(); K().jump(shell().querySelector('.epc-msgs')); return; }
     try { const d = await rpc('chat_load', {p_token: opt.token, p_room: id, p_after: 0, p_before: null});
-      room = d; msgs = d.msgs; unreadMap = d.unread || {}; mark = K().firstUnread(msgs, was); drawRoom(); K().jump(shell().querySelector('.epc-msgs')); poll(); loadHome(); custSeen(); }
+      room = d; msgs = d.msgs; unreadMap = d.unread || {}; mark = K().firstUnread(msgs, was); drawRoom(); K().jump(shell().querySelector('.epc-msgs')); poll(); loadHome(); custSeen();  loadPin(id); }
     catch(_) { view = 'list'; await loadHome(); drawList(); }
   }
   async function refreshRoom(){

@@ -614,6 +614,7 @@ H.FORM.pay = async v => { const id = +v.get('id'); const j = J(id);
 
 /* 내 일정 (대표) */
 const BIZ = [['clean','클린'],['res','부동산'],['ago','아고'],['common','공통'],['me','개인']];
+H.evSheet = e => evSheet(e);
 function evSheet(e){
   e = e || {ev_date: st().sel, kind:'기타', biz:'common'};
   H.open(`<form data-f="ev"><h3>${e.id?'내 일정 수정':'내 일정 올리기'}</h3><div class="fg">

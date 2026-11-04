@@ -543,3 +543,5 @@ html.chatapp .fab{display:none}
 /* 1104a 꾹 누를 때 폰 글자 선택(복사하기) 대신 우리 메뉴 */
 .ch-b[data-mid],.ch-b[data-mid] *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .mm,.mm *,.rd,.rd *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.mm-rx{display:flex;justify-content:space-around;background:#F6F7F9;border-radius:14px;padding:8px;margin-bottom:6px}.mm-rx button{border:0;background:none;font-size:26px;padding:4px 10px;cursor:pointer;border-radius:10px}.mm-rx button:active{background:#E5E7EB}
+.ch-col>.kit-rx{align-self:flex-start}.ch-m.mine .ch-col>.kit-rx{align-self:flex-end}
