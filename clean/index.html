@@ -223,13 +223,13 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1105c"></script>
+<script src="../status.js?v=1105d"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1105c'</script>
-<script src="../chatkit.js?v=1105c"></script>
-<script src="../chat.js?v=1105c"></script>
-<script src="../mymoney.js?v=1105c"></script>
+<script>window.EP_VER='1105d'</script>
+<script src="../chatkit.js?v=1105d"></script>
+<script src="../chat.js?v=1105d"></script>
+<script src="../mymoney.js?v=1105d"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -724,7 +724,7 @@ document.addEventListener('click', async e => {
   // 현장 사진
   if (d.shoot){ closeSheet(); shoot = {job:+d.shoot, stage: (D.jobs.find(x=>x.id==d.shoot)||{}).photos ? 'during' : 'before', done:[], memo:''}; tab = 'shoot'; render(); window.scrollTo(0,0); return; }
   if (d.stage){ shoot.memo = (document.getElementById('shootmemo')||{}).value || ''; shoot.stage = d.stage; render(); return; }
-  if (d.workdone){ if (!confirm('작업이 끝났나요? 고객님 방이 완료 리포트(계좌 안내)로 바뀌어요.')) return;
+  if (d.workdone){ if (!confirm('작업이 끝났나요? 고객님 방이 완료 리포트로 바뀌어요.')) return;
     try { await rpc('staff_work_done',{p_token:TOKEN,p_job:+d.workdone}); const j = D.jobs.find(x=>x.id==d.workdone); if (j) j.work_done = new Date().toISOString(); toast('작업 끝! 고생 많으셨어요 🙏'); render(); } catch(err){ toast(errMsg(err)); } return; }
 });
 function keepText(fn){ const t = document.getElementById('r-text'), j = document.getElementById('r-job'); const v = t && t.value, jv = j && j.value; fn(); const t2 = document.getElementById('r-text'), j2 = document.getElementById('r-job'); if (t2 && v) t2.value = v; if (j2 && jv != null) j2.value = jv; }

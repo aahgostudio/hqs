@@ -152,8 +152,8 @@ function render(){
     const ex = D.extras || [];
     const after = (D.photos||[]).filter(p=>p.stage==='after'), before = (D.photos||[]).filter(p=>p.stage==='before');
     body = `<h1>청소가 끝났어요 ✨</h1><div class="sub">${esc(D.title)} · ${md(D.date)}${D.done_at?' · '+hm(D.done_at)+' 완료':''}</div>
-      ${c.done_img?`<img class="img" src="${esc(c.done_img)}" alt="입금 계좌 안내">`:''}
-      ${D.pay_total!=null?`<div class="card"><div class="sub">잔금 안내</div><div class="amt">${won(D.pay_total)}</div>
+      ${c.done_img&&!D.no_acct?`<img class="img" src="${esc(c.done_img)}" alt="입금 계좌 안내">`:''}
+      ${D.pay_total!=null&&!D.no_acct?`<div class="card"><div class="sub">잔금 안내</div><div class="amt">${won(D.pay_total)}</div>
         ${ex.length?`<div class="li"><span>잔금</span><span>${won(D.balance)}</span></div>${ex.map(x=>`<div class="li"><span>추가 작업 · ${esc(x.name)}</span><span>${won(x.amount)}</span></div>`).join('')}`:''}
         ${c.account?`<div class="acct"><span class="kb">${esc(c.bank||'')}</span>${esc(c.account)}</div><div class="sub">예금주 ${esc(c.holder||'')}</div>
         <div class="row" style="margin-top:10px"><button class="btn sm" data-copy="${esc(c.account)}">계좌번호 복사</button>${c.phone?`<a class="btn ghost sm" href="sms:${esc(c.phone.replace(/[^0-9]/g,''))}?&body=${encodeURIComponent('[현금영수증 신청] '+D.title+' / 휴대폰(또는 사업자)번호: ')}">현금영수증 신청</a>`:''}</div>`:''}
