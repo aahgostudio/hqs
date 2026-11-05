@@ -73,6 +73,10 @@ H.ACT.stlPaid = async el => {
   const s = H.P(el.dataset.s), n = +el.dataset.n;
   if (!confirm(`${s.name}님께 ${won(n)}원 입금하셨어요?\n입금 기록으로 남겨요.`)) return;
   await H.payNotify(s.id, n, SD.d, SD.d === H.ymd(new Date()) ? '' : `${md(SD.d)} 정산`);
+  // 그날 현장 지급도 '보냄'으로 — 월별 정산 화면 '남은 돈'에 안 남게
+  const r = calc(SD).rows.find(x => x.s.id === s.id);
+  for (const it of (r ? r.items : [])) await H.q(sb.from('assignments').update({paid: true}).match({job_id: it.j.id, staff_id: s.id})).catch(() => {});
+  H._dirty = Date.now();
   H.toast(`${s.name}님 입금 기록 완료`); SD = await load(SD.d); draw();
 };
 H.ACT.stlCopy = () => { const C = calc(SD);
