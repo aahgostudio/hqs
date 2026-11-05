@@ -7,6 +7,10 @@
 <meta name="theme-color" content="#16347A">
 <title>어닝플레이스 일정판</title>
 <link rel="icon" href="../logo.svg">
+<!-- 1105a: 홈 화면에 '일정판' 아이콘으로 추가 (주소에 내 링크 그대로 들어가서 바로 내 일정판이 열려요) -->
+<link rel="apple-touch-icon" href="../board-180.png"><link rel="manifest" href="../board.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="일정판"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="../style.css">
 <style>
@@ -538,7 +542,8 @@ function plusMenu(){
     ${isRES() ? '' : `<button data-paint="1">🗓<span>일할 수 있는 날 알려주기<small>가능·불가일을 한 번에 칠해요</small></span></button>`}
     <button data-evnew="1">📌<span>내 일정 추가<small>${isRES()?'계약 · 잔금 · 안내 · 기타 (매물번호 연결)':isAGO()?'촬영 · 라이브 · 미팅 · 교육 · 기타':'개인 일정 · 메모'}</small></span></button>
     ${todayShoot?`<button data-shoot="${todayShoot.id}">📷<span>${W('오늘 현장 사진 올리기','오늘 촬영 사진 올리기')}<small>${esc(todayShoot.title)}</small></span></button>`:''}
-    <button data-tab="report">📝<span>${W('현장 보고','작업 공유')}<small>${W('한 줄 보고 · 사진','진행 상황 · 결과물 · 메모')}</small></span></button></div>`);
+    <button data-tab="report">📝<span>${W('현장 보고','작업 공유')}<small>${W('한 줄 보고 · 사진','진행 상황 · 결과물 · 메모')}</small></span></button>
+    ${matchMedia('(display-mode: standalone)').matches || navigator.standalone ? '' : `<button data-homeadd="1">📲<span>홈 화면에 일정판 추가<small>앱처럼 아이콘 눌러서 바로 열기</small></span></button>`}</div>`);
 }
 
 function paintView(){
@@ -687,6 +692,13 @@ document.addEventListener('click', async e => {
   if (d.av1){ return act('staff_set_avail',{p_token:TOKEN,p_days:[pick],p_kind:d.av1,p_memo:null}, d.av1==='ok'?'이날 가능으로 표시했어요':d.av1==='no'?'이날 불가로 표시했어요':'지웠어요'); }
   // 칠하기
   if (d.paint){ return openPaint(); }
+  if (d.homeadd){ const ios = /iPhone|iPad/i.test(navigator.userAgent), kakao = /KAKAOTALK/i.test(navigator.userAgent);
+    return sheet(`<h3>📲 홈 화면에 일정판 추가</h3><div style="font-size:15px;line-height:1.7;margin:4px 2px 12px">
+      ${kakao ? `<p><b>① 카톡 안에서는 안 돼요.</b><br>오른쪽 아래 <b>⋯</b> → <b>'다른 브라우저로 열기'</b>를 먼저 눌러주세요.</p>` : ''}
+      <p><b>${kakao ? '②' : '①'} ${ios ? '사파리 아래 <b>공유 버튼(⬆)</b>을 누르고' : '오른쪽 위 <b>⋮ 메뉴</b>를 누르고'}</b></p>
+      <p><b>${kakao ? '③' : '②'} [홈 화면에 추가]</b>를 누르면 끝!</p>
+      <p style="color:var(--sub);font-size:13px">처음 한 번만 하면 돼요. 아이콘 이름은 '일정판'이에요. 이 아이콘은 내 전용이라 다른 사람에게 보내면 안 돼요.</p></div>
+      <button class="btn" style="width:100%" onclick="document.getElementById('sheetbg').remove()">알겠어요</button>`); }
   if (d.pmode){ paint.mode = d.pmode; render(); return; }
   if (d.pmon){ return paintMonth(+d.pmon); }
   if (d.pd){ if (paint.mode === 'clear') delete paint.marks[d.pd]; else paint.marks[d.pd] = paint.marks[d.pd] === paint.mode ? undefined : paint.mode; if (!paint.marks[d.pd]) delete paint.marks[d.pd]; render(); return; }
