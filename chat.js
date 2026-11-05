@@ -344,7 +344,7 @@
 
   async function send(){
     const t = document.getElementById('epc-t'); const v = (t.value || '').trim(); if (!v || busy) return;
-    busy = true;
+    busy = true; if (!matchMedia('(pointer:fine)').matches) t.blur();   // 폰: 보내면 키보드 내림
     try {
       if (editing) { const m = editing;
         if (!opt.demo) await rpc('chat_edit', {p_token: opt.token, p_id: m.id, p_body: v, p_delete: false});
