@@ -27,6 +27,7 @@ H.loadPartners = async () => {
   H.S.pbank = {};
   if (H.S.owner) { if (H.S.needV42) p.forEach(a => { if (a.bank) H.S.pbank[a.id] = a.bank; });
     else (await H.q(sb.from('partner_private').select('*'))).forEach(b => { H.S.pbank[b.partner_id] = b.bank; }); }
+  if (!H.S.needV44) { const [dd, dc] = await Promise.all([H.q(sb.rpc('deal_days')), H.q(sb.from('settings').select('value').eq('key','deal'))]); H.S.deal = dd || {rate:10, days:[]}; H.S.dealCfg = (dc && dc[0] && dc[0].value) || {rate:10, days:14, cap:2, off:[]}; }
   H.S.pkit = H.S.needV43 ? [] : await H.q(sb.from('partner_kit').select('*').order('sort', {ascending:false}).order('created_at', {ascending:false}));
   H.S.pmsgs = H.S.needV41 ? [] : await H.q(sb.from('partner_msgs').select('*').order('created_at', {ascending:false}).limit(1500));
 };
@@ -320,4 +321,39 @@ H.ACT.kitHide = async el => { const k = KK(el.dataset.k); await H.q(sb.from('par
 H.ACT.kitDel = async el => { if (!confirm('이 사진 자료를 지울까요? (현장 사진 원본은 그대로예요)')) return; const k = KK(el.dataset.k);
   const mine = (k.photos||[]).filter(p => p.bucket === 'kit').map(p => p.path); if (mine.length) await sb.storage.from('kit').remove(mine);
   await H.q(sb.from('partner_kit').delete().eq('id', k.id)); H.close(); H.toast('지웠어요'); H.refresh(); };
+/* ---------- 빈 날 특가 (v44) : 14일 안 빈 날만 10% ---------- */
+const DOW = ['일','월','화','수','목','금','토'];
+const dLabel = x => { const [y,m,d] = x.d.split('-').map(Number); return `${m}/${d}(${DOW[x.dow]})`; };
+const slot = x => x.am && x.pm ? '종일' : x.am ? '오전' : '오후';
+H.dealText = (kind) => { const D = (H.S.deal||{}).days||[], r = (H.S.deal||{}).rate||10; const list = D.map(x => `✔ ${dLabel(x)} ${slot(x)}`).join('\n');
+  if (!D.length) return '';
+  if (kind === 'insta') return `📅 리츠 이번 주 빈 날 특가 ${r}%\n\n아래 날짜에 예약하시면 ${r}% 할인해 드려요.\n${list}\n\n하루 한 집만 집중해서 작업해요.\n먼저 연락 주시는 분께 드려요 :)\n\n📞 010-7193-2246 · DM\n\n#리츠종합클린 #부산청소 #입주청소 #이사청소 #빈날특가`;
+  if (kind === 'karrot') return `[리츠종합클린] 이번 주 빈 날 ${r}% 특가\n\n${list}\n\n위 날짜에 청소 예약하시면 ${r}% 할인해 드려요.\n입주·이사·상가·사무실 청소 모두 가능해요.\n먼저 연락 주시는 순서대로 마감돼요.\n\n📞 010-7193-2246`;
+  if (kind === 'partner') return `🔥 이번 주 빈 날 특가 ${r}%\n\n${list}\n\n이 날짜로 소개하시면 고객님께 ${r}% 할인이 들어가요.\n"이 날이면 더 싸게 해준대요" 한마디가 제일 잘 먹혀요!`;
+  return D.map(x => `${x.d} ${slot(x)}`).join('\n'); };
+H.partnerDeal = () => {
+  if (H.S.needV44) return `<section class="box"><div class="bh"><h3>빈 날 특가 시작하기 (서버 업데이트 한 번)</h3></div>
+    <p class="note" style="line-height:1.7">1. [SQL 복사] → 2. Supabase SQL Editor에 붙여넣고 Run → 3. '업데이트 완료 (v44)'가 보이면 새로고침</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" data-a="v44copy">SQL 복사</button><a class="btn ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></div></section>`;
+  const cfg = H.S.dealCfg || {}, off = new Set(cfg.off||[]), D = (H.S.deal||{}).days||[], by = Object.fromEntries(D.map(x => [x.d, x]));
+  const t0 = H.today(), cells = [];
+  for (let i = 1; i <= (cfg.days||14); i++) { const d = new Date(t0); d.setDate(d.getDate()+i); const k = H.ymd(d), x = by[k], isOff = off.has(k);
+    const st = isOff ? ['쉬는 날','off'] : x ? [slot(x)+' 빈','free'] : ['꽉 참','full'];
+    cells.push(`<button class="dl ${st[1]}" data-a="dealOff" data-d="${k}" title="눌러서 쉬는 날 지정·해제"><b>${d.getMonth()+1}/${d.getDate()}</b><small>${DOW[d.getDay()]}</small><span>${st[0]}</span></button>`); }
+  const btn = (k,l) => `<button class="btn sm ghost" data-a="dealCopy" data-k="${k}">${l}</button>`;
+  return `<section class="box"><div class="bh"><h3>빈 날 특가 · 앞으로 ${cfg.days||14}일</h3><div style="display:flex;gap:6px;align-items:center;font-size:13px">할인 <input type="number" min="0" max="50" value="${cfg.rate||10}" data-a="dealRate" style="width:60px;padding:6px;border:1px solid var(--line);border-radius:8px">%</div></div>
+    <p class="note" style="margin:-4px 0 12px">우리 직영 현장이 하루 ${cfg.cap||2}건 미만인 날이 자동으로 '빈 날'이 돼요 (도급 현장은 안 셈). 쉬는 날은 날짜를 눌러 빼 주세요.</p>
+    <div class="dls">${cells.join('')}</div>
+    <div style="margin-top:16px;font-weight:700;font-size:14px">지금 특가 날짜 ${D.length}일</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${btn('insta','인스타·스레드 문구')}${btn('karrot','당근 소식 문구')}${btn('soomgo','숨고용 날짜 목록')}<button class="btn sm" data-a="dealNotice">파트너 공지로 보내기</button></div>
+    <p class="note" style="margin-top:12px">숨고 견적 점검은 이 날짜를 읽어서, 고객 희망일이 빈 날이면 자동으로 ${cfg.rate||10}% 할인가로 보내요. 파트너 화면 홈에도 바로 떠요.</p></section>`;
+};
+const saveDeal = async cfg => { await H.q(sb.from('settings').upsert({key:'deal', value: cfg})); H.S.dealCfg = cfg; H.S.deal = await H.q(sb.rpc('deal_days')); H.render(); };
+H.ACT.v44copy = async () => { const t = await (await fetch('update_v44.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL 복사했어요 · SQL Editor에 붙여넣고 Run'); };
+H.ACT.dealOff = async el => { const cfg = {...(H.S.dealCfg||{})}, off = new Set(cfg.off||[]), k = el.dataset.d; off.has(k) ? off.delete(k) : off.add(k);
+  const today = H.ymd(H.today()); cfg.off = [...off].filter(x => x > today).sort(); await saveDeal(cfg); H.toast(off.has(k) ? '쉬는 날로 뺐어요' : '다시 특가 대상이에요'); };
+document.addEventListener('change', async e => { if (!e.target.matches('[data-a="dealRate"]')) return; const v = Math.max(0, Math.min(50, +e.target.value||0)); await saveDeal({...(H.S.dealCfg||{}), rate: v}); H.toast(`할인 ${v}%로 바꿨어요`); });
+H.ACT.dealCopy = el => { const t = H.dealText(el.dataset.k); if (!t) return H.toast('지금 특가 날짜가 없어요'); H.copy(t, '복사했어요'); };
+H.ACT.dealNotice = async () => { const t = H.dealText('partner'); if (!t) return H.toast('지금 특가 날짜가 없어요'); if (!confirm('파트너 공지방에 빈 날 특가를 올릴까요?')) return;
+  await H.q(sb.from('partner_msgs').insert({partner_id: null, from_hq: true, author: '리츠 본사', body: t})); H.toast('파트너 공지방에 올렸어요'); };
 })(window.HQ);
