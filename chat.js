@@ -328,7 +328,7 @@
       if (d.msgs.length || Object.keys(d.unread || {}).length) { const t = document.getElementById('epc-t'); const v = t ? t.value : ''; drawRoom(true); const t2 = document.getElementById('epc-t'); if (t2 && !editing) t2.value = v; }
     } catch(_){}
   }
-  function poll(){ clearInterval(pollT); let n = 0; pollT = setInterval(() => { refreshRoom(); if (++n % 4 === 0) custSeen(); }, 3500); }
+  function poll(){ clearInterval(pollT); let n = 0; pollT = setInterval(() => { refreshRoom(); if (++n % 5 === 0) custSeen(); }, 2500); }
   // 👀 고객님이 링크를 봤는지 (SQL v26 전이면 조용히 건너뜀)
   async function custSeen(){
     if (view !== 'room' || !room || room.room.kind !== 'cust' || opt.demo || document.hidden) return;

@@ -204,8 +204,12 @@ H.ACT.chReply = el => { const m = C.msgs.find(x => x.id === +el.dataset.id); if 
 async function openRoom(id){ C.reply = null;
   const rr = C.home && C.home.rooms.find(x => x.id === id); if (!OWN() && rr && !(rr.mgr && !rr.closed && rr.live)) { C.cur = null; C.room = null; return paint(); }
   const was = rr ? rr.unread || 0 : 0;
-  C.cur = id; C.seen = null; C.room = await rpc('chat_admin_load', {p_room: id, p_after: 0, p_before: null, p_limit: 300});
-  C.msgs = C.room.msgs; C.unread = C.room.unread || {};
+  C.cur = id; C.seen = null; C.cache = C.cache || {};
+  const cc = C.cache[id];   // 한 번 연 방은 바로 보여주고 뒤에서 새로 받음
+  if (cc) { C.pin = null; C.room = cc.room; C.msgs = cc.msgs.slice(); C.unread = Object.assign({}, cc.unread); C.mark = null; paint(); K.jump(document.getElementById('chMsgs')); }
+  const d0 = await rpc('chat_admin_load', {p_room: id, p_after: 0, p_before: null, p_limit: 300});
+  if (C.cur !== id) return;
+  C.room = d0; C.msgs = d0.msgs; C.unread = d0.unread || {}; C.cache[id] = {room: d0, msgs: d0.msgs, unread: C.unread};
   C.mark = K.firstUnread(C.msgs, was);   // '여기까지 읽으셨습니다' — 이 방에 있는 동안 유지
   const r = C.home.rooms.find(x => x.id === id); if (r) r.unread = 0;
   C.pin = null; loadPin();
@@ -223,11 +227,14 @@ async function tick(){
     if (C.cur) { const real = C.msgs.filter(m => typeof m.id === 'number'), last = real.length ? real[real.length-1].id : 0;
       const d = await rpc('chat_admin_load', {p_room: C.cur, p_after: last, p_before: null, p_limit: 300});
       Object.assign(C.unread, d.unread || {}); if (d.msgs.length) C.msgs = C.msgs.concat(d.msgs);
+      if (C.cache && C.room) C.cache[C.cur] = {room: C.room, msgs: C.msgs.filter(m => typeof m.id === 'number'), unread: C.unread};
+      if (d.msgs.length || Object.keys(d.unread || {}).length) paint(true);   // 새 글은 바로 (목록 기다리지 않음)
       if ((C.tk = (C.tk || 0) + 1) % 3 === 0) await custSeen(); }
-    await loadHome(); paint(true);
+    // 대화 목록은 무거워서 방 안에 있을 땐 15초마다만
+    if (!C.cur || (C.hk = (C.hk || 0) + 1) % 5 === 0) { await loadHome(); paint(true); }
   } catch(_){}
 }
-function poll(){ clearInterval(C.t); C.t = setInterval(tick, 4000); }
+function poll(){ clearInterval(C.t); C.t = setInterval(tick, 3000); }
 // 지금 이 방 보고 있음 → 서버에 알려서 이 방 새 글은 어닝톡 알림 안 보냄 (SQL v18) · 방 나가거나 화면 내리면 바로 해제
 let hereR, hereT = 0;
 function here(force){

@@ -206,7 +206,8 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     } catch(_) { window.open(dl || src, '_blank'); }
   }
-  document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[data-view]'); if (!a) return; if (e.target.closest('.sec')) { e.preventDefault(); return; }   // 🔒 버튼은 대표 화면이 처리 e.preventDefault(); e.stopPropagation();
+  document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[data-view]'); if (!a) return; if (e.target.closest('.sec')) { e.preventDefault(); return; }   // 🔒 버튼은 대표 화면이 처리
+    e.preventDefault(); e.stopPropagation();   // 사진 주소로 넘어가지 않게 — 크게 보기만 (두 번 뜨던 것)
     const g = a.closest('.kit-grid'), all = g ? [...g.querySelectorAll('a[data-view]')] : [a];
     viewer(a.dataset.view, a.dataset.dl, a.dataset.name, all.map(x => ({view: x.dataset.view, dl: x.dataset.dl, name: x.dataset.name})), all.indexOf(a)); }, true);
 
