@@ -27,7 +27,7 @@ H.loadPartners = async () => {
   H.S.pbank = {};
   if (H.S.owner) { if (H.S.needV42) p.forEach(a => { if (a.bank) H.S.pbank[a.id] = a.bank; });
     else (await H.q(sb.from('partner_private').select('*'))).forEach(b => { H.S.pbank[b.partner_id] = b.bank; }); }
-  if (!H.S.needV44) { const [dd, dc] = await Promise.all([H.q(sb.rpc('deal_days')), H.q(sb.from('settings').select('value').eq('key','deal'))]); H.S.deal = dd || {rate:10, days:[]}; H.S.dealCfg = (dc && dc[0] && dc[0].value) || {rate:10, days:14, cap:2, off:[]}; }
+  if (!H.S.needV45) { const [dd, dc] = await Promise.all([H.q(sb.rpc('deal_days')), H.q(sb.from('settings').select('value').eq('key','deal'))]); H.S.deal = dd || {rate:10, days:[]}; H.S.dealCfg = (dc && dc[0] && dc[0].value) || {rate:10, days:14, cap:2, off:[]}; }
   H.S.pkit = H.S.needV43 ? [] : await H.q(sb.from('partner_kit').select('*').order('sort', {ascending:false}).order('created_at', {ascending:false}));
   H.S.pmsgs = H.S.needV41 ? [] : await H.q(sb.from('partner_msgs').select('*').order('created_at', {ascending:false}).limit(1500));
 };
@@ -321,7 +321,7 @@ H.ACT.kitHide = async el => { const k = KK(el.dataset.k); await H.q(sb.from('par
 H.ACT.kitDel = async el => { if (!confirm('이 사진 자료를 지울까요? (현장 사진 원본은 그대로예요)')) return; const k = KK(el.dataset.k);
   const mine = (k.photos||[]).filter(p => p.bucket === 'kit').map(p => p.path); if (mine.length) await sb.storage.from('kit').remove(mine);
   await H.q(sb.from('partner_kit').delete().eq('id', k.id)); H.close(); H.toast('지웠어요'); H.refresh(); };
-/* ---------- 빈 날 특가 (v44) : 14일 안 빈 날만 10% ---------- */
+/* ---------- 빈 날 특가 (v45) : 14일 안 빈 날만 10% ---------- */
 const DOW = ['일','월','화','수','목','금','토'];
 const dLabel = x => { const [y,m,d] = x.d.split('-').map(Number); return `${m}/${d}(${DOW[x.dow]})`; };
 const slot = x => x.am && x.pm ? '종일' : x.am ? '오전' : '오후';
@@ -332,9 +332,9 @@ H.dealText = (kind) => { const D = (H.S.deal||{}).days||[], r = (H.S.deal||{}).r
   if (kind === 'partner') return `🔥 이번 주 빈 날 특가 ${r}%\n\n${list}\n\n이 날짜로 소개하시면 고객님께 ${r}% 할인이 들어가요.\n"이 날이면 더 싸게 해준대요" 한마디가 제일 잘 먹혀요!`;
   return D.map(x => `${x.d} ${slot(x)}`).join('\n'); };
 H.partnerDeal = () => {
-  if (H.S.needV44) return `<section class="box"><div class="bh"><h3>빈 날 특가 시작하기 (서버 업데이트 한 번)</h3></div>
-    <p class="note" style="line-height:1.7">1. [SQL 복사] → 2. Supabase SQL Editor에 붙여넣고 Run → 3. '업데이트 완료 (v44)'가 보이면 새로고침</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" data-a="v44copy">SQL 복사</button><a class="btn ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></div></section>`;
+  if (H.S.needV45) return `<section class="box"><div class="bh"><h3>빈 날 특가 시작하기 (서버 업데이트 한 번)</h3></div>
+    <p class="note" style="line-height:1.7">1. [SQL 복사] → 2. Supabase SQL Editor에 붙여넣고 Run → 3. '업데이트 완료 (v45)'가 보이면 새로고침</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" data-a="v45copy">SQL 복사</button><a class="btn ghost" href="https://supabase.com/dashboard/project/ldvknvmsnpbporxhnsli/sql/new" target="_blank" rel="noopener">SQL Editor 열기</a></div></section>`;
   const cfg = H.S.dealCfg || {}, off = new Set(cfg.off||[]), D = (H.S.deal||{}).days||[], by = Object.fromEntries(D.map(x => [x.d, x]));
   const t0 = H.today(), cells = [];
   for (let i = 1; i <= (cfg.days||14); i++) { const d = new Date(t0); d.setDate(d.getDate()+i); const k = H.ymd(d), x = by[k], isOff = off.has(k);
@@ -349,7 +349,7 @@ H.partnerDeal = () => {
     <p class="note" style="margin-top:12px">숨고 견적 점검은 이 날짜를 읽어서, 고객 희망일이 빈 날이면 자동으로 ${cfg.rate||10}% 할인가로 보내요. 파트너 화면 홈에도 바로 떠요.</p></section>`;
 };
 const saveDeal = async cfg => { await H.q(sb.from('settings').upsert({key:'deal', value: cfg})); H.S.dealCfg = cfg; H.S.deal = await H.q(sb.rpc('deal_days')); H.render(); };
-H.ACT.v44copy = async () => { const t = await (await fetch('update_v44.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL 복사했어요 · SQL Editor에 붙여넣고 Run'); };
+H.ACT.v45copy = async () => { const t = await (await fetch('update_v45.sql', {cache:'no-store'})).text(); H.copy(t, 'SQL 복사했어요 · SQL Editor에 붙여넣고 Run'); };
 H.ACT.dealOff = async el => { const cfg = {...(H.S.dealCfg||{})}, off = new Set(cfg.off||[]), k = el.dataset.d; off.has(k) ? off.delete(k) : off.add(k);
   const today = H.ymd(H.today()); cfg.off = [...off].filter(x => x > today).sort(); await saveDeal(cfg); H.toast(off.has(k) ? '쉬는 날로 뺐어요' : '다시 특가 대상이에요'); };
 document.addEventListener('change', async e => { if (!e.target.matches('[data-a="dealRate"]')) return; const v = Math.max(0, Math.min(50, +e.target.value||0)); await saveDeal({...(H.S.dealCfg||{}), rate: v}); H.toast(`할인 ${v}%로 바꿨어요`); });
