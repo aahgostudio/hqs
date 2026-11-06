@@ -306,21 +306,25 @@
     opt.onState({on: !!(home && home.on), unread}); K().badge(unread);   // 홈 화면 아이콘 숫자
     if (view === 'list') drawList();
   }
+  const CACHE = {};   // 한 번 연 방은 다시 열 때 바로 보여주고 뒤에서 새로 받음
   async function openRoom(id){ replying = null; editing = null;
     view = 'room'; editing = null; cseen = null; const rw = home && home.rooms ? home.rooms.find(x => x.id == id) : null, was = rw ? rw.unread || 0 : 0;
     if (opt.demo) { const d = (opt.demoTeam === 'RES' ? DEMO_RES : DEMO).room[id] || {room:{id, kind:'dm', title:(home.rooms.find(r=>r.id==id)||{}).title || '대화', members:[]}, msgs:[], unread:{}};
       room = d; msgs = d.msgs.slice(); unreadMap = Object.assign({}, d.unread); mark = K().firstUnread(msgs, was); const r = home.rooms.find(x => x.id == id); if (r) r.unread = 0; drawRoom(); K().jump(shell().querySelector('.epc-msgs')); return; }
+    const cc = CACHE[id]; if (cc) { room = cc.room; msgs = cc.msgs.slice(); unreadMap = Object.assign({}, cc.unread); mark = null; drawRoom(); K().jump(shell().querySelector('.epc-msgs')); }
     try { const d = await rpc('chat_load', {p_token: opt.token, p_room: id, p_after: 0, p_before: null});
+      if (view !== 'room') return; CACHE[id] = {room: d, msgs: d.msgs, unread: d.unread || {}};
       room = d; msgs = d.msgs; unreadMap = d.unread || {}; mark = K().firstUnread(msgs, was); drawRoom(); K().jump(shell().querySelector('.epc-msgs')); poll(); loadHome(); custSeen();  loadPin(id); }
-    catch(_) { view = 'list'; await loadHome(); drawList(); }
+    catch(_) { if (cc) { poll(); return; } view = 'list'; await loadHome(); drawList(); }
   }
   async function refreshRoom(){
     if (view !== 'room' || !room || opt.demo || document.hidden) return;
-    try { const lastId = msgs.length ? msgs[msgs.length-1].id : 0;
+    try { const real = msgs.filter(m => !m.tmp), lastId = real.length ? real[real.length-1].id : 0;
       const d = await rpc('chat_load', {p_token: opt.token, p_room: room.room.id, p_after: lastId, p_before: null});
       // 새 글 + 읽음 수 갱신 (수정·삭제는 다시 열 때 반영)
       const nu = Object.assign(unreadMap, d.unread || {}); unreadMap = nu;
-      if (d.msgs.length) msgs = msgs.concat(d.msgs);
+      if (d.msgs.length) msgs = real.concat(d.msgs).concat(msgs.filter(m => m.tmp && !d.msgs.some(x => x.mine && x.body === m.body)));
+      if (CACHE[room.room.id]) CACHE[room.room.id] = {room, msgs: msgs.filter(m => !m.tmp), unread: unreadMap};
       if (d.msgs.length || Object.keys(d.unread || {}).length) { const t = document.getElementById('epc-t'); const v = t ? t.value : ''; drawRoom(true); const t2 = document.getElementById('epc-t'); if (t2 && !editing) t2.value = v; }
     } catch(_){}
   }
@@ -353,12 +357,13 @@
         t.value = ''; K().sync(t); mark = null;
         if (opt.demo) { msgs.push({id: Date.now(), who:'me', name: home.me.name, mine:true, body:v, at:new Date().toISOString(), reply: replying}); replying = null; unreadMap[msgs[msgs.length-1].id] = (room.room.members||[]).length; drawRoom(); }
         else { const rp = replying; replying = null;
+          const tmp = {id: 'tmp' + Date.now(), tmp: true, who: home.me.id, name: home.me.name, mine: true, body: v, at: new Date().toISOString(), reply: rp}; msgs.push(tmp); drawRoom(); K().jump(shell().querySelector('.epc-msgs'));
           if (rp) { try { await rpc('chat_send_reply', {p_token: opt.token, p_room: room.room.id, p_body: v, p_reply: rp.id}); }
                     catch(e){ if (/chat_send_reply|function/.test((e && e.message) || '')) await rpc('chat_send', {p_token: opt.token, p_room: room.room.id, p_body: v, p_photo: null}); else throw e; } }
           else await rpc('chat_send', {p_token: opt.token, p_room: room.room.id, p_body: v, p_photo: null});
           await refreshRoom(); if (rp) drawRoom(); }
       }
-    } catch(_) { alert('보내지 못했어요. 인터넷 연결을 확인해주세요.'); t.value = v; K().sync(t); }
+    } catch(_) { msgs = msgs.filter(m => !(m.tmp && m.body === v)); drawRoom(true); alert('보내지 못했어요. 인터넷 연결을 확인해주세요.'); t.value = v; K().sync(t); }
     busy = false;
   }
 
