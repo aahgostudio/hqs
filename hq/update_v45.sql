@@ -13,7 +13,7 @@ on conflict (key) do nothing;
 create or replace function public.deal_days() returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare cfg jsonb; rate int; ndays int; cap int; d date; am boolean; pm boolean; n int; nt int;
-        out jsonb := '[]'::jsonb; t0 date := (now() at time zone 'Asia/Seoul')::date;
+        res jsonb := '[]'::jsonb; t0 date := (now() at time zone 'Asia/Seoul')::date;
 begin
   select value into cfg from public.settings where key = 'deal';
   cfg := coalesce(cfg, '{}'::jsonb);
@@ -33,9 +33,9 @@ begin
     -- 시간 안 정한 현장(시간 무관)은 빈 쪽 하나를 차지한다고 봄
     if nt > 0 then if am then am := false; elsif pm then pm := false; end if; end if;
     continue when not am and not pm;
-    out := out || jsonb_build_object('d', to_char(d, 'YYYY-MM-DD'), 'dow', extract(dow from d)::int, 'am', am, 'pm', pm);
+    res := res || jsonb_build_object('d', to_char(d, 'YYYY-MM-DD'), 'dow', extract(dow from d)::int, 'am', am, 'pm', pm);
   end loop;
-  return jsonb_build_object('rate', rate, 'days', out);
+  return jsonb_build_object('rate', rate, 'days', res);
 end $$;
 grant execute on function public.deal_days() to anon, authenticated;
 
