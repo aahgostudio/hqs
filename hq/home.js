@@ -178,8 +178,6 @@ H.FORM.mmLink = async v => {
   await H.q(H.sb.from('settings').upsert({key:'hq_maemul_code', value: H.S.mcode}));
   H.close(); H.toast('매물노트를 연결했어요'); await H.loadMaemul(); H.refresh();
 };
-})(window.HQ);
-
 // 1107: 현금영수증 발행할 것 목록 — 홈택스에서 발행하고 [발행했어요] 누르면 목록에서 빠짐
 H.ACT.rcptList = () => {
   const ym = H.ymd(H.today()).slice(0,7), md = d => +d.slice(5,7) + '/' + +d.slice(8,10);
@@ -200,3 +198,4 @@ H.ACT.rcptDone = async el => {
   try { await H.q(H.sb.from('jobs').update(patch).eq('id', j.id)); Object.assign(j, patch); H.toast('발행 체크했어요'); H.ACT.rcptList(); H.refresh && H.refresh(); }
   catch (e) { el.disabled = false; H.toast('저장 못 했어요: ' + (e.message || e)); }
 };
+})(window.HQ);
