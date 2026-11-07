@@ -491,7 +491,7 @@ html.chatapp .fab{display:none}
 .dbx.quote{background:#fff;border:1px dashed #CBD5E1;border-left:4px dashed #94A3B8}.dbx.done{opacity:.8}.dbx.cancelled{opacity:.5}.dbx.cancelled b{text-decoration:line-through}
 .dbx.rwx{cursor:default}.dbx.on{box-shadow:0 0 0 2px var(--clean) inset}
 .dbx-d{margin:-2px 0 10px}
-@media(max-width:600px){.cal td{height:56px}.cal td .bars{margin:4px 3px 0;gap:2px}.cal td .bars i{height:3.5px}}
+@media(max-width:600px){.cal td{height:56px}.cal td .bars{margin:4px 3px 0;gap:3px}.cal td .bars i{height:4px}}
 
 /* 1104F 출근부 */
 .att{border:1px solid var(--line);border-left:4px solid var(--res);border-radius:12px;padding:12px;background:#fff}
