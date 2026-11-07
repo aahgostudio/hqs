@@ -58,7 +58,8 @@ H.teamData = () => {
       else if (wkT && now < mins(wkT[0])) { icon = '⏰'; now_ = `오늘 ${wkT[0]} 출근 예정` + (nextE ? ` · ${hm(nextE.ev_time)} ${nextE.kind}` : ''); }
       else if (seenToday) { icon = '🏢'; now_ = '근무 중' + (wkT ? ` (출근표 ${wkT[0]}~${wkT[1]})` : '') + (nextE ? ` · 다음 ${hm(nextE.ev_time)} ${nextE.kind}` : ''); }
       else { icon = '💤'; now_ = '오늘 접속 없음' + (nextE ? ` · ${hm(nextE.ev_time)} ${nextE.kind} 예정` : ''); }
-      const warn = !curE && !seenToday && !(wk && wk.kind === 'no') && (wkT ? now >= mins(wkT[0]) + 60 : now >= 11*60);
+      // 1107: 출근표에 출근 잡힌 날만 경고 (주말·안 나오는 날은 접속 없어도 정상)
+      const warn = !curE && !seenToday && !!wkT && now >= mins(wkT[0]) + 60;
       return {s, icon, now: now_, reg, chk, stale, warn, evN: evs.length, seen: s.last_seen_at};
     }).sort((a,b) => b.warn - a.warn || (a.icon === '🚗' ? -1 : 0));
   }
