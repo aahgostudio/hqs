@@ -183,19 +183,20 @@ H.ACT.rcptList = () => {
   const ym = H.ymd(H.today()).slice(0,7), md = d => +d.slice(5,7) + '/' + +d.slice(8,10);
   const rows = (H.S.jobs||[]).filter(j => j.job_date.startsWith(ym)).flatMap(j => H.jobProofSplit(j).items.map(x => ({j, x})))
     .sort((a,b) => a.j.job_date.localeCompare(b.j.job_date));
-  H.open(`<h3>현금영수증 발행할 것 · ${rows.length}건</h3><p class="note">돈을 받은 것 중 10만 원 이상 현금·계좌이체예요. 홈택스에서 발행하고 [발행했어요]를 누르면 빠져요.</p>
+  H.open(`<h3>현금영수증 발행할 것 · ${rows.length}건</h3><p class="note">지난 현장 중 받은 돈 10만 원 이상 현금·계좌이체예요. 홈택스에서 발행했으면 ⭕, 손님이 필요 없다고 하는 등 안 하면 ✕ — 누르면 빠져요.</p>
     ${rows.map(({j, x}) => `<div class="rw" style="align-items:center;gap:8px"><span><b>${md(j.job_date)} ${H.esc(j.title)}</b><br><small class="note">${H.esc(x.label)} ${H.won(x.amt)}원${x.how ? ' · ' + H.esc(x.how) : ''}${j.cust_phone ? ' · ' + H.esc(j.cust_phone) : ''}</small></span>
-      <button class="btn sm" data-a="rcptDone" data-j="${j.id}" data-k="${x.k}">발행했어요</button></div>`).join('') || '<div class="note">발행할 게 없어요 👍</div>'}
+      <span style="display:flex;gap:6px;flex:none"><button class="btn sm" data-a="rcptDone" data-j="${j.id}" data-k="${x.k}" data-v="o">⭕ 발행</button><button class="btn sm ghost" data-a="rcptDone" data-j="${j.id}" data-k="${x.k}" data-v="x">✕ 안 함</button></span></div>`).join('') || '<div class="note">발행할 게 없어요 👍</div>'}
     <div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button></div>`);
 };
 H.ACT.rcptDone = async el => {
   const j = (H.S.jobs||[]).find(x => x.id === +el.dataset.j), k = el.dataset.k; if (!j) return;
+  const o = el.dataset.v !== 'x';   // ⭕ 발행 / ✕ 안 함 (증빙 '없음'으로 남김)
   let patch;
-  if (k === 'deposit') patch = {deposit_issued: true};
-  else if (k === 'balance') patch = {balance_issued: true};
-  else { const ex = (j.extras||[]).map((x, i) => 'x' + i === k ? Object.assign({}, x, {issued: true}) : x); patch = {extras: ex}; }
+  if (k === 'deposit') patch = o ? {deposit_issued: true} : {deposit_proof: '없음'};
+  else if (k === 'balance') patch = o ? {balance_issued: true} : {balance_proof: '없음'};
+  else { const ex = (j.extras||[]).map((x, i) => 'x' + i === k ? Object.assign({}, x, o ? {issued: true} : {proof: '없음'}) : x); patch = {extras: ex}; }
   el.disabled = true;
-  try { await H.q(H.sb.from('jobs').update(patch).eq('id', j.id)); Object.assign(j, patch); H.toast('발행 체크했어요'); H.ACT.rcptList(); H.refresh && H.refresh(); }
+  try { await H.q(H.sb.from('jobs').update(patch).eq('id', j.id)); Object.assign(j, patch); H.toast(o ? '발행으로 체크했어요' : '발행 안 함으로 체크했어요'); H.ACT.rcptList(); H.refresh && H.refresh(); }
   catch (e) { el.disabled = false; H.toast('저장 못 했어요: ' + (e.message || e)); }
 };
 })(window.HQ);

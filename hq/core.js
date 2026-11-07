@@ -81,10 +81,10 @@ H.jobProofSplit = j => {
   const r = {issued:0, not:0, need:0, items:[]};
   if (j.status === 'cancelled' || j.status === 'quote') return r;
   // 1107: '발행 필요'는 실제로 돈을 받은 것만 (아직 안 받은 잔금·앞으로 할 현장은 빼기)
-  const fin = !!(j.status === 'done' || j.work_done_at || j.collected_at);
+  const fin = !!(j.status === 'done' || j.work_done_at || j.collected_at), past = j.job_date <= H.ymd(H.today()) || fin;   // 지난 현장만
   const add = (amt, proof, issued, how, got, k, label) => { amt = +amt||0; if (!amt) return;
     if (issued || proof === '카드' || proof === '플랫폼' || how === '카드' || how === '플랫폼') r.issued += amt;
-    else { r.not += amt; if (got && (proof === '현금영수증' || ((how === '현금' || how === '계좌이체') && amt >= 100000))) { r.need++; r.items.push({k, label, amt, how: how || proof || ''}); } } };
+    else { r.not += amt; if (got && past && proof !== '없음' && (proof === '현금영수증' || ((how === '현금' || how === '계좌이체') && amt >= 100000))) { r.need++; r.items.push({k, label, amt, how: how || proof || ''}); } } };
   if (j.contract_mode === 'A') { add(j.deposit_amount, j.deposit_proof, j.deposit_issued, j.deposit_how, j.deposit_paid, 'deposit', '예약금'); return r; }
   const base = +j.total_amount || 0, dep = +j.deposit_amount || 0;
   add(dep, j.deposit_proof, j.deposit_issued, j.deposit_how, j.deposit_paid, 'deposit', '예약금');

@@ -98,7 +98,7 @@ H.ACT.urgentCopy = el => { const j = H.J(el.dataset.j); const d = parse(j.job_da
 /* ---------- 현장 금액 ---------- */
 const pillPay = (paid, label) => paid ? `<span class="pill p-ok">${label||'받음'}</span>` : `<span class="pill p-wait">대기</span>`;
 const proofPill = (proof, issued, how, amt) => { if (!amt) return ''; if (issued || proof==='카드' || proof==='플랫폼' || how==='카드' || how==='플랫폼') return `<span class="pill p-ok">${esc(proof||how)}${issued?' 발행':''}</span>`;
-  if (proof==='현금영수증' || ((how==='현금'||how==='계좌이체') && amt>=100000)) return '<span class="pill p-warn">현금영수증 발행 필요</span>'; return proof?`<span class="pill p-mute">${esc(proof)}</span>`:''; };
+  if (proof!=='없음' && (proof==='현금영수증' || ((how==='현금'||how==='계좌이체') && amt>=100000))) return '<span class="pill p-warn">현금영수증 발행 필요</span>'; return proof?`<span class="pill p-mute">${esc(proof)}</span>`:''; };
 function money(){
   const S = H.S;
   const jobs = (S.jobs||[]).filter(j => inMonth(j.job_date) && !['quote','cancelled'].includes(j.status)).sort((a,b)=>a.job_date.localeCompare(b.job_date));
