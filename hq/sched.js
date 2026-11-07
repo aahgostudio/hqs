@@ -13,7 +13,7 @@ H.view('sched', {label:'일정',
     const newRep = (S.reports||[]).filter(r=>!r.checked_at).length;
     const head = `<div class="bh"><h3>${v.anchor.getFullYear()}년 ${v.anchor.getMonth()+1}월</h3>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <div class="chips">${[['clean','클린','var(--clean)'],['res','부동산','var(--res)'],['ntc','공지','var(--notice)'],['me','내 일정','#9CA3AF'],['avail','가능·불가일','#86EFAC']].map(([k,l,c])=>`<label><input type="checkbox" data-c="schedF" value="${k}" ${v.f[k]?'checked':''}><span><i style="background:${c}"></i>${l}</span></label>`).join('')}</div>
+        <div class="chips">${[['clean','클린','var(--clean)'],['res','부동산','var(--res)'],['ntc','공지','var(--notice)'],['me','내 일정','var(--me)'],['avail','가능·불가일','#86EFAC']].map(([k,l,c])=>`<label><input type="checkbox" data-c="schedF" value="${k}" ${v.f[k]?'checked':''}><span><i style="background:${c}"></i>${l}</span></label>`).join('')}</div>
         <div class="seg"><button data-a="schedMode" data-m="month" aria-pressed="${v.mode==='month'}">달력</button><button data-a="schedMode" data-m="list" aria-pressed="${v.mode==='list'}">목록</button></div>
         <button class="btn ghost sm" data-a="schedNav" data-n="-1" aria-label="이전 달">${I('left')}</button><button class="btn ghost sm" data-a="schedNav" data-n="0">오늘</button><button class="btn ghost sm" data-a="schedNav" data-n="1" aria-label="다음 달">${I('right')}</button>
         <button class="btn sm only-pc" data-a="addMenu">${I('plus')}올리기</button></div></div>`;
@@ -33,7 +33,7 @@ H.view('sched', {label:'일정',
           <div class="bars">${bars.slice(0,4).map(x=>`<i class="${x.cls}"></i>`).join('')}${bars.length>4?`<small>+${bars.length-4}</small>`:''}</div></td>`;
         if (d.getDay() === 6) h += '</tr>';
       }
-      body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:#C9CED6"></i>내 일정</span>${H.S.owner ? '<span><i style="background:#10B981"></i>대표 근무</span><span><i style="background:#DB2777"></i>대표 휴무</span>' : ''}</div>`;
+      body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:var(--me)"></i>내 일정</span>${H.S.owner ? '<span><i style="background:#10B981"></i>대표 근무</span><span><i style="background:#DB2777"></i>대표 휴무</span>' : ''}</div>`;
     } else {
       const days = {}; for (let d = new Date(v.anchor); d.getMonth() === v.anchor.getMonth(); d = addDays(d,1)) { const s = ymd(d); const its = dayItems(s); if (its.length) days[s] = its; }
       body = Object.keys(days).map(s => `<div class="ptitle" style="${s===today?'color:var(--info)':''}">${md(s)}${s===today?' · 오늘':''}</div>` + dayCards(s)).join('') || '<p class="empty">이 달 일정이 없어요</p>';
@@ -245,8 +245,8 @@ function jobCard(j){
 function evCard(e){
   const who = e.staff_id ? H.P(e.staff_id) : null;
   const biz = {res:'부동산', clean:'클린', ago:'아고', common:'공통', me:'개인'}[e.biz] || e.biz;
-  return `<div class="card" style="--tc:${who?'var(--res)':'#9CA3AF'}">
-    <div class="t"><span>${e.ev_time?e.ev_time.slice(0,5):'종일'}</span>${who?`<b>${esc(who.name)}</b>`:'<span class="tag" style="background:#6B7280">내 일정</span>'} ${esc(e.kind)} ${e.maemul_id?`<span class="tag" style="background:var(--res)">${esc(e.maemul_id)}</span>`:''}${!who?`<span class="tag" style="background:#9CA3AF">${esc(biz)}</span>`:''}</div>
+  return `<div class="card" style="--tc:${who?'var(--res)':'var(--me)'}">
+    <div class="t"><span>${e.ev_time?e.ev_time.slice(0,5):'종일'}</span>${who?`<b>${esc(who.name)}</b>`:'<span class="tag" style="background:var(--me)">내 일정</span>'} ${esc(e.kind)} ${e.maemul_id?`<span class="tag" style="background:var(--res)">${esc(e.maemul_id)}</span>`:''}${!who?`<span class="tag" style="background:#9CA3AF">${esc(biz)}</span>`:''}</div>
     <div class="m">${esc(e.title)}${!who&&e.memo?' · '+esc(e.memo):''}</div>
     ${!who?`<div class="acts"><button class="btn ghost sm" data-a="evEdit" data-id="${e.id}">수정</button></div>`:''}</div>`;
 }
