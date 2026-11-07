@@ -426,7 +426,7 @@ H.jobSheet = jobSheet;
 function jobSheet(j, def){
   const S = H.S;
   j = j || Object.assign({job_date: st().sel < ymd(H.today()) ? ymd(H.today()) : st().sel, start_time:'08:00', headcount:2, teams:['OPS'], status:'open'}, def||{});
-  const chans = [...new Set([...(S.settings.order_channels || []), '정기'])];   // 1107: 정기 현장은 '정기'로 따로
+  const chans = [...new Set([...(S.settings.order_channels || []), '정기', '의뢰'])];   // 1107: 정기 현장은 '정기'로 따로
   const tgt = j.target_staff || [];
   const lock = I('lock').replace('class="i"','class="i" style="width:14px;height:14px"');
   H.open(`<form data-f="job"><h3>${j.id?'현장 수정':j.status==='quote'?'오더 접수':'클린 현장 올리기'}</h3>
