@@ -54,7 +54,7 @@ H.ST_PRT = {active:'근무', leave:'휴업', left:'계약종료'};   // 도급(�
 H.STL = s => (s && s.team === 'PRT') ? H.ST_PRT : H.ST;
 H.stPill = (s, team) => { const L = team === 'PRT' ? H.ST_PRT : H.ST; return s === 'leave' ? `<span class="pill p-leave">${L.leave}</span>` : s === 'left' ? `<span class="pill p-mute">${L.left}</span>` : '<span class="pill p-ok">근무</span>'; };
 H.PT = {none:'공제 없음', freelance33:'3.3%', daily:'일용직', salary:'급여', contract:'도급'};
-H.PROOF = ['세금계산서','현금영수증','카드','플랫폼','없음'];
+H.PROOF = ['세금계산서','현금영수증','카드','플랫폼','없음','발행안함'];   // 발행안함 = 현금영수증 대상인데 안 하기로 한 것
 H.HOW = ['계좌이체','카드','현금','플랫폼'];
 
 /* ---------- 돈 계산 (대표 화면 · 홈에서 같이 씀) ---------- */
