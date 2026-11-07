@@ -67,7 +67,7 @@ function dayItems(s){
   if (f.clean) (S.jobs||[]).filter(j=>j.job_date===s).forEach(j=>{ const m = jobMeta(j); out.push({t:j.start_time||'', cls:m.cls, k:'j'+j.id, title:(j.series_id?'🔁 ':'')+j.title, sub:[j.start_time?j.start_time.slice(0,5):'', m.st].filter(Boolean).join(' · '), badge:m.badge, card:()=>jobCard(j)}); });
   (S.events||[]).filter(e=>e.ev_date===s).forEach(e=>{
     if (e.staff_id && f.res && e.show_boss) out.push({t:e.ev_time||'', cls:'res', k:'e'+e.id, title:`${H.P(e.staff_id).name} · ${e.kind}${e.maemul_id?' '+e.maemul_id:''}`, sub:[e.ev_time?e.ev_time.slice(0,5):'종일', e.title].filter(Boolean).join(' · '), card:()=>evCard(e)});
-    if (!e.staff_id && f.me) out.push({t:e.ev_time||'', cls:'me', k:'e'+e.id, title:e.title, sub:e.ev_time?e.ev_time.slice(0,5):'종일', card:()=>evCard(e)});
+    if (!e.staff_id && f.me) out.push({t:e.ev_time||'', cls:'myev', k:'e'+e.id, title:e.title, sub:e.ev_time?e.ev_time.slice(0,5):'종일', card:()=>evCard(e)});
   });
   // 1104E: 부동산 출근도 한 사람씩 일정처럼 — 출근 시간 순서대로 섞여 나옴
   if (f.res) (S.avail||[]).filter(a => a.day === s && (a.kind === 'work' || a.kind === 'ok') && H.P(a.staff_id).team === 'RES').forEach(a => {

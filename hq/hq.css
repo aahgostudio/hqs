@@ -475,7 +475,7 @@ html.chatapp .fab{display:none}
 /* 1104D 달력: 칸엔 색 막대만, 아래 하루 목록 */
 .cal td{height:74px}.cal td .bars{display:flex;flex-direction:column;gap:3px;margin:5px 4px 0}
 .cal td .bars i{display:block;height:4px;border-radius:3px;background:var(--clean)}
-.cal td .bars i.open{background:var(--cleanl)}.cal td .bars i.prt{background:var(--prt)}.cal td .bars i.res{background:var(--res)}.cal td .bars i.ntc{background:var(--notice)}.cal td .bars i.me{background:#F59E0B}
+.cal td .bars i.open{background:var(--cleanl)}.cal td .bars i.prt{background:var(--prt)}.cal td .bars i.res{background:var(--res)}.cal td .bars i.ntc{background:var(--notice)}.cal td .bars i.myev{background:#F59E0B}
 .cal td .bars i.quote{background:repeating-linear-gradient(90deg,#94A3B8 0 4px,transparent 4px 7px)}.cal td .bars i.done{opacity:.55}.cal td .bars i.cancelled{opacity:.25}
 .cal td .bars small{font-size:9.5px;color:var(--sub);line-height:1}
 .cal td.t .n{background:#111;color:#fff;border-radius:999px;padding:1px 6px}
@@ -486,7 +486,7 @@ html.chatapp .fab{display:none}
 .dbx .dt em{font-style:normal;font-size:11px;font-weight:700;background:#fff;border-radius:99px;padding:2px 8px;color:#374151;flex-shrink:0}.dbx .dt em.w{color:#B45309}
 .dbx .ds{font-size:12.5px;color:#5B6472;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dbx.open{background:repeating-linear-gradient(135deg,#EEF2FD 0 8px,#E3E9FA 8px 16px);border-left-color:var(--cleanl)}
-.dbx.prt{background:#FDF3E7;border-left-color:var(--prt)}.dbx.res{background:#F3EEFD;border-left-color:var(--res)}.dbx.ntc{background:#E8F5F3;border-left-color:var(--notice)}.dbx.me{background:#FEF6E4;border-left-color:#F59E0B}
+.dbx.prt{background:#FDF3E7;border-left-color:var(--prt)}.dbx.res{background:#F3EEFD;border-left-color:var(--res)}.dbx.ntc{background:#E8F5F3;border-left-color:var(--notice)}.dbx.myev{background:#FEF6E4;border-left-color:#F59E0B}
 .dbx.quote{background:#fff;border:1px dashed #CBD5E1;border-left:4px dashed #94A3B8}.dbx.done{opacity:.8}.dbx.cancelled{opacity:.5}.dbx.cancelled b{text-decoration:line-through}
 .dbx.rwx{cursor:default}.dbx.on{box-shadow:0 0 0 2px var(--clean) inset}
 .dbx-d{margin:-2px 0 10px}
