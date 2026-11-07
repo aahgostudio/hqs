@@ -98,15 +98,16 @@ H.view('home', {label:'홈',
         <div class="k"><span>임금 보냄 (이번 달)</span><b>${won(month.reduce((n,j)=>n+(j.assignments||[]).filter(a=>a.status==='approved'&&a.paid).reduce((m,a)=>m+(+a.pay_amount||0)+(+a.extra_amount||0),0)+H.helpers(j).filter(x=>x.paid).reduce((m,x)=>m+(+x.pay||0)+(+x.extra||0),0),0))}</b><small>예정 포함 ${won(month.reduce((n,j)=>n+H.jobLabor(j),0))} · 원</small></div>
         ${S.depMonth ? `<div class="k"><span>예약금 받음 (이번 달)</span><b>${won(S.depMonth.reduce((n,j)=>n+(+j.deposit_amount||0),0))}</b><small>예약 ${S.depMonth.length}건${S.depPrevN!=null?` · 지난달 ${S.depPrevN}건 ${S.depMonth.length>S.depPrevN?`<i style="font-style:normal;color:#16A34A;font-weight:800">▲${S.depMonth.length-S.depPrevN}</i>`:S.depMonth.length<S.depPrevN?`<i style="font-style:normal;color:#DC2626;font-weight:800">▼${S.depPrevN-S.depMonth.length}</i>`:'(같음)'}`:''}</small></div>`
           : `<div class="k"><span>예약금 받음 (이번 달 현장)</span><b>${won(deps.filter(j=>j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>j.deposit_paid).length}건 · 그중 다가오는 현장 ${won(deps.filter(j=>j.deposit_paid&&j.job_date>today).reduce((n,j)=>n+(+j.deposit_amount),0))}</small></div>`}
-        <div class="k ${deps.filter(j=>!j.deposit_paid).length?'wait':''}"><span>예약금 대기</span><b>${won(deps.filter(j=>!j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>!j.deposit_paid).length}건 · 원</small></div>
+${deps.filter(j=>!j.deposit_paid).length?`<div class="k wait"><span>예약금 대기</span><b>${won(deps.filter(j=>!j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>!j.deposit_paid).length}건 · 원</small></div>`:''}
       </div>` : '';
     const cleanHtml = `<div class="kp">
         <div class="k"><span>오늘 현장</span><b>${todayJ.length}</b><small>인원 확정 ${todayJ.filter(j=>appr(j).length>=j.headcount).length}</small></div>
         <div class="k"><span>이번 7일</span><b>${weekJ.length}</b><small>~${md(wk)}</small></div>
-        <div class="k ${short.length?'warn':''}"><span>인원 미달</span><b>${short.length}</b><small>7일 안</small></div>
-        <div class="k ${waiting.length?'wait':''}"><span>신청 대기</span><b>${waiting.length}</b></div>
-        <div class="k ${quotes.length?'wait':''}"><span>견적 중</span><b>${quotes.length}</b><small>오더 접수함</small></div>
-        <div class="k ${notClosed.length?'wait':''}"><span>미마감</span><b>${notClosed.length}</b><small>지난 현장</small></div>
+        ${/* 1107: 0이면 안 보이게 — 챙길 게 생겼을 때만 뜸 */''}
+        ${short.length?`<div class="k warn"><span>인원 미달</span><b>${short.length}</b><small>7일 안</small></div>`:''}
+        ${waiting.length?`<div class="k wait"><span>신청 대기</span><b>${waiting.length}</b><small>직원 신청 승인</small></div>`:''}
+        ${quotes.length?`<div class="k wait"><span>견적 중</span><b>${quotes.length}</b><small>오더 접수함</small></div>`:''}
+        ${notClosed.length?`<div class="k wait"><span>미마감</span><b>${notClosed.length}</b><small>지난 현장</small></div>`:''}
       </div>${cleanMoney}
       ${short.length?`<div class="ptitle">사람이 더 필요한 현장</div>${short.slice(0,6).map(j=>`<div class="rw"><span>${md(j.job_date)} ${j.start_time?j.start_time.slice(0,5):''} ${esc(j.title)}</span><span class="pill p-warn">${appr(j).length}/${j.headcount}명</span></div>`).join('')}`:''}`;
 
