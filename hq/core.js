@@ -76,6 +76,10 @@ H.prtOn = j => H.isPartner(j) && (j.assignments||[]).some(a => a.status === 'app
 H.crewN = j => H.prtOn(j) ? Math.max(j.headcount||0, 1) : (j.assignments||[]).filter(a => a.status === 'approved').length + (j.boss_on && !H.S.needV4 ? 1 : 0) + H.helpers(j).length;
 H.jobLabor = j => (j.assignments||[]).filter(a => a.status === 'approved').reduce((n,a) => n + (+a.pay_amount||0) + (+a.extra_amount||0), 0)
   + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
+// 1107: 대표님이 직접 뛴 현장의 대표님 몫 = 잔금 − 그 현장 직원 지급액 (예약금은 회사 몫)
+H.bossShare = j => { if (!j || !j.boss_on || j.contract_mode || ['cancelled','quote'].includes(j.status)) return 0;
+  const bal = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
+  return Math.max(0, bal - H.jobLabor(j)); };
 // 증빙 발행/미발행 나누기: 예약금 · 잔금 · 추가금 줄마다
 H.jobProofSplit = j => {
   const r = {issued:0, not:0, need:0, items:[]};

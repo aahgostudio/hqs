@@ -29,7 +29,7 @@ H.view('money', {label:'경영', owner:true,
         <div><span>− 외주 · 매입</span><b style="font-size:20px">${won(R.puTot)}</b></div>
         <div><span>− 운영비</span><b style="font-size:20px">${won(R.exTot)}</b></div>
         <div><span>미수금</span><b style="font-size:20px;color:#FCA5A5">${won(R.unpaid)}</b></div>
-        <div class="net"><span>순수익 <small style="opacity:.75">확정</small></span><b>${won(R.netDone)}</b>${R.planN ? `<small style="display:block;opacity:.8;margin-top:2px">이 달 일정 다 끝나면 예상 ${won(R.net)}</small>` : ''}</div>
+        <div class="net"><span>순수익 <small style="opacity:.75">확정</small></span><b>${won(R.netDone)}</b>${R.bossN ? `<small style="display:block;opacity:.85;margin-top:2px">그중 대표님 현장 몫 ${won(R.bossDone)} (${R.bossN}현장) · 빼면 ${won(R.netDone - R.bossDone)}</small>` : ''}${R.planN ? `<small style="display:block;opacity:.8;margin-top:2px">이 달 일정 다 끝나면 예상 ${won(R.net)}</small>` : ''}</div>
       </div></section>
     <nav class="mtabs">${[['sum','요약'],['clean','클린 정산'],['res','부동산 정산'],['cost','운영비 · 매입']].map(([k,l])=>`<button data-a="monSec" data-k="${k}" aria-pressed="${sec===k}">${l}</button>`).join('')}</nav>
     ${sec==='sum' ? `<div class="g2">
@@ -174,6 +174,7 @@ H.calcMonth = () => {
   R.resRevDone = deals.reduce((n,d)=>n+(d.sides||[]).filter(x=>x.paid!==false).reduce((a,x)=>a+(+x.amount||0),0),0);
   R.revDone = R.cleanRevDone + R.resRevDone;
   R.netDone = R.revDone - R.laborDone - R.shareTot - R.puTot - R.exTot;
+  const bj = R.cleanJobs.filter(done).filter(x => H.bossShare(x.j) > 0); R.bossN = bj.length; R.bossDone = bj.reduce((n,x)=>n+H.bossShare(x.j),0);
   return R;
 };
 
