@@ -18,6 +18,21 @@ H.view('home', {label:'홈',
     if (H.S.depMonth) { const p0 = new Date(m0.getFullYear(), m0.getMonth() - 1, 1), pEnd = new Date(m0.getFullYear(), m0.getMonth() - 1, Math.min(T.getDate(), new Date(m0.getFullYear(), m0.getMonth(), 0).getDate()));
       H.S.depPrevN = await H.q(H.sb.from('jobs').select('id').eq('deposit_paid', true).neq('status', 'cancelled')
         .gte('deposit_paid_at', H.ymd(p0) + 'T00:00:00+09:00').lte('deposit_paid_at', H.ymd(pEnd) + 'T23:59:59+09:00')).then(r => r.length).catch(() => null); }
+    // 1108: 부동산 지난달 정산 — 10일부터, 지급 안 한 사람이 있으면 계속 띄움
+    H.S.resUnpaid = null;
+    if (H.S.owner && T.getDate() >= 10) try {
+      const l0 = new Date(T.getFullYear(), T.getMonth() - 1, 1), l1 = new Date(T.getFullYear(), T.getMonth(), 0), lm = l0.getMonth() + 1;
+      const ds = (await H.q(H.sb.from('deals').select('id,agents').gte('deal_date', H.ymd(l0)).lte('deal_date', H.ymd(l1)))).filter(d => (d.agents||[]).length);
+      if (ds.length) {
+        const [sh, po] = await Promise.all([
+          H.q(H.sb.from('deal_shares').select('deal_id,staff_id,paid').in('deal_id', ds.map(d => d.id))),
+          H.S.needV9 ? [] : H.q(H.sb.from('payouts').select('staff_id').eq('void', false).like('body', `${lm}월 부동산 정산%`).gte('paid_on', H.ymd(l0))).catch(() => [])]);
+        const who = new Set(); ds.forEach(d => d.agents.forEach(a => who.add(a)));
+        const paidBy = new Set(po.map(p => p.staff_id));
+        const left = [...who].filter(a => !paidBy.has(a) && ds.some(d => d.agents.includes(a) && !sh.some(x => x.deal_id === d.id && x.staff_id === a && x.paid)));
+        H.S.resUnpaid = {m: lm, n: left.length};
+      }
+    } catch(_){}
     // 1:1 대화로 보낸 입금 기록 (정산 화면과 같은 기준으로 '입금 완료' 판단)
     H.S.payouts14 = H.S.owner && !H.S.needV9 ? await H.q(H.sb.from('payouts').select('staff_id,amount,paid_on').gte('paid_on', H.ymd(H.addDays(H.today(), -15))).eq('void', false)).catch(() => []) : [];
   },
@@ -62,8 +77,8 @@ H.view('home', {label:'홈',
       puOld.length && ['warn', `외주 세금계산서 요청 7일 넘음 ${puOld.length}건`, 'ops/buy'],
       unpaidCollect.length && ['wait', `현장 잔금 미수 ${unpaidCollect.length}건`, 'ops/money'],
       repEnding.length && ['wait', `정기 일정 2주 안에 끝남 ${repEnding.length}곳 (연장하기)`, 'sched'],
-      // 1108: 미리 안 띄움 — 지급일(10일) 당일에만
-      S.owner && T.getDate() === 10 && ['warn', `부동산 ${T.getMonth() || 12}월 정산 · 오늘 지급`, 'money']
+      // 1108: 미리 안 띄움 — 10일 당일부터, 지급 안 한 사람이 남아 있으면 계속
+      S.owner && S.resUnpaid && S.resUnpaid.n && ['warn', `부동산 ${S.resUnpaid.m}월 정산 · ${T.getDate() === 10 ? '오늘 지급' : `미지급 ${S.resUnpaid.n}명 (10일 지남)`}`, 'money']
     ].filter(Boolean);
 
     // 부동산
