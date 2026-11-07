@@ -58,7 +58,7 @@ H.view('home', {label:'홈',
       notClosed.length && ['wait', `지난 현장 미마감 ${notClosed.length}건 (금액 기입)`, 'ops/money'],
       newRep && ['info', `안 본 현장 보고 ${newRep}건`, 'sched'],
       noPhoto.length && ['wait', `사진 못 받은 현장 ${noPhoto.length}곳 (14일)`, 'promo'],
-      needRcpt && ['warn', `현금영수증 발행 필요 ${needRcpt}건 (이번 달)`, S.owner?'money':'ops/money'],
+      needRcpt && ['warn', `현금영수증 발행 필요 ${needRcpt}건 (이번 달)`, '!rcptList'],
       puOld.length && ['warn', `외주 세금계산서 요청 7일 넘음 ${puOld.length}건`, 'ops/buy'],
       unpaidCollect.length && ['wait', `현장 잔금 미수 ${unpaidCollect.length}건`, 'ops/money'],
       repEnding.length && ['wait', `정기 일정 2주 안에 끝남 ${repEnding.length}곳 (연장하기)`, 'sched'],
@@ -144,7 +144,7 @@ H.view('home', {label:'홈',
       ${unpaidRows.map(({j,s})=>`<div class="hm-row"><div><b>${esc(s.name)}</b><small>${md(j.job_date)} · ${esc(j.title)}</small></div>
         <span class="hm-btns"><button class="btn sm" data-a="payDay" data-d="${j.job_date}">${md(j.job_date)} 정산 열기 →</button></span></div>`).join('')}</section>`:''}
     ${alerts.length?`<section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">누르면 해당 화면으로 가요</span></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${alerts.map(([c,t,go])=>`<a class="banner ${c==='warn'?'warn':'info'}" href="#${go}" style="text-decoration:none;padding:8px 12px">${esc(t)} →</a>`).join('')}</div></section>`:''}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${alerts.map(([c,t,go])=>`<a class="banner ${c==='warn'?'warn':'info'}" ${go[0]==='!'?`data-a="${go.slice(1)}" style="cursor:pointer;`:`href="#${go}" style="`}text-decoration:none;padding:8px 12px">${esc(t)} →</a>`).join('')}</div></section>`:''}
     <div class="g2">
       <section class="box"><div class="bh"><h3>오늘 ${md(today)}</h3><span style="display:flex;gap:6px">${S.owner?'<a class="btn sm" href="#pay" style="text-decoration:none">💸 오늘 정산</a>':''}<a class="btn sm ghost" href="#sched">일정판 →</a></span></div>
         ${todayList.map(x=>`<div class="rw"><span>${x.t?x.t.slice(0,5)+' · ':''}${x.h}</span></div>`).join('') || '<div class="note">오늘 일정이 없어요</div>'}</section>
@@ -179,3 +179,24 @@ H.FORM.mmLink = async v => {
   H.close(); H.toast('매물노트를 연결했어요'); await H.loadMaemul(); H.refresh();
 };
 })(window.HQ);
+
+// 1107: 현금영수증 발행할 것 목록 — 홈택스에서 발행하고 [발행했어요] 누르면 목록에서 빠짐
+H.ACT.rcptList = () => {
+  const ym = H.ymd(H.today()).slice(0,7), md = d => +d.slice(5,7) + '/' + +d.slice(8,10);
+  const rows = (H.S.jobs||[]).filter(j => j.job_date.startsWith(ym)).flatMap(j => H.jobProofSplit(j).items.map(x => ({j, x})))
+    .sort((a,b) => a.j.job_date.localeCompare(b.j.job_date));
+  H.open(`<h3>현금영수증 발행할 것 · ${rows.length}건</h3><p class="note">돈을 받은 것 중 10만 원 이상 현금·계좌이체예요. 홈택스에서 발행하고 [발행했어요]를 누르면 빠져요.</p>
+    ${rows.map(({j, x}) => `<div class="rw" style="align-items:center;gap:8px"><span><b>${md(j.job_date)} ${H.esc(j.title)}</b><br><small class="note">${H.esc(x.label)} ${H.won(x.amt)}원${x.how ? ' · ' + H.esc(x.how) : ''}${j.cust_phone ? ' · ' + H.esc(j.cust_phone) : ''}</small></span>
+      <button class="btn sm" data-a="rcptDone" data-j="${j.id}" data-k="${x.k}">발행했어요</button></div>`).join('') || '<div class="note">발행할 게 없어요 👍</div>'}
+    <div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button></div>`);
+};
+H.ACT.rcptDone = async el => {
+  const j = (H.S.jobs||[]).find(x => x.id === +el.dataset.j), k = el.dataset.k; if (!j) return;
+  let patch;
+  if (k === 'deposit') patch = {deposit_issued: true};
+  else if (k === 'balance') patch = {balance_issued: true};
+  else { const ex = (j.extras||[]).map((x, i) => 'x' + i === k ? Object.assign({}, x, {issued: true}) : x); patch = {extras: ex}; }
+  el.disabled = true;
+  try { await H.q(H.sb.from('jobs').update(patch).eq('id', j.id)); Object.assign(j, patch); H.toast('발행 체크했어요'); H.ACT.rcptList(); H.refresh && H.refresh(); }
+  catch (e) { el.disabled = false; H.toast('저장 못 했어요: ' + (e.message || e)); }
+};

@@ -78,16 +78,18 @@ H.jobLabor = j => (j.assignments||[]).filter(a => a.status === 'approved').reduc
   + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
 // 증빙 발행/미발행 나누기: 예약금 · 잔금 · 추가금 줄마다
 H.jobProofSplit = j => {
-  const r = {issued:0, not:0, need:0};
+  const r = {issued:0, not:0, need:0, items:[]};
   if (j.status === 'cancelled' || j.status === 'quote') return r;
-  const add = (amt, proof, issued, how) => { amt = +amt||0; if (!amt) return;
+  // 1107: '발행 필요'는 실제로 돈을 받은 것만 (아직 안 받은 잔금·앞으로 할 현장은 빼기)
+  const fin = !!(j.status === 'done' || j.work_done_at || j.collected_at);
+  const add = (amt, proof, issued, how, got, k, label) => { amt = +amt||0; if (!amt) return;
     if (issued || proof === '카드' || proof === '플랫폼' || how === '카드' || how === '플랫폼') r.issued += amt;
-    else { r.not += amt; if (proof === '현금영수증' || ((how === '현금' || how === '계좌이체') && amt >= 100000)) r.need++; } };
-  if (j.contract_mode === 'A') { add(j.deposit_amount, j.deposit_proof, j.deposit_issued, j.deposit_how); return r; }
+    else { r.not += amt; if (got && (proof === '현금영수증' || ((how === '현금' || how === '계좌이체') && amt >= 100000))) { r.need++; r.items.push({k, label, amt, how: how || proof || ''}); } } };
+  if (j.contract_mode === 'A') { add(j.deposit_amount, j.deposit_proof, j.deposit_issued, j.deposit_how, j.deposit_paid, 'deposit', '예약금'); return r; }
   const base = +j.total_amount || 0, dep = +j.deposit_amount || 0;
-  add(dep, j.deposit_proof, j.deposit_issued, j.deposit_how);
-  add(j.balance_amount != null ? j.balance_amount : Math.max(0, base - dep), j.balance_proof, j.balance_issued, j.balance_how);
-  (j.extras||[]).filter(x => x.agreed !== false).forEach(x => add(x.amount, x.proof, x.issued, x.how));
+  add(dep, j.deposit_proof, j.deposit_issued, j.deposit_how, j.deposit_paid, 'deposit', '예약금');
+  add(j.balance_amount != null ? j.balance_amount : Math.max(0, base - dep), j.balance_proof, j.balance_issued, j.balance_how, fin, 'balance', '잔금');
+  (j.extras||[]).forEach((x, i) => { if (x.agreed !== false) add(x.amount, x.proof, x.issued, x.how, fin, 'x' + i, '추가금' + (x.name ? ' · ' + x.name : '')); });
   return r;
 };
 // 공제 계산 (세무사 확인 전 기본값)
