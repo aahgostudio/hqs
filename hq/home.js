@@ -190,11 +190,11 @@ H.ACT.rcptList = () => {
 };
 H.ACT.rcptDone = async el => {
   const j = (H.S.jobs||[]).find(x => x.id === +el.dataset.j), k = el.dataset.k; if (!j) return;
-  const o = el.dataset.v !== 'x';   // ⭕ 발행 / ✕ 안 함 (증빙 '없음'으로 남김)
+  const o = el.dataset.v !== 'x';   // ⭕ 발행 / ✕ 안 함 (증빙 '발행안함'으로 남김)
   let patch;
-  if (k === 'deposit') patch = o ? {deposit_issued: true} : {deposit_proof: '없음'};
-  else if (k === 'balance') patch = o ? {balance_issued: true} : {balance_proof: '없음'};
-  else { const ex = (j.extras||[]).map((x, i) => 'x' + i === k ? Object.assign({}, x, o ? {issued: true} : {proof: '없음'}) : x); patch = {extras: ex}; }
+  if (k === 'deposit') patch = o ? {deposit_issued: true} : {deposit_proof: '발행안함'};
+  else if (k === 'balance') patch = o ? {balance_issued: true} : {balance_proof: '발행안함'};
+  else { const ex = (j.extras||[]).map((x, i) => 'x' + i === k ? Object.assign({}, x, o ? {issued: true} : {proof: '발행안함'}) : x); patch = {extras: ex}; }
   el.disabled = true;
   try { await H.q(H.sb.from('jobs').update(patch).eq('id', j.id)); Object.assign(j, patch); H.toast(o ? '발행으로 체크했어요' : '발행 안 함으로 체크했어요'); H.ACT.rcptList(); H.refresh && H.refresh(); }
   catch (e) { el.disabled = false; H.toast('저장 못 했어요: ' + (e.message || e)); }
