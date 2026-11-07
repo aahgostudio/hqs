@@ -614,3 +614,15 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .dl b{font-size:14px}.dl small{font-size:11px;color:var(--sub)}.dl span{font-size:11px;font-weight:700;border-radius:20px;padding:1px 6px;margin-top:2px}
 .dl.free{border-color:#F68B1F;background:#FFF6EC}.dl.free span{background:#F68B1F;color:#fff}
 .dl.full span{background:#EEF2F7;color:#667}.dl.off{opacity:.5}.dl.off span{background:#eee;color:#888}
+
+/* 1108: 달력 — 언더바 연하게, PC는 글자 블록 (suplex 참고) */
+.cal td .bars i{opacity:.55}
+.cal td .chips2{display:none}
+@media(min-width:900px){.cal td{height:92px}.cal td .bars{display:none}
+  .cal td .chips2{display:flex;flex-direction:column;gap:3px;margin:5px 4px 0}
+  .cal td .chips2 em{font-style:normal;display:block;font-size:11px;line-height:17px;padding:0 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;
+    --c:var(--clean);background:color-mix(in srgb,var(--c) 14%,#fff);color:color-mix(in srgb,var(--c) 85%,#000)}
+  .cal td .chips2 em.open{--c:var(--cleanl)}.cal td .chips2 em.prt{--c:var(--prt)}.cal td .chips2 em.res{--c:var(--res)}.cal td .chips2 em.ntc{--c:var(--notice)}.cal td .chips2 em.myev{--c:#D97706}
+  .cal td .chips2 em.quote{--c:#64748B;background:repeating-linear-gradient(90deg,#F1F5F9 0 6px,#fff 6px 10px)}.cal td .chips2 em.done{opacity:.6}.cal td .chips2 em.cancelled{opacity:.3;text-decoration:line-through}
+  .cal td .chips2 i{display:block;height:3px;border-radius:2px;background:#10B981;opacity:.7}.cal td .chips2 i.brest{background:#DB2777}
+  .cal td .chips2 small{font-size:10px;color:var(--sub);padding-left:4px}}

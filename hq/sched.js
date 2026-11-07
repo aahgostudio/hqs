@@ -30,7 +30,8 @@ H.view('sched', {label:'일정',
         const bd = H.S.owner ? bossDay(s) : null;
         const bars = (bd ? [{cls: bd.rest && !bd.p.length ? 'brest' : 'boss'}] : []).concat(items);
         h += `<td data-a="schedPick" data-d="${s}" class="${d.getMonth()!==v.anchor.getMonth()?'out':''} ${s===today?'t':''} ${s===v.sel?'sel':''}"><span class="n">${d.getDate()}</span>${v.f.avail&&(ok||no)?`<span class="av">${ok?'○'+ok:''}${no?' <span style="color:var(--warn)">✕'+no+'</span>':''}</span>`:''}
-          <div class="bars">${bars.slice(0,4).map(x=>`<i class="${x.cls}"></i>`).join('')}${bars.length>4?`<small>+${bars.length-4}</small>`:''}</div></td>`;
+          <div class="bars">${bars.slice(0,4).map(x=>`<i class="${x.cls}"></i>`).join('')}${bars.length>4?`<small>+${bars.length-4}</small>`:''}</div>
+          <div class="chips2">${bd ? `<i class="${bd.rest && !bd.p.length ? 'brest' : 'boss'}"></i>` : ''}${items.slice(0,2).map(x=>`<em class="${x.cls}">${esc(shortName(x))}</em>`).join('')}${items.length>2?`<small>+${items.length-2}</small>`:''}</div></td>`;
         if (d.getDay() === 6) h += '</tr>';
       }
       body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:var(--me)"></i>내 일정</span>${H.S.owner ? '<span><i style="background:#10B981"></i>대표 근무</span><span><i style="background:#DB2777"></i>대표 휴무</span>' : ''}</div>`;
@@ -62,6 +63,11 @@ function jobMeta(j){
   const st2 = j.status==='quote' ? '견적 중' : j.status==='cancelled' ? '취소' : j.status==='done' ? '마감' : H.isPartner(j) ? '도급' : ap >= j.headcount ? '인원 완료' : '모집 중';
   return {cls, badge, st: st2};
 }
+// 1108: PC 달력 칸 글자 블록용 짧은 이름 (동네·건물만)
+function shortName(x){ let t = String(x.title||'').replace(/^[🔁📢🏢]\s*/u,'').trim();
+  if (x.cls === 'res' && t.includes(' · ')) { const [n, r] = t.split(' · '); return (n.length >= 3 ? n.slice(1) : n) + ' ' + (r||'').split(' ')[0]; }
+  t = t.replace(/^(부산|창원|김해|울산|양산|경남)\s+/,'').replace(/^\S+(구|군)\s+/,'').replace(/(부분인테리어|인테리어|이사|입주|퇴실|정기|상가|사무실|공사후)?청소/g,'').replace(/\s+/g,' ').trim();
+  return t.split(' ').slice(0,2).join(' ') || x.title; }
 function dayItems(s){
   const S = H.S, f = st().f, out = [];
   if (f.clean) (S.jobs||[]).filter(j=>j.job_date===s).forEach(j=>{ const m = jobMeta(j); out.push({t:j.start_time||'', cls:m.cls, k:'j'+j.id, title:(j.series_id?'🔁 ':'')+j.title, sub:[j.start_time?j.start_time.slice(0,5):'', m.st].filter(Boolean).join(' · '), badge:m.badge, card:()=>jobCard(j)}); });
