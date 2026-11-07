@@ -87,8 +87,8 @@ H.view('home', {label:'홈',
     // 청소
     const deps = month.filter(j=>+j.deposit_amount);
     const cleanMoney = S.owner ? `<div class="kp" style="margin-top:8px">
-        <div class="k"><span>이번 달 클린 예상 수익</span><b>${won(month.reduce((n,j)=>n+H.jobRevenue(j),0))}</b><small>계약 + 추가금 · 원</small></div>
-        <div class="k"><span>임금 지출 (마감분)</span><b>${won(month.reduce((n,j)=>n+H.jobLabor(j),0))}</b><small>원</small></div>
+        <div class="k"><span>이번 달 클린 수익 (끝난 현장)</span><b>${won(month.filter(j=>j.status==='done'||j.work_done_at).reduce((n,j)=>n+H.jobRevenue(j),0))}</b><small>예정 포함 ${won(month.reduce((n,j)=>n+H.jobRevenue(j),0))} · 원</small></div>
+        <div class="k"><span>임금 보냄 (이번 달)</span><b>${won(month.reduce((n,j)=>n+(j.assignments||[]).filter(a=>a.status==='approved'&&a.paid).reduce((m,a)=>m+(+a.pay_amount||0)+(+a.extra_amount||0),0)+H.helpers(j).filter(x=>x.paid).reduce((m,x)=>m+(+x.pay||0)+(+x.extra||0),0),0))}</b><small>예정 포함 ${won(month.reduce((n,j)=>n+H.jobLabor(j),0))} · 원</small></div>
         <div class="k"><span>예약금 받음</span><b>${won(deps.filter(j=>j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>j.deposit_paid).length}건 · 원</small></div>
         <div class="k ${deps.filter(j=>!j.deposit_paid).length?'wait':''}"><span>예약금 대기</span><b>${won(deps.filter(j=>!j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>!j.deposit_paid).length}건 · 원</small></div>
       </div>` : '';
