@@ -11,6 +11,9 @@ H.view('home', {label:'홈',
       H.q(H.sb.from('deals').select('*').gte('deal_date', H.ymd(m0)).lte('deal_date', H.ymd(m1)))
     ]);
     H.S.puWait = pu; H.S.dealsMonth = dl;
+    // 1107: 이번 달에 실제로 받은 예약금 (받은 날 기준) — SQL 안 돌렸으면 null → 예전 방식
+    H.S.depMonth = await H.q(H.sb.from('jobs').select('id,deposit_amount').eq('deposit_paid', true).neq('status', 'cancelled')
+      .gte('deposit_paid_at', H.ymd(m0) + 'T00:00:00+09:00').lte('deposit_paid_at', H.ymd(m1) + 'T23:59:59+09:00')).catch(() => null);
     // 1:1 대화로 보낸 입금 기록 (정산 화면과 같은 기준으로 '입금 완료' 판단)
     H.S.payouts14 = H.S.owner && !H.S.needV9 ? await H.q(H.sb.from('payouts').select('staff_id,amount,paid_on').gte('paid_on', H.ymd(H.addDays(H.today(), -15))).eq('void', false)).catch(() => []) : [];
   },
@@ -89,7 +92,8 @@ H.view('home', {label:'홈',
     const cleanMoney = S.owner ? `<div class="kp" style="margin-top:8px">
         <div class="k"><span>이번 달 클린 수익 (끝난 현장)</span><b>${won(month.filter(j=>j.status==='done'||j.work_done_at).reduce((n,j)=>n+H.jobRevenue(j),0))}</b><small>예정 포함 ${won(month.reduce((n,j)=>n+H.jobRevenue(j),0))} · 원</small></div>
         <div class="k"><span>임금 보냄 (이번 달)</span><b>${won(month.reduce((n,j)=>n+(j.assignments||[]).filter(a=>a.status==='approved'&&a.paid).reduce((m,a)=>m+(+a.pay_amount||0)+(+a.extra_amount||0),0)+H.helpers(j).filter(x=>x.paid).reduce((m,x)=>m+(+x.pay||0)+(+x.extra||0),0),0))}</b><small>예정 포함 ${won(month.reduce((n,j)=>n+H.jobLabor(j),0))} · 원</small></div>
-        <div class="k"><span>예약금 받음 (이번 달 현장)</span><b>${won(deps.filter(j=>j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>j.deposit_paid).length}건 · 그중 다가오는 현장 ${won(deps.filter(j=>j.deposit_paid&&j.job_date>today).reduce((n,j)=>n+(+j.deposit_amount),0))}</small></div>
+        ${S.depMonth ? `<div class="k"><span>예약금 받음 (이번 달)</span><b>${won(S.depMonth.reduce((n,j)=>n+(+j.deposit_amount||0),0))}</b><small>예약 ${S.depMonth.length}건 받음 · 원</small></div>`
+          : `<div class="k"><span>예약금 받음 (이번 달 현장)</span><b>${won(deps.filter(j=>j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>j.deposit_paid).length}건 · 그중 다가오는 현장 ${won(deps.filter(j=>j.deposit_paid&&j.job_date>today).reduce((n,j)=>n+(+j.deposit_amount),0))}</small></div>`}
         <div class="k ${deps.filter(j=>!j.deposit_paid).length?'wait':''}"><span>예약금 대기</span><b>${won(deps.filter(j=>!j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>!j.deposit_paid).length}건 · 원</small></div>
       </div>` : '';
     const cleanHtml = `<div class="kp">
