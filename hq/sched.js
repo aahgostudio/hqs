@@ -19,7 +19,7 @@ H.view('sched', {label:'일정',
         <button class="btn sm only-pc" data-a="addMenu">${I('plus')}올리기</button></div></div>`;
     let body = '';
     if (v.mode === 'month') {
-      let h = `<div class="cal"><table><thead><tr>${DOW.map((d,i)=>`<th style="${i===0?'color:var(--warn)':''}">${d}</th>`).join('')}</tr></thead><tbody>`;
+      let h = `<div class="cal"><table><thead><tr>${DOW.map((d,i)=>`<th style="${i===0?'color:#EF4444':i===6?'color:#3B82F6':''}">${d}</th>`).join('')}</tr></thead><tbody>`;
       for (let d = new Date(gs); d <= ge; d = addDays(d, 1)) {
         if (d.getDay() === 0) h += '<tr>';
         const s = ymd(d); const items = dayItems(s);
@@ -29,12 +29,12 @@ H.view('sched', {label:'일정',
         const rw = v.f.res ? (S.avail||[]).filter(a => a.day === s && a.kind === 'work' && H.P(a.staff_id).team === 'RES') : [];
         const bd = H.S.owner ? bossDay(s) : null;
         const bars = (bd ? [{cls: bd.rest && !bd.p.length ? 'brest' : 'boss'}] : []).concat(items);
-        h += `<td data-a="schedPick" data-d="${s}" class="${d.getMonth()!==v.anchor.getMonth()?'out':''} ${s===today?'t':''} ${s===v.sel?'sel':''}"><span class="n">${d.getDate()}</span>${v.f.avail&&(ok||no)?`<span class="av">${ok?'○'+ok:''}${no?' <span style="color:var(--warn)">✕'+no+'</span>':''}</span>`:''}
+        h += `<td data-a="schedPick" data-d="${s}" class="${d.getMonth()!==v.anchor.getMonth()?'out':''} ${s===today?'t':''} ${s===v.sel?'sel':''} ${d.getDay()===0?'su':d.getDay()===6?'sa':''}"><span class="n">${d.getDate()}</span>${v.f.avail&&(ok||no)?`<span class="av">${ok?'○'+ok:''}${no?' <span style="color:var(--warn)">✕'+no+'</span>':''}</span>`:''}
           <div class="bars">${bars.slice(0,4).map(x=>`<i class="${x.cls}"></i>`).join('')}${bars.length>4?`<small>+${bars.length-4}</small>`:''}</div>
           <div class="chips2">${bd ? `<i class="${bd.rest && !bd.p.length ? 'brest' : 'boss'}"></i>` : ''}${items.slice(0,2).map(x=>`<em class="${x.cls}">${esc(shortName(x))}</em>`).join('')}${items.length>2?`<small>+${items.length-2}</small>`:''}</div></td>`;
         if (d.getDay() === 6) h += '</tr>';
       }
-      body = h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:var(--me)"></i>내 일정</span>${H.S.owner ? '<span><i style="background:#10B981"></i>대표 근무</span><span><i style="background:#DB2777"></i>대표 휴무</span>' : ''}</div>`;
+      body = monthSum(v.anchor) + h + `</tbody></table></div><div class="legend"><span><i style="background:var(--clean)"></i>인원 완료</span><span><i style="background:var(--cleanl)"></i>모집 중</span><span><i style="background:var(--prt)"></i>도급</span><span><i style="background:var(--res)"></i>부동산 직원</span><span><i style="background:var(--notice)"></i>공지</span><span><i style="background:var(--me)"></i>내 일정</span>${H.S.owner ? '<span><i style="background:#10B981"></i>대표 근무</span><span><i style="background:#DB2777"></i>대표 휴무</span>' : ''}</div>`;
     } else {
       const days = {}; for (let d = new Date(v.anchor); d.getMonth() === v.anchor.getMonth(); d = addDays(d,1)) { const s = ymd(d); const its = dayItems(s); if (its.length) days[s] = its; }
       body = Object.keys(days).map(s => `<div class="ptitle" style="${s===today?'color:var(--info)':''}">${md(s)}${s===today?' · 오늘':''}</div>` + dayCards(s)).join('') || '<p class="empty">이 달 일정이 없어요</p>';
@@ -46,7 +46,12 @@ H.view('sched', {label:'일정',
       ${v.side==='day' ? daySide(v.sel) : v.side==='rep' ? repView() : ntcView()}`;
     return `<div class="gside"><section class="box">${head}${body}</section><section class="box dayside" id="dayside">${side}</section></div>`;
   },
-  after(){ if (st().side === 'rep') loadRepPhotos(); }
+  after(){ if (st().side === 'rep') loadRepPhotos();
+    // 1108e: 폰에서 달력 좌우로 밀면 달 넘기기
+    const c = document.querySelector('.cal'); if (c && !c._sw) { c._sw = 1; let sx = 0, sy = 0;
+      c.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
+      c.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+        if (Math.abs(dx) > 60 && Math.abs(dy) < 50) H.ACT.schedNav({dataset:{n: dx < 0 ? 1 : -1}}); }, {passive:true}); } }
 });
 
 function jobMeta(j){
@@ -70,7 +75,7 @@ function shortName(x){ let t = String(x.title||'').replace(/^[🔁📢🏢]\s*/u
   return t.split(' ').slice(0,2).join(' ') || x.title; }
 function dayItems(s){
   const S = H.S, f = st().f, out = [];
-  if (f.clean) (S.jobs||[]).filter(j=>j.job_date===s).forEach(j=>{ const m = jobMeta(j); out.push({t:j.start_time||'', cls:m.cls, k:'j'+j.id, title:(j.series_id?'🔁 ':'')+j.title, sub:[j.start_time?j.start_time.slice(0,5):'', m.st].filter(Boolean).join(' · '), badge:m.badge, card:()=>jobCard(j)}); });
+  if (f.clean) (S.jobs||[]).filter(j=>j.job_date===s).forEach(j=>{ const m = jobMeta(j); out.push({t:j.start_time||'', cls:m.cls, k:'j'+j.id, crew:(j.assignments||[]).filter(a=>a.status==='approved').map(a=>H.P(a.staff_id).name).concat(j.boss_on?['대표']:[]), title:(j.series_id?'🔁 ':'')+j.title, sub:[j.start_time?j.start_time.slice(0,5):'', m.st].filter(Boolean).join(' · '), badge:m.badge, card:()=>jobCard(j)}); });
   (S.events||[]).filter(e=>e.ev_date===s).forEach(e=>{
     if (e.staff_id && f.res && e.show_boss) out.push({t:e.ev_time||'', cls:'res', k:'e'+e.id, title:`${H.P(e.staff_id).name} · ${e.kind}${e.maemul_id?' '+e.maemul_id:''}`, sub:[e.ev_time?e.ev_time.slice(0,5):'종일', e.title].filter(Boolean).join(' · '), card:()=>evCard(e)});
     if (!e.staff_id && f.me) out.push({t:e.ev_time||'', cls:'myev', k:'e'+e.id, title:e.title, sub:e.ev_time?e.ev_time.slice(0,5):'종일', card:()=>evCard(e)});
@@ -85,7 +90,20 @@ function dayItems(s){
 }
 function dayBox(x){
   const on = st().open === x.k;
-  return `<div class="dbx ${x.cls}${on?' on':''}" data-a="${x.ntc?'schedSide':'dayOpen'}" data-s="ntc" data-k="${x.k}"><div class="dt"><b>${esc(x.title)}</b>${x.badge||''}</div><div class="ds">${esc(x.sub)}</div></div>${on && x.card ? `<div class="dbx-d">${x.card()}</div>` : ''}`;
+  // 1108e: 왼쪽 시간 + 함께 가는 사람 동그라미
+  const tm = /^\d\d:\d\d/.test(x.t) ? x.t.slice(0,5) : '', hh = tm ? +tm.slice(0,2) : -1;
+  const tmBox = `<div class="dtm">${tm ? `${tm}<small>${hh < 12 ? '오전' : hh < 18 ? '오후' : '저녁'}</small>` : '<small>종일</small>'}</div>`;
+  const crew = (x.crew||[]).length ? `<div class="dcr">${x.crew.slice(0,4).map((n,i)=>`<span class="c${i%3}">${esc(String(n).slice(-2))}</span>`).join('')}${x.crew.length>4?`<small>+${x.crew.length-4}</small>`:''}</div>` : '';
+  return `<div class="dbx ${x.cls}${on?' on':''}" data-a="${x.ntc?'schedSide':'dayOpen'}" data-s="ntc" data-k="${x.k}">${tmBox}<div class="dbd"><div class="dt"><b>${esc(x.title)}</b></div>${(()=>{ const sb2 = String(x.sub||'').replace(/^\d\d:\d\d( · | – )?/,'').replace(/^종일$/,''); return sb2 ? `<div class="ds">${esc(sb2)}</div>` : ''; })()}${crew || x.badge ? `<div class="dft">${crew}${x.badge||''}</div>` : ''}</div></div>${on && x.card ? `<div class="dbx-d">${x.card()}</div>` : ''}`;
+}
+// 1108e: 이번 달 요약 (폰 달력 위)
+function monthSum(a){
+  const y = a.getFullYear(), m = a.getMonth(), inM = d => { const t = parse(d); return t.getFullYear() === y && t.getMonth() === m; };
+  const js = (H.S.jobs||[]).filter(j => inM(j.job_date) && j.status !== 'cancelled' && j.status !== 'quote');
+  const today = ymd(H.today()), left = js.filter(j => j.job_date >= today && j.status !== 'done').length;
+  const short = js.filter(j => j.job_date >= today && j.status === 'open' && H.crewN(j) < j.headcount).length;
+  const me = (H.S.events||[]).filter(e => !e.staff_id && inM(e.ev_date)).length;
+  return `<div class="msum"><span>현장 <b>${js.length}</b></span><span>남은 현장 <b>${left}</b></span>${short ? `<span class="w">인원 부족 <b>${short}</b></span>` : ''}<span>내 일정 <b>${me}</b></span></div>`;
 }
 
 /* 1104F: 부동산 출근부 — 출근 블럭 누르면 이번 달 근무 현황 */
