@@ -28,6 +28,18 @@ function sync() {
     ne.setTag('uid', it.uid); ne.setTag('sig', sig);
   });
   Object.keys(have).forEach(u => { if (!want[u]) have[u].deleteEvent(); });   // 일정판에서 지운 건 캘린더에서도 지움
+  try { blogSync(decodeURIComponent(m[1])); } catch (e) { console.log('blog: ' + e); }
+}
+
+/* 청소 블로그 새 글 → 홍보 진행표 '블로그 ✓' 자동 체크 */
+function blogSync(key) {
+  const xml = UrlFetchApp.fetch('https://rss.blog.naver.com/landys_earningplace.xml', {muteHttpExceptions: true}).getContentText();
+  const items = XmlService.parse(xml).getRootElement().getChild('channel').getChildren('item').slice(0, 20);
+  const posts = items.map(it => ({title: it.getChildText('title'), url: String(it.getChildText('link')).split('?')[0],
+    date: Utilities.formatDate(new Date(it.getChildText('pubDate')), 'Asia/Seoul', 'yyyy-MM-dd')}));
+  const res = UrlFetchApp.fetch(SB_URL.replace('boss_ics', 'promo_blog_sync'), {method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: {apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY}, payload: JSON.stringify({p_key: key, p_posts: posts})});
+  console.log('blog: ' + res.getContentText());
 }
 
 function setup() {
