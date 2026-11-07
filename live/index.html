@@ -34,6 +34,11 @@ h1{font-size:20px;margin:0;font-weight:900;letter-spacing:-.02em}
 .grid.g3{grid-template-columns:repeat(3,1fr)}
 .grid a{display:block;position:relative;border-radius:10px;overflow:hidden;background:var(--soft)}
 .grid img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+.mgr{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E5E7EB;border-radius:16px;padding:10px 12px;margin:12px 0 4px}
+.mgr .av{width:40px;height:40px;border-radius:50%;background:#DCE5F7;color:#16347A;display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.mgr b{font-size:14px}.mgr small{display:block;font-size:11.5px;color:var(--sub)}.mgr .call{margin-left:auto;background:var(--navy);color:#fff;border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:700;text-decoration:none}
+.grid.fold a.more{display:none}.grid .plus{border:0;border-radius:10px;background:#56678A;color:#fff;font-size:17px;font-weight:800;aspect-ratio:1/1;cursor:pointer}
+.grid.open a.more{display:block}.grid.open .plus{display:none}
 .grid span{position:absolute;left:6px;bottom:6px;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.5);border-radius:5px;padding:1px 6px}
 .memo{font-size:13.5px;color:#374151;margin-top:6px;background:var(--soft);border-radius:10px;padding:8px 10px}
 .empty{text-align:center;color:var(--sub);padding:34px 10px;font-size:14px}
@@ -116,6 +121,7 @@ function header(){
 }
 const curl = p => `${C.SUPABASE_URL}/storage/v1/object/public/chat/${p}`;
 const isVid = p => /\.(mov|mp4|m4v|webm|3gp)$/i.test(p||'');
+const OPEN = new Set();   // 펼친 사진 묶음 (새로 그려도 유지)
 function feed(){
   const ph = (D.photos || []).slice().sort((a,b) => new Date(a.at) - new Date(b.at));
   const groups = [];
@@ -126,7 +132,7 @@ function feed(){
   if (!items.length) return `<div class="empty">${D.state==='live' ? '곧 작업 사진이 올라와요 📷<br>궁금한 점은 아래에 편하게 남겨주세요' : '기록이 없어요'}</div>`;
   let day = '', out = '';
   items.forEach(it => { const d = md(it.at); if (d !== day) { day = d; out += `<div class="day">${d}</div>`; }
-    if (it.k === 'p') out += `<div class="who">리츠종합클린 현장팀 · ${LAB[it.stage]||'작업 사진'}</div><div class="pg"><div class="grid ${it.items.length>=3?'g3':''}">${it.items.map(p=>`<a href="${url(p.path)}" target="_blank" rel="noopener"><img loading="lazy" src="${url(p.path)}" alt="${LAB[p.stage]||'작업 사진'}"></a>`).join('')}</div>${it.memo?`<div class="memo">"${esc(it.memo)}"</div>`:''}<small class="sub" style="display:block;text-align:right;margin-top:2px">${hm(it.last)}</small></div>`;
+    if (it.k === 'p') out += `<div class="who">리츠종합클린 현장팀 · ${LAB[it.stage]||'작업 사진'}</div><div class="pg"><div class="grid ${it.items.length>=3?'g3':''} ${it.items.length>6?'fold':''} ${OPEN.has(it.at)?'open':''}">${it.items.map((p,i)=>`<a href="${url(p.path)}" target="_blank" rel="noopener" class="${i>=5&&it.items.length>6?'more':''}"><img loading="lazy" src="${url(p.path)}" alt="${LAB[p.stage]||'작업 사진'}"></a>`).join('')}${it.items.length>6?`<button class="plus" data-unfold="${esc(it.at)}">+${it.items.length-5}</button>`:''}</div>${it.memo?`<div class="memo">"${esc(it.memo)}"</div>`:''}<small class="sub" style="display:block;text-align:right;margin-top:2px">${hm(it.last)}</small></div>`;
     else { const media = it.photo ? (isVid(it.photo) ? `<video src="${curl(it.photo)}" controls playsinline preload="none"></video>` : /\.(jpe?g|png|webp|heic|heif|gif)$/i.test(it.photo) ? `<a href="${curl(it.photo)}" target="_blank" rel="noopener"><img loading="lazy" src="${curl(it.photo)}" alt=""></a>` : `<a href="${curl(it.photo)}" target="_blank" rel="noopener">📎 파일 보기</a>`) : '';
       out += it.me ? `<div class="bub me">${esc(it.deleted?'삭제된 메시지':it.body||'')}${media}<small>${hm(it.at)}</small></div>`
                    : `<div class="who">리츠종합클린 현장팀</div><div class="bub us">${it.deleted?'삭제된 메시지':esc(it.body||'')}${media}<small>${hm(it.at)}</small></div>`; } });
@@ -139,13 +145,16 @@ function steps(){
   return `<div class="steps"><span class="${st.has('before')||st.has('during')||done?'dn':'on'}">작업 전</span><span class="${done?'dn':st.has('during')||st.has('after')?'on':''}">작업 중</span><span class="${done?'on':''}">작업 후</span></div>`;
 }
 const cfg = () => D.cfg || {};
+// 1108: 오늘 담당 카드 (수금 담당 = 현장 책임자) — 전화는 회사 번호로
+function mgrCard(){ const m = D.mgr; if (!m || !m.name) return ''; const c = cfg(), nm = m.name.length >= 3 ? m.name.slice(1) : m.name;
+  return `<div class="mgr"><span class="av">${esc(nm)}</span><div><b>${esc(m.name)} ${esc(((m.role||'').match(/팀장|실장|소장|대표/)||['매니저'])[0])}</b><small>오늘 현장 담당${D.crew_n?` · ${D.crew_n}명 작업`:''}</small></div>${c.phone?`<a class="call" href="tel:${esc(c.phone.replace(/[^0-9]/g,''))}">📞 전화</a>`:''}</div>`; }
 function reviewBtn(){ return cfg().review_url ? `<a class="btn" href="${esc(cfg().review_url)}" target="_blank" rel="noopener">⭐ 네이버 후기 남기기</a>` : ''; }
 function contact(){ const c = cfg(); return `<div class="row" style="margin-top:8px">${c.phone?`<a class="btn ghost" href="tel:${esc(c.phone.replace(/[^0-9]/g,''))}">📞 다시 문의</a>`:''}${c.kakao?`<a class="btn kakao" href="${esc(c.kakao)}" target="_blank" rel="noopener">카톡 상담</a>`:''}</div>`; }
 
 function render(){
   const c = cfg(); let body = '';
   if (D.state === 'live') {
-    body = `<h1>${esc(D.title)}</h1><div class="sub">${md(D.date)}${D.time?' '+D.time+' 시작':''}</div>${steps()}<div class="feed" id="feed">${feed()}</div>
+    body = `<h1>${esc(D.title)}</h1><div class="sub">${md(D.date)}${D.time?' '+D.time+' 시작':''}</div>${mgrCard()}${steps()}<div class="feed" id="feed">${feed()}</div>
       <div style="margin-top:20px" class="row"><button class="btn ghost sm" data-intro="1">안내 다시 보기</button>${c.phone?`<a class="btn ghost sm" href="tel:${esc(c.phone.replace(/[^0-9]/g,''))}">📞 전화</a>`:''}</div>
       <p class="foot">사진·글은 자동으로 새로 올라와요 · 사진을 누르면 크게 볼 수 있어요</p>`;
   } else if (D.state === 'done') {
@@ -185,6 +194,7 @@ function intro(force){
 document.addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.next) { if (slide < intro.imgs.length - 1) { slide++; intro.draw(); } else { $('#pop').remove(); setSeen(); } }
+  if (b.dataset.unfold) { OPEN.add(b.dataset.unfold); b.closest('.grid').classList.add('open'); return; }
   if (b.dataset.intro) intro(true);
   if (b.dataset.copy) { try { await navigator.clipboard.writeText(b.dataset.copy); toast('계좌번호를 복사했어요'); } catch(_) { prompt('계좌번호', b.dataset.copy); } }
 });
