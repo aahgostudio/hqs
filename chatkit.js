@@ -265,7 +265,19 @@
   }
   function grid(ps, pub, o){ o = o || {}; const n = ps.length, show = ps.slice(0, 9);
     return `<div class="kit-grid${n >= 5 ? ' g3' : ''}">${show.map((m, i) => { const u = pub(m.photo);
-      return `<a href="${esc(u)}" target="_blank" rel="noopener" data-view="${esc(u)}" data-dl="${esc(u)}?download=" ${o.own ? `data-own="${m.id}"` : ''} class="${n === 1 ? 'one' : ''}"><img src="${esc(u)}" alt="사진" loading="lazy">${i === 8 && n > 9 ? `<span class="more">+${n - 9}</span>` : ''}${o.sec ? `<button type="button" class="sec" data-a="chSecure" data-id="${m.id}" title="인사카드로 옮기기">🔒</button>` : ''}</a>`; }).join('')}</div>`; }
+      return `<a href="${esc(u)}" target="_blank" rel="noopener" data-view="${esc(u)}" data-dl="${esc(u)}?download=" ${o.own ? `data-own="${m.id}"` : ''} class="${n === 1 ? 'one' : ''}">${timg(u)}${i === 8 && n > 9 ? `<span class="more">+${n - 9}</span>` : ''}${o.sec ? `<button type="button" class="sec" data-a="chSecure" data-id="${m.id}" title="인사카드로 옮기기">🔒</button>` : ''}</a>`; }).join('')}</div>`; }
+  // 🖼 썸네일 (2026-11-07 대화 속도 개선): 사진을 올릴 때 작은 미리보기(긴 쪽 640px)를 '원본경로.t.jpg'로 같이 올리고,
+  //    대화창 목록에선 미리보기를 먼저 보여줌. 누르면 원본. 예전 사진(미리보기 없음)은 자동으로 원본을 보여줌.
+  async function thumb(f){
+    try { if (!f || !/^image\//.test(f.type || '') || /gif/i.test(f.type)) return null;
+      let bmp; try { bmp = await createImageBitmap(f, {imageOrientation: 'from-image'}); } catch(_) {
+        bmp = await new Promise((ok, no) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => { URL.revokeObjectURL(u); no(); }; im.src = u; }); }
+      const s = Math.min(1, 640 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      try { bmp.close && bmp.close(); } catch(_){}
+      return await new Promise(r => c.toBlob(r, 'image/jpeg', 0.72)); } catch(_) { return null; } }
+  const T = '.t.jpg';
+  function timg(u, alt){ return `<img src="${esc(u + T)}" data-orig="${esc(u)}" onerror="if(this.dataset.orig){this.src=this.dataset.orig;this.dataset.orig=''}" alt="${alt || '사진'}" loading="lazy">`; }
   // 📷 큰 사진(15MB 넘음)은 올리기 전에 폰에서 줄임 — 긴 쪽 4000px · 화질 90% (홍보용으로 충분) · 15MB 이하 사진은 원본 그대로
   async function shrink(f){
     const LIM = 15 * 1024 * 1024;
@@ -316,5 +328,5 @@
   function pinBar(p, canX){ if (!p || !p.id) return '';
     const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     return `<div class="kit-pin" data-kitjump="${p.id}"><span>📌</span><div><b>${e(p.name)}</b> ${e(p.body || (p.photo ? '사진' : ''))}</div>${canX ? `<button type="button" data-kitunpin="1" aria-label="고정 해제">✕</button>` : ''}</div>`; }
-  window.EPKit = {RX, reacts, pinBar, snip, quote, replyBar, shrink, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
+  window.EPKit = {thumb, timg, T, RX, reacts, pinBar, snip, quote, replyBar, shrink, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();

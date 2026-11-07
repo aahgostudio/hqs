@@ -203,7 +203,7 @@
       const u = Math.max(...(m.ids || [m.id]).map(id => unreadMap[id] || 0));
       const nx = GM[i+1], tail = !(nx && nx.who === m.who && dayKey(nx.at) === dayKey(m.at) && tm(nx.at) === tm(m.at));   // 같은 분의 마지막 글에만 시간
       const body = m.photos ? `<div class="epc-b" style="padding:3px">${K().grid(m.photos, pub, {own: m.mine})}</div>` : m.deleted ? `<div class="epc-b del">삭제된 메시지예요</div>`
-        : `<div class="epc-b" data-mid="${m.id}" ${m.mine ? `data-own="${m.id}"` : ''}>${m.reply ? K().quote(m.reply) : ''}${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}" controls playsinline preload="none"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download="><img src="${esc(pub(m.photo))}" alt="사진" loading="lazy"></a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
+        : `<div class="epc-b" data-mid="${m.id}" ${m.mine ? `data-own="${m.id}"` : ''}>${m.reply ? K().quote(m.reply) : ''}${m.photo ? `${K().isDoc(m.photo) ? K().docCard(pub(m.photo), m.body) : isVid(m.photo) ? `<video src="${esc(pub(m.photo))}" controls playsinline preload="none"></video>` : `<a href="${esc(pub(m.photo))}" target="_blank" rel="noopener" data-view="${esc(pub(m.photo))}" data-dl="${esc(pub(m.photo))}?download=">${K().timg(pub(m.photo))}</a>`}${m.body && !K().isDoc(m.photo) ? '<div style="margin-top:8px">' + K().text(m.body, names, me) + '</div>' : ''}` : K().text(m.body, names, me)}</div>`;
       out += `<div class="epc-m ${m.mine ? 'mine' : ''}${cont ? ' cont' : ''}">${m.mine ? '' : (cont ? '<span style="width:34px;flex:none"></span>' : avatar(m.name, m.avatar))}
         <div class="epc-col">${!m.mine && !cont ? `<span class="epc-nm">${esc(m.name)}</span>` : ''}
         <div class="epc-line">${body}<span class="epc-meta">${cUp && m.id === cUp ? K().SEEN_TAG : ''}${u ? `<span class="u">${u}</span>` : ''}${m.edited && !m.deleted ? '<span>수정됨</span>' : ''}${tail ? `<span>${tm(m.at)}</span>` : ''}</span></div>${typeof m.id === 'number' && K().reacts ? K().reacts(m) : ''}</div></div>`;
@@ -410,6 +410,7 @@
       const path = `${key}/${room.room.id}/${Date.now()}.${ext}`;
       const r = await fetch(`${URL_}/storage/v1/object/chat/${path}`, {method:'POST', headers:Object.assign({'cache-control':'max-age=31536000','content-type': f.type || (vid ? 'video/mp4' : 'image/jpeg')}, H), body: f});   // 15MB 이하는 원본 그대로 (증거 보관)
       if (!r.ok) throw new Error('upload');
+      if (!vid) { const tb = await K().thumb(f); if (tb) await fetch(`${URL_}/storage/v1/object/chat/${path}${K().T}`, {method:'POST', headers:Object.assign({'cache-control':'max-age=31536000','content-type':'image/jpeg'}, H), body: tb}).catch(() => {}); }
       await rpc('chat_send', {p_token: opt.token, p_room: room.room.id, p_body: null, p_photo: path}); await refreshRoom();
     } catch(_) { alert((vid ? '동영상' : '사진') + '을 올리지 못했어요. 잠시 뒤 다시 해주세요.'); }
   }
