@@ -51,6 +51,18 @@
     if (fn==='staff_live_target') return 'DEMO';
     if (fn==='staff_job_photo') return a.p_paths.length;
     if (fn==='staff_work_done'){ j(a.p_job).work_done=new Date().toISOString(); return 'ok'; }
+    // 1108: 내 현장 다이어리 미리보기
+    const DY = S.dy || (S.dy = [
+      {id:11,no:128,date:day(-1),title:'세영리첸시아 305호 퇴실청소',kind:'퇴실청소',crew:['김준호','김지원'],boss:false,note:null,cover:null,before:'d/05_bath.jpg',after:'d/06_vanity.jpg',photo_n:42,rx:{'👏':12,'💪':5,'🔥':3},my_rx:['👏'],cm_n:2,mine:true,
+       photos:['d/05_bath.jpg','d/06_vanity.jpg','d/03_washer.jpg','d/04_storage.jpg'],comments:[{id:1,name:'김준호',role:'팀장',body:'욕실 수전 진짜 빡셌어요 ㅋㅋ',at:new Date(Date.now()-7200000).toISOString()},{id:2,name:'권성환',role:'대표',boss:true,body:'고객님이 후기 남겨주셨어요. 고생했어요!',at:new Date(Date.now()-3600000).toISOString()}]},
+      {id:12,no:127,date:day(-2),title:'양정동 주상복합 이사청소 20평',kind:'이사청소',crew:['김준호','김지원','나미정'],boss:true,note:null,cover:null,before:'d/01_kitchen.jpg',after:'d/02_room.jpg',photo_n:150,rx:{'👏':9,'💪':7},my_rx:[],cm_n:0,mine:true,photos:['d/01_kitchen.jpg','d/02_room.jpg'],comments:[]},
+      {id:13,no:126,date:day(-4),title:'해운대 센텀 사무실 정기청소',kind:'정기',crew:['김지원'],boss:false,note:null,cover:null,before:null,after:null,photo_n:0,rx:{},my_rx:[],cm_n:0,mine:true,photos:[],comments:[]}]);
+    if (fn==='staff_diary') return {me:S.me.name,total:128,mine_total:46,month_n:23,month_mine:DY.length,cheers:148,items:a.p_scope==='all'?DY:DY};
+    if (fn==='staff_diary_one') return JSON.parse(JSON.stringify(DY.find(x=>x.id===a.p_job)));
+    if (fn==='staff_diary_react'){ const x=DY.find(x=>x.id===a.p_job); const on=x.my_rx.includes(a.p_emoji); x.my_rx=on?x.my_rx.filter(e=>e!==a.p_emoji):x.my_rx.concat([a.p_emoji]); x.rx[a.p_emoji]=(x.rx[a.p_emoji]||0)+(on?-1:1); if(!x.rx[a.p_emoji]) delete x.rx[a.p_emoji]; return {rx:x.rx,my_rx:x.my_rx}; }
+    if (fn==='staff_diary_comment'){ const x=DY.find(x=>x.id===a.p_job); x.comments.push({id:Date.now(),name:S.me.name,role:'',mine:true,body:a.p_body,at:new Date().toISOString()}); x.cm_n++; return 1; }
+    if (fn==='staff_diary_comment_del'){ DY.forEach(x=>x.comments=x.comments.filter(c=>c.id!==a.p_id)); return null; }
+    if (fn==='staff_diary_new') return 3;
     return null;
   }};
 })();

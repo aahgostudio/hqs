@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="일정판"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../diary.css?v=1108f">
 <style>
 body{background:var(--bg)}
 .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
@@ -199,7 +200,7 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 .okline{font-size:13px;background:var(--okb);color:#065F46;border-radius:10px;padding:8px 11px}
 .ics{font-size:12px;word-break:break-all;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-family:ui-monospace,Menlo,monospace}
 </style>
-<script src="../thumb.js?v=1108e"></script>
+<script src="../thumb.js?v=1108f"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -207,6 +208,7 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+ <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></symbol>
  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></symbol>
  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -224,13 +226,14 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1108e"></script>
+<script src="../status.js?v=1108f"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1108e'</script>
-<script src="../chatkit.js?v=1108e"></script>
-<script src="../chat.js?v=1108e"></script>
-<script src="../mymoney.js?v=1108e"></script>
+<script>window.EP_VER='1108f'</script>
+<script src="../chatkit.js?v=1108f"></script>
+<script src="../chat.js?v=1108f"></script>
+<script src="../mymoney.js?v=1108f"></script>
+<script src="../diary.js?v=1108f"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -620,9 +623,12 @@ function tabbar(){
   const tb = document.getElementById('tabbar'); tb.classList.remove('hidden');
   // 하단 메뉴: 일정판 · 나 · ＋ · 대화 · 공지 (사진은 고객님 방에서 올려서 '사진·보고' 뺌 — 아고 파트너만 '촬영·공유' 남김)
   const items = [['board','cal','일정판',acks], ['mine','check','나',(window.EPMoney && EPMoney.data && EPMoney.data.due > 0) ? '!' : 0], V2() ? ['plus'] : null,
-    ch.on ? ['chat','chat','대화',ch.unread] : (isAGO() ? ['report','cam','촬영·공유',0] : null), isAGO() && ch.on ? ['report','cam','촬영·공유',0] : null, ['notice','bell','공지',unread]].filter(Boolean);
+    ch.on ? ['chat','chat','대화',ch.unread] : (isAGO() ? ['report','cam','촬영·공유',0] : null), isAGO() && ch.on ? ['report','cam','촬영·공유',0] : null,
+    // 1108: 내 현장 다이어리 (클린 직원만 · SQL 넣기 전엔 안 보임)
+    (window.EPDiary && !EPDiary.off && !isRES() && !isAGO()) ? ['diary','book','다이어리',EPDiary.news] : null, ['notice','bell','공지',unread]].filter(Boolean);
   tb.querySelector('nav').style.gridTemplateColumns = `repeat(${items.length},1fr)`;
   tb.querySelector('nav').innerHTML = items.map(([k,i,l,b]) => k==='plus' ? `<button class="plus" data-plus="1" aria-label="넣기">${I('plus')}</button>`
+    : k==='diary' ? `<button data-diary="1">${I(i)}${l}${b?`<span class="badge">${b>99?'99+':b}</span>`:''}</button>`
     : k==='chat' ? `<button data-chat="1">${I(i)}${l}${b?`<span class="badge">${b>99?'99+':b}</span>`:''}</button>`
     : `<button data-tab="${k}" aria-pressed="${tab===k}">${I(i)}${l}${b?`<span class="badge">${b}</span>`:''}</button>`).join('');
 }
@@ -651,6 +657,7 @@ document.addEventListener('click', async e => {
     if (tab==='board' && (paint || shoot)){ paint = null; shoot = null; try{ await load(); }catch(_){} }
     render(); return; }
   if (d.plus){ plusMenu(); return; }
+  if (d.diary){ EPDiary.open(); return; }
   if (d.chat){ EPChat.open(); return; }
   if (d.croom){ EPChat.open(+d.croom); return; }
   if (d.view){ view = d.view; render(); return; }
@@ -789,6 +796,7 @@ document.addEventListener('submit', async e => {
       onState:st => { const k = st.on + '/' + st.unread; if (k !== last) { last = k; tabbar(); } },
       custJob: rid => D && (D.jobs||[]).find(j => j.cust_room == rid),
       onWorkDone: async id => { await rpc('staff_work_done',{p_token:TOKEN,p_job:id}); const j = D.jobs.find(x=>x.id==id); if (j) j.work_done = new Date().toISOString(); toast('작업 끝! 고생 많으셨어요 🙏'); }}); }
+  if (window.EPDiary) EPDiary.init({token:TOKEN, rpc, photoUrl, toast, onChange:()=>{ if (D) tabbar(); }});
   EPStatus.init({manual:()=>D&&D.boss, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }, demo:DEMO});
   try { await load(); if (EVT()) scope = 'mine';
     if (qs.has('new') && EVT()) { evEdit = {date: ymd(today), kind: isRES() ? '계약' : '미팅', show_boss: true, gcal: false}; tab = 'ev'; }   // 매물노트 [＋ 계약·잔금·안내 넣기] → 바로 입력칸
