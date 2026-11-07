@@ -19,7 +19,7 @@ async function loadMonth(){
   const to = P.mOff === 0 ? T : m1;
   P.mKeys = [2, 1, 0].map(n => { const d = new Date(base.getFullYear(), base.getMonth() - n, 1); return H.ymd(d).slice(0, 7); });   // [2달 전, 전월, 이번]
   P.mLabel = base.getMonth() + 1;
-  P.mJobs = (await H.q(sb.from('jobs').select('id,job_date,title,status,helpers,assignments(*)').gte('job_date', H.ymd(from)).lte('job_date', H.ymd(to)).order('job_date')))
+  P.mJobs = (await H.q(sb.from('jobs').select('id,job_date,title,status,helpers,boss_on,contract_mode,total_amount,deposit_amount,balance_amount,work_done_at,assignments(*)').gte('job_date', H.ymd(from)).lte('job_date', H.ymd(to)).order('job_date')))
     .filter(j => j.status !== 'cancelled' && j.status !== 'quote');
 }
 const grp = p => p.s.ext ? 2 : p.s.team === 'PRT' ? 1 : 0;
@@ -40,6 +40,19 @@ function monthRows(){
     .filter(p => p.mon.some(m => m.n))
     .sort((a,b) => grp(a) - grp(b) || b.net - a.net || b.mon[1].net - a.mon[1].net);   // 직영·지원 → 도급 → 외부, 그 안에서 많이 받은 순
 }
+// 1107: 대표님도 현장 뛴 건 직원처럼 — 대표님 몫 = 잔금 − 그 현장 직원 지급액 (보낼 돈엔 안 들어감)
+function bossRow(){
+  const share = j => { if (!j.boss_on || j.contract_mode) return 0;
+    const bal = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
+    const lab = (j.assignments||[]).filter(a => a.status === 'approved').reduce((n,a) => n + baseOf(H.P(a.staff_id), a) + (+a.extra_amount||0), 0)
+      + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
+    return Math.max(0, bal - lab); };
+  const items = P.mJobs.filter(j => j.boss_on && !j.contract_mode).map(j => ({j, ym: String(j.job_date).slice(0, 7), g: share(j)}));
+  if (!items.length) return null;
+  const mon = P.mKeys.map(k => { const it = items.filter(i => i.ym === k); return {k, n: it.length, net: it.reduce((a,i) => a + i.g, 0)}; });
+  const cur = items.filter(i => i.ym === P.mKeys[2]);
+  return {mon, cur, n: cur.length, net: mon[2].net};
+}
 function monthBox(){
   const rs = monthRows(), tot = k => rs.reduce((a,r) => a + r[k], 0), tag = s => s.ext ? '외부지원' : (lvOf(s) || s.role || '');
   const ml = k => +k.slice(5) + '월', man = v => v >= 10000 ? (Math.round(v / 1000) / 10).toLocaleString() + '만' : won(v);
@@ -48,6 +61,13 @@ function monthBox(){
   const chg = d => d == null ? '<span class="pd z">새로</span>' : d === 0 ? '<span class="pd z">±0%</span>' : `<span class="pd ${d > 0 ? 'u' : 'd'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}%</span>`;
   return `<section class="pm"><div class="pm-hd"><button class="pm-nav" data-a="pyMon" data-n="-1">‹</button><div><b>📒 ${P.mLabel||''}월 직원별 정산</b><small>${P.mOff ? '그 달 전체 · ▲▼ 전월 대비' : `오늘(${new Date().getDate()}일)까지 · ▲▼ 전월 같은 기간 대비`}</small></div><button class="pm-nav" data-a="pyMon" data-n="1" ${P.mOff >= 0 ? 'disabled' : ''}>›</button></div>
     <div class="pm-k"><div><span>지급 총액</span><b>${won(totM[2])}</b>${chg(dTot)}</div><div><span>입금 완료</span><b class="g">${won(tot('sent'))}</b></div><div class="${tot('left') > 0 ? 'w' : ''}"><span>남은 돈</span><b>${won(tot('left'))}</b></div></div>
+    ${(() => { const b = bossRow(); if (!b) return ''; const mx = Math.max(1, ...b.mon.map(m => m.net)), op = P.mOpen.__boss;
+      return `<div class="pm-list"><div class="pm-g">대표님 (보낼 돈엔 안 들어가요)</div><div class="pm-c">
+        <button class="pm-top" data-a="pyMonOpen" data-k="__boss"><span class="av">${esc((H.S.name||'대표').slice(-2))}</span>
+          <span class="nm"><b>${esc(H.S.name||'대표')}</b><small>대표 · 현장 뛴 몫</small></span><span class="am"><b>${won(b.net)}</b></span></button>
+        <div class="pm-3">${b.mon.map((m, i) => `<div class="${i === 2 ? 'on' : ''}"><i style="height:${Math.max(4, Math.round(m.net / mx * 100))}%"></i><b>${m.net ? man(m.net) : '-'}</b><small>${ml(m.k)} · ${m.n}곳</small></div>`).join('')}</div>
+        <div class="pm-st"><span>잔금 − 직원 지급액 · 예약금은 회사 몫</span><button class="lk" data-a="pyMonOpen" data-k="__boss">${op ? '접기 ▴' : '현장별 ▾'}</button></div>
+        ${op ? `<div class="pm-det">${b.cur.map(it => `<div><span>${md(it.j.job_date)} ${esc(it.j.title||'')}</span><span>${won(it.g)}</span></div>`).join('') || '<div><span>이 달 현장 없음</span></div>'}</div>` : ''}</div></div>`; })()}
     <div class="pm-list">${rs.map((r, ri) => { const gh = ri === 0 || grp(rs[ri-1]) !== grp(r) ? `<div class="pm-g">${['직영 · 지원', '도급', '외부지원'][grp(r)]}</div>` : ''; const k = r.s.id || r.s.name, op = P.mOpen[k], mx = Math.max(1, ...r.mon.map(m => m.net)), d = diff(r.mon[2].net, r.prevSame);
       return gh + `<div class="pm-c ${r.left > 0 ? 'due' : ''}">
         <button class="pm-top" data-a="pyMonOpen" data-k="${esc(k)}"><span class="av">${esc(r.s.name.length >= 3 ? r.s.name.slice(1) : r.s.name)}</span>
