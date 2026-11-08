@@ -8,7 +8,7 @@
 <title>리츠 영업파트너</title>
 <link rel="icon" href="../logo.svg">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="../style.css?v=1108o">
+<link rel="stylesheet" href="../style.css?v=1108p">
 <style>
 body{background:#F6F4EF}
 .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
@@ -68,12 +68,12 @@ h2{font-size:15px;font-weight:900;margin:18px 2px 8px}
 .kf figcaption{position:absolute;top:10px;left:10px;font-size:12px;font-weight:900;color:#fff;background:rgba(0,0,0,.55);padding:4px 10px;border-radius:20px}.kf figcaption.after{background:#F68B1F}
 .err{max-width:420px;margin:80px auto;text-align:center;padding:20px;color:var(--sub)}
 </style>
-<script src="../thumb.js?v=1108o"></script>
+<script src="../thumb.js?v=1108p"></script>
 </head>
 <body>
 <div class="app" id="app"><div class="spin"></div></div>
 <div class="toast" id="toast" role="status"></div>
-<script src="../config.js?v=1108o"></script>
+<script src="../config.js?v=1108p"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
@@ -105,7 +105,7 @@ async function load(){
   if (r.error) return fail(/bad_token/.test(r.error.message) ? '링크가 맞지 않거나 사용이 끝났어요. 리츠종합클린(010-7193-2246)에 문의해 주세요.' : '불러오지 못했어요. 잠시 뒤 다시 열어 주세요.');
   D = r.data;
   try { const u = await sb.rpc('partner_unread', {p_token: K}); if (!u.error && u.data) UN = u.data; } catch(_){}
-  try { const dl = await sb.rpc('deal_days'); if (!dl.error && dl.data) DEAL = dl.data; } catch(_){}
+  // 1108: 빈 날 특가 없앰 (대표님 결정) — 안 불러옴
   render();
 }
 async function loadChat(){ const r = await sb.rpc('partner_chat', {p_token: K, p_room: room});
