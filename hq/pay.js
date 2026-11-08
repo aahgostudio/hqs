@@ -65,7 +65,7 @@ function bossRow(){
   // 1109: 대표님 공식 = 이 달 받은 예약금 + (끝난 현장 잔금 − 인건비) — '오늘 내 수익'을 하루하루 더한 것과 같음
   const dps = (P.mDeps||[]), dep = dps.reduce((a,j) => a + (+j.deposit_amount||0), 0);
   const site = cj.reduce((a,j) => a + dayNet(j), 0);
-  return {mon, cur, n: cur.length, net: mon[2].net, clean: {n: cj.length, dep, depN: dps.length, site, net: dep + site}};
+  return {mon, cur, n: cur.length, net: mon[2].net, clean: {n: cj.length, dep, depN: dps.length, site, net: dep + site, jobs: cj, deps: dps}};
 }
 function monthBox(){
   const rs = monthRows(), tot = k => rs.reduce((a,r) => a + r[k], 0), tag = s => s.ext ? '외부지원' : (lvOf(s) || s.role || '');
@@ -80,7 +80,10 @@ function monthBox(){
         <button class="pm-top" data-a="pyMonOpen" data-k="__boss"><span class="av">${esc((H.S.name||'대표').slice(-2))}</span>
           <span class="nm"><b>${esc(H.S.name||'대표')}</b><small>대표 · 현장 뛴 몫</small></span><span class="am"><b>${won(b.net)}</b></span></button>
         <div class="pm-3">${b.mon.map((m, i) => `<div class="${i === 2 ? 'on' : ''}"><i style="height:${Math.max(4, Math.round(m.net / mx * 100))}%"></i><b>${m.net ? man(m.net) : '-'}</b><small>${ml(m.k)} · ${m.n}곳</small></div>`).join('')}</div>
-        <div class="pm-cn"><span>현장 순수익 <small>(청소+용달 · 끝난 ${b.clean.n}현장 · ${P.mOff ? '그 달' : '오늘까지'})</small></span><b>${won(b.clean.net)}</b><small>예약금 ${won(b.clean.dep)} (${b.clean.depN}건) · 현장 ${won(b.clean.site)} · 외주·운영비는 경영 탭</small></div>
+        <div class="pm-cn" data-a="pyMonOpen" data-k="__net" role="button" style="cursor:pointer"><span>현장 순수익 <small>(청소+용달 · 끝난 ${b.clean.n}현장 · ${P.mOff ? '그 달' : '오늘까지'})</small></span><b>${won(b.clean.net)}</b><small>예약금 ${won(b.clean.dep)} (${b.clean.depN}건) · 현장 ${won(b.clean.site)} · 외주·운영비는 경영 탭 · ${P.mOpen.__net ? '접기 ▴' : '현장별 ▾'}</small></div>
+        ${P.mOpen.__net ? `<div class="pm-nl">${b.clean.jobs.slice().sort((x,y)=>String(x.job_date).localeCompare(y.job_date)).map(j => { const bal = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0)), n = dayNet(j);
+            return `<div><span>${md(j.job_date)} ${esc(String(j.title||'').slice(0,18))}${j.contract_mode?' (도급·안 셈)':''}</span><em>잔금 ${won(bal + H.extrasSum(j))} − 인건비 ${won(bal + H.extrasSum(j) - n)}</em><b class="${n<0?'neg':''}">${won(n)}</b></div>`; }).join('') || '<p class="note">끝난 현장이 없어요</p>'}
+          <div class="tot"><span>예약금 (이 달 받은 날 기준 ${b.clean.depN}건)</span><b>${won(b.clean.dep)}</b></div></div>` : ''}
         <div class="pm-st"><span>잔금 − 직원 지급액 · 예약금은 회사 몫</span><button class="lk" data-a="pyMonOpen" data-k="__boss">${op ? '접기 ▴' : '현장별 ▾'}</button></div>
         ${op ? `<div class="pm-det">${b.cur.map(it => `<div><span>${md(it.j.job_date)} ${esc(it.j.title||'')}</span><span>${won(it.g)}</span></div>`).join('') || '<div><span>이 달 현장 없음</span></div>'}</div>` : ''}</div></div>`; })()}
     <div class="pm-list">${rs.map((r, ri) => { const gh = ri === 0 || grp(rs[ri-1]) !== grp(r) ? `<div class="pm-g">${['직영 · 지원', '도급', '외부지원'][grp(r)]}</div>` : ''; const k = r.s.id || r.s.name, op = P.mOpen[k], mx = Math.max(1, ...r.mon.map(m => m.net)), d = diff(r.mon[2].net, r.prevSame);
