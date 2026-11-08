@@ -81,6 +81,11 @@ function meCard(wait){
     dep = (P.deps||[]).reduce((n,j) => n + (+j.deposit_amount||0), 0); depN = (P.deps||[]).length;
     site = P.jobs.reduce((n,j) => n + dayNet(j), 0); star = P.jobs.filter(j => j.boss_on).reduce((n,j) => n + dayNet(j), 0);
     sub = `${md(d)} (${W[new Date(d + 'T00:00:00').getDay()]})`;
+    // 1109: 오늘도 접었다 펴기 — 그날 받은 예약금 · 그날 현장
+    const op = P.todayOpen, tag = j => { if (j.contract_mode) return ' (도급·안 셈)'; const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0)); return !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; };
+    const rows = (P.deps||[]).map(j => `<div><span>예약금 · ${esc(String(j.title||'').slice(0, 18))}${j.job_date ? ` <small style="color:var(--sub)">(${md(j.job_date)} 현장)</small>` : ''}</span><b>+${won(+j.deposit_amount||0)}</b></div>`).join('')
+      + P.jobs.filter(j => !['cancelled','quote'].includes(j.status)).map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${tag(j)}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('');
+    extra = `<div class="pm-nl"><div class="dh" data-a="pyTodayOpen" role="button"><span>${op ? '▾' : '▸'} 오늘 내역<small>${depN ? ` 예약금 ${depN}건` : ''}${P.jobs.length ? ` · 현장 ${P.jobs.length}곳` : ''}</small></span><b class="${dep+site<0?'neg':''}">${won(dep + site)}</b></div>${op ? (rows || '<p class="note">오늘 기록이 없어요</p>') : ''}</div>`;
   } else {
     const b = bossRow(); dep = b.clean.dep; depN = b.clean.depN; site = b.clean.site; star = b.clean.star;
     sub = `${P.mLabel}월 · ${P.mOff ? '그 달 전체' : '오늘까지'}`; extra = dayTable(b);
@@ -92,6 +97,7 @@ function meCard(wait){
     ${extra}</div>`;
 }
 H.ACT.pyDayOpen = el => { (P.dOpen||(P.dOpen={}))[el.dataset.k] = !P.dOpen[el.dataset.k]; H.render(); };
+H.ACT.pyTodayOpen = () => { P.todayOpen = !P.todayOpen; H.render(); };
 H.ACT.pyMeTab = el => { P.meTab = el.dataset.t; H.render(); };
 function bossRow(){
   const items = P.mJobs.filter(j => j.boss_on && !j.contract_mode).map(j => ({j, ym: String(j.job_date).slice(0, 7), g: share(j)}));
@@ -131,7 +137,7 @@ async function load(d){
   if (H.loadAccts) await H.loadAccts([...ids]).catch(() => {});
   P.pays = H.S.needV9 ? [] : await H.q(sb.from('payouts').select('*').eq('paid_on', d).eq('void', false)).catch(() => []);
   // 1107: 그날 받은 예약금 (받은 날 기준 — SQL 안 돌렸으면 null)
-  P.deps = H.S.owner ? await H.q(sb.from('jobs').select('id,deposit_amount').eq('deposit_paid', true).neq('status', 'cancelled')
+  P.deps = H.S.owner ? await H.q(sb.from('jobs').select('id,deposit_amount,title,job_date').eq('deposit_paid', true).neq('status', 'cancelled')
     .gte('deposit_paid_at', d + 'T00:00:00+09:00').lte('deposit_paid_at', d + 'T23:59:59+09:00')).catch(() => null) : null;
 }
 function people(){
