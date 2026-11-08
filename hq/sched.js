@@ -241,7 +241,7 @@ function jobCard(j){
   const tc = H.isPartner(j) ? 'var(--prt)' : j.status==='open' && left ? 'var(--cleanl)' : 'var(--clean)';
   const phs = H.photosOf(j.id).length;
   const live = j.live_code ? `<span class="who" style="background:#EEF2FF;color:var(--navy);border-color:transparent" data-a="liveSheet" data-j="${j.id}" role="button">🔗 고객님 방 링크${j.live_views?' · '+j.live_views+'번 봄':''}</span>` : '';
-  const money = (j.total_amount||j.balance_amount) ? `<span>계약금액 ${won(j.total_amount)}${j.deposit_amount?' · 예약금 '+won(j.deposit_amount):''} · 잔금 ${won(j.balance_amount)}${H.extrasSum(j)?' · 추가 '+won(H.extrasSum(j)):''}${j.collector_id?` (${esc(H.P(j.collector_id).name)} ${j.collected_at?'✓ 수금':'수금 대기'})`:''}</span>` : '';
+  const money = (j.total_amount||j.balance_amount) ? `<span>계약금액 ${won(j.total_amount)}${j.deposit_amount?' · 예약금 '+won(j.deposit_amount):''} · 잔금 ${won(j.balance_amount)}${H.extrasSum(j)?' · 추가 '+won(H.extrasSum(j)):''}${H.refundSum(j)?` · <b style="color:#B91C1C">${esc((j.refunds||[]).map(r=>r.kind).filter((v,i,a)=>a.indexOf(v)===i).join('·'))} −${won(H.refundSum(j))}</b>`:''}${j.collector_id?` (${esc(H.P(j.collector_id).name)} ${j.collected_at?'✓ 수금':'수금 대기'})`:''}</span>` : '';
   // v30: 도급 현장인데 정산 방식·금액이 비어 있으면 빨간 알림 (누르면 금액·증빙)
   const prtMiss = H.isPartner(j) && !['cancelled','quote'].includes(j.status) && (!j.contract_mode || !(j.total_amount||j.balance_amount))
     ? `<button class="who" data-a="moneySheet" data-j="${j.id}" style="cursor:pointer;background:#FEF2F2;border-color:#FECACA;color:#B91C1C">⚠️ ${!j.contract_mode && !(j.total_amount||j.balance_amount) ? '도급 정산 방식·금액' : !j.contract_mode ? '도급 정산 방식' : '계약금액'} 안 넣음 ›</button>` : '';

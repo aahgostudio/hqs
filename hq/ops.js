@@ -140,7 +140,19 @@ H.ACT.moneySheet = el => { const j = H.J(el.dataset.j); const opts = H.setting('
       <div class="sec">추가금 (줄마다 사유)</div>
       <div class="full" id="xbox">${(j.extras||[]).map(x=>xRow(x, opts)).join('')}</div>
       <div class="full"><button type="button" class="btn sm ghost" data-a="xAdd">+ 추가금 줄 추가</button> <span class="note">항목을 고르면 기준가가 들어가요. 현장 추가는 고객 동의 체크 후 저장</span></div>
+      <div class="sec">고객에게 돌려준 돈 (페이백 · 클레임) <small style="font-weight:500">매출에서 빠져요</small></div>
+      <div class="full" id="rbox">${(j.refunds||[]).map(rRow).join('')}</div>
+      <div class="full"><button type="button" class="btn sm ghost" data-a="rAdd">+ 페이백 · 클레임 줄 추가</button></div>
     </div>${H.sacts('저장')}<input type="hidden" name="id" value="${j.id}"></form>`, true); };
+// 1108: 페이백 · 클레임 줄
+const rRow = r => `<div class="xl" data-r style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+  <select name="r_kind" style="width:auto">${['페이백','클레임','환불','기타'].map(k=>`<option ${r.kind===k?'selected':''}>${k}</option>`).join('')}</select>
+  <input type="number" name="r_amount" step="1000" placeholder="금액" value="${r.amount??''}" style="width:110px">
+  <input type="date" name="r_at" value="${r.at || H.ymd(H.today())}" style="width:auto">
+  <input name="r_memo" placeholder="사유 (예: 리뷰 페이백, 얼룩 재방문 대신)" value="${H.esc(r.memo||'')}" style="flex:1;min-width:140px">
+  <button type="button" class="btn sm ghost" data-a="rDel">✕</button></div>`;
+H.ACT.rAdd = () => document.getElementById('rbox').insertAdjacentHTML('beforeend', rRow({kind:'페이백'}));
+H.ACT.rDel = el => el.closest('[data-r]').remove();
 H.ACT.xAdd = () => { const box = document.getElementById('xbox'); box.insertAdjacentHTML('beforeend', xRow({notice:'site', agreed:false}, H.setting('extra_options')||[])); };
 H.ACT.xDel = el => el.closest('[data-x]').remove();
 H.CHANGE.xopt = el => { const row = el.closest('[data-x]'); const o = el.selectedOptions[0]; if (!el.value) return;
@@ -151,12 +163,15 @@ H.FORM.money = async (v, f) => { const id = +v.get('id'); const j = H.J(id);
     how: r.querySelector('[name=x_how]').value || null, proof: r.querySelector('[name=x_proof]').value || null, agreed: r.querySelector('[name=x_agreed]').checked, issued: r.querySelector('[name=x_issued]').checked}))
     .filter(x => x.name || x.amount);
   if (extras.some(x => !x.name)) return H.toast('추가금마다 사유를 적어주세요');
+  const refunds = [...f.querySelectorAll('[data-r]')].map(r => ({kind: r.querySelector('[name=r_kind]').value, amount: H.nnum(r.querySelector('[name=r_amount]').value), at: r.querySelector('[name=r_at]').value || null, memo: r.querySelector('[name=r_memo]').value.trim()})).filter(r => r.amount);
   if (extras.some(x => x.notice === 'site' && !x.agreed) && !confirm('현장 추가 중 고객 동의 체크가 안 된 줄이 있어요. 동의 안 된 금액은 매출·고객님 잔금에 안 들어가요. 저장할까요?')) return;
   const up = {total_amount:H.nnum(v.get('total_amount')), contract_mode:H.nn(v.get('contract_mode')), deposit_amount:H.nnum(v.get('deposit_amount')), deposit_how:H.nn(v.get('deposit_how')), deposit_proof:H.nn(v.get('deposit_proof')),
     deposit_paid:v.get('deposit_paid')==='on', deposit_issued:v.get('deposit_issued')==='on', balance_amount:H.nnum(v.get('balance_amount')), balance_how:H.nn(v.get('balance_how')), balance_proof:H.nn(v.get('balance_proof')),
     balance_issued:v.get('balance_issued')==='on', collector_id:H.nn(v.get('collector_id')), extras};
+  if (refunds.length || (j.refunds||[]).length) up.refunds = refunds;
   const col = v.get('collected')==='on'; if (col && !j.collected_at) { up.collected_at = new Date().toISOString(); up.collected_how = up.balance_how || '계좌'; } if (!col && j.collected_at) up.collected_at = null;
-  await H.q(sb.from('jobs').update(up).eq('id', id)); H.close(); H.toast('저장했어요'); H.refresh(); };
+  try { await H.q(sb.from('jobs').update(up).eq('id', id)); } catch(e){ if (/refunds/.test(String(e && e.message || e))) return H.toast('페이백 SQL(update_refunds.sql)을 먼저 넣어주세요'); throw e; }
+  H.close(); H.toast('저장했어요'); H.refresh(); };
 
 /* ---------- 부동산 계약 (중개보수) ---------- */
 const SIDES = {'월세':['임대인','임차인'],'전세':['임대인','임차인'],'매매':['매도인','매수인'],'기타':['의뢰인','상대방']};

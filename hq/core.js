@@ -62,10 +62,11 @@ H.extrasSum = j => (j.extras||[]).filter(x => x.agreed !== false).reduce((a,x) =
 H.isClean = j => !(j.teams||[]).includes('RES') || (j.teams||[]).some(t => t !== 'RES');
 H.isPartner = j => (j.teams||[]).includes('PRT') || !!j.contract_mode;
 // 본사 매출로 잡히는 금액: 도급 A = 예약금만, 그 외 = 계약금액 + 추가금
+H.refundSum = j => (j.refunds||[]).reduce((n,r) => n + (+r.amount||0), 0);
 H.jobRevenue = j => {
   if (j.status === 'cancelled' || j.status === 'quote') return 0;
-  if (j.contract_mode === 'A') return +j.deposit_amount || 0;
-  return (+j.total_amount || 0) + H.extrasSum(j);
+  if (j.contract_mode === 'A') return (+j.deposit_amount || 0) - H.refundSum(j);
+  return (+j.total_amount || 0) + H.extrasSum(j) - H.refundSum(j);   // 1108: 페이백·클레임은 매출에서 뺌
 };
 // 외부지원(일용직): 그 현장에만 붙는 임시 인원 — jobs.helpers [{id,name,phone,src,pay,extra,memo,paid}] (v29)
 H.helpers = j => (H.S.needV29 || !j) ? [] : (j.helpers||[]);
