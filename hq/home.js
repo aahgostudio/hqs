@@ -33,6 +33,22 @@ H.view('home', {label:'홈',
         H.S.resUnpaid = {m: lm, n: left.length};
       }
     } catch(_){}
+    // 1108: 이번 달 순수익 (오늘까지 · 경영 탭과 같은 계산)
+    H.S.homeNet = null;
+    if (H.S.owner && H.calcMonth) try {
+      const f = H.ymd(m0), t = H.ymd(m1);
+      const [jobs, shares, rules, ex, pu, staff] = await Promise.all([
+        H.q(H.sb.from('jobs').select('*, assignments(*)').gte('job_date', f).lte('job_date', t)),
+        H.q(H.sb.from('deal_shares').select('*')), H.q(H.sb.from('pay_rules').select('*')),
+        H.q(H.sb.from('expenses').select('*').gte('ex_date', f).lte('ex_date', t)),
+        H.q(H.sb.from('purchases').select('*').gte('pu_date', f).lte('pu_date', t)),
+        H.q(H.sb.from('staff').select('*').order('created_at'))]);
+      const keep = {mJobs:H.S.mJobs, mDeals:H.S.mDeals, mShares:H.S.mShares, payRules:H.S.payRules, mEx:H.S.mEx, mPu:H.S.mPu};
+      Object.assign(H.S, {mJobs: jobs, mDeals: dl, mShares: shares, payRules: rules, mEx: ex, mPu: pu});
+      if (!H.S.staffAll) H.S.staffAll = staff;
+      const R = H.calcMonth(); Object.assign(H.S, keep);
+      H.S.homeNet = {done: R.netDone, plan: R.net, planN: R.planN, boss: R.bossDone, bossN: R.bossN, ex: R.exTot, rev: R.revDone};
+    } catch(_){}
     // 1:1 대화로 보낸 입금 기록 (정산 화면과 같은 기준으로 '입금 완료' 판단)
     H.S.payouts14 = H.S.owner && !H.S.needV9 ? await H.q(H.sb.from('payouts').select('staff_id,amount,paid_on').gte('paid_on', H.ymd(H.addDays(H.today(), -15))).eq('void', false)).catch(() => []) : [];
   },
@@ -109,7 +125,9 @@ H.view('home', {label:'홈',
 
     // 청소
     const deps = month.filter(j=>+j.deposit_amount);
+    const hn = S.homeNet;
     const cleanMoney = S.owner ? `<div class="kp" style="margin-top:8px">
+        ${hn ? `<a class="k" href="#money" style="grid-column:1/-1;background:#F0FDF4;border-color:#BBF7D0;text-decoration:none;color:inherit;display:block"><span>이번 달 순수익 (오늘까지 · 클린+부동산)</span><b style="color:#047857">${won(hn.done)}</b><small>매출 ${won(hn.rev)} − 인건비·배분·외주·운영비${hn.boss ? ` · 그중 대표님 현장 몫 ${won(hn.boss)}` : ''}${hn.planN ? ` · 이 달 다 끝나면 예상 ${won(hn.plan)}` : ''}${!hn.ex ? ' · 운영비 아직 0원' : ''} · 경영 탭 →</small></a>` : ''}
         <div class="k"><span>이번 달 클린 수익 (끝난 현장)</span><b>${won(month.filter(j=>j.status==='done'||j.work_done_at).reduce((n,j)=>n+H.jobRevenue(j),0))}</b><small>예정 포함 ${won(month.reduce((n,j)=>n+H.jobRevenue(j),0))}${(()=>{const bs=month.filter(j=>j.status==='done'||j.work_done_at).map(H.bossShare).filter(Boolean);return bs.length?` · 대표님 몫 ${won(bs.reduce((a,b)=>a+b,0))} (${bs.length}현장)`:''})()}</small></div>
         <div class="k"><span>임금 보냄 (이번 달)</span><b>${won(month.reduce((n,j)=>n+(j.assignments||[]).filter(a=>a.status==='approved'&&a.paid).reduce((m,a)=>m+(+a.pay_amount||0)+(+a.extra_amount||0),0)+H.helpers(j).filter(x=>x.paid).reduce((m,x)=>m+(+x.pay||0)+(+x.extra||0),0),0))}</b><small>예정 포함 ${won(month.reduce((n,j)=>n+H.jobLabor(j),0))} · 원</small></div>
         ${S.depMonth ? `<div class="k"><span>예약금 받음 (이번 달)</span><b>${won(S.depMonth.reduce((n,j)=>n+(+j.deposit_amount||0),0))}</b><small>예약 ${S.depMonth.length}건${S.depPrevN!=null?` · 지난달 ${S.depPrevN}건 ${S.depMonth.length>S.depPrevN?`<i style="font-style:normal;color:#16A34A;font-weight:800">▲${S.depMonth.length-S.depPrevN}</i>`:S.depMonth.length<S.depPrevN?`<i style="font-style:normal;color:#DC2626;font-weight:800">▼${S.depPrevN-S.depMonth.length}</i>`:'(같음)'}`:''}</small></div>`
