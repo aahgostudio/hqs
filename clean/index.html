@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="일정판"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="../diary.css?v=1108n">
+<link rel="stylesheet" href="../diary.css?v=1108o">
 <style>
 body{background:var(--bg)}
 .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
@@ -200,7 +200,7 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 .okline{font-size:13px;background:var(--okb);color:#065F46;border-radius:10px;padding:8px 11px}
 .ics{font-size:12px;word-break:break-all;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-family:ui-monospace,Menlo,monospace}
 </style>
-<script src="../thumb.js?v=1108n"></script>
+<script src="../thumb.js?v=1108o"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -226,14 +226,14 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1108n"></script>
+<script src="../status.js?v=1108o"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1108n'</script>
-<script src="../chatkit.js?v=1108n"></script>
-<script src="../chat.js?v=1108n"></script>
-<script src="../mymoney.js?v=1108n"></script>
-<script src="../diary.js?v=1108n"></script>
+<script>window.EP_VER='1108o'</script>
+<script src="../chatkit.js?v=1108o"></script>
+<script src="../chat.js?v=1108o"></script>
+<script src="../mymoney.js?v=1108o"></script>
+<script src="../diary.js?v=1108o"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -344,7 +344,7 @@ function card(j){
   const live = j.my_status === 'approved' && j.status !== 'cancelled';
   const shootable = V2() && live && j.date >= ymd(addDays(today,-2));   // v30: 확정되면 작업일 전에도 사진 칸 보임
   // 고객님 방: 확정되면 날짜 상관없이 바로 들어갈 수 있게 (v30)
-  const roomBtn = V2() && live && j.cust_room ? `<button class="btn" data-croom="${j.cust_room}">💬 고객님 방 · 사진·글 올리기${j.photos?` (${j.photos}장)`:''}</button>`
+  const roomBtn = V2() && live && j.cust_room ? `<button class="btn" data-croom="${j.cust_room}" style="white-space:normal;line-height:1.25;flex-direction:column;gap:1px">💬 고객님 방<small style="font-size:11.5px;font-weight:500;opacity:.85">사진·글 올리기${j.photos?` · ${j.photos}장`:''}</small></button>`
     : shootable ? `<button class="btn" data-shoot="${j.id}">${I('cam')}${W('현장 사진','촬영 사진')}${j.photos?` (${j.photos}장)`:''}</button>` : '';
   const linkBtn = live && j.collector && j.live ? `<button class="btn ghost" data-clink="${j.id}">🔗 링크 보내기</button>` : '';
   const shootBtn = (roomBtn || linkBtn) ? `<div class="acts">${roomBtn}${linkBtn}${j.work_done?'<span class="pill p-ok" style="align-self:center">작업 끝</span>':''}</div>` : '';

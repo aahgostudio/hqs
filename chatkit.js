@@ -201,7 +201,14 @@
   }
   async function save(src, dl, name){
     name = name || ('사진_' + new Date().toISOString().slice(0, 10) + '.jpg');
-    try { const r = await fetch(src); if (!r.ok) throw 0; const b = await r.blob(); const f = new File([b], name, {type: b.type || 'image/jpeg'});
+    try { const r = await fetch(src); if (!r.ok) throw 0; const b0 = await r.blob();
+      // 1108: 서버가 사진 종류를 '파일'로 주면 아이폰 공유창에 '이미지 저장'이 안 됨 → 사진 종류·확장자를 맞춰서 넘김
+      const ext = ((String(src).split('?')[0].match(/\.(jpe?g|png|webp|gif|heic|heif)$/i) || [])[1] || '').toLowerCase();
+      const MT = {jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', gif:'image/gif', heic:'image/heic', heif:'image/heif'};
+      const type = /^image\//.test(b0.type) ? b0.type : (MT[ext] || 'image/jpeg');
+      const want = {'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/heic':'heic','image/heif':'heif'}[type] || 'jpg';
+      name = name.replace(/\.[a-z0-9]{2,5}$/i, '') + '.' + want;
+      const b = b0.type === type ? b0 : new Blob([b0], {type}); const f = new File([b], name, {type});
       if (navigator.canShare && navigator.canShare({files: [f]})) { try { await navigator.share({files: [f]}); } catch(_){} return; }   // 아이폰: 공유창 → '이미지 저장'
       const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     } catch(_) { window.open(dl || src, '_blank'); }
