@@ -70,9 +70,28 @@ function dayTable(b){
       ${d.jobs.map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${j.contract_mode ? ' (도급·안 셈)' : ''}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('')}`; }).join('')}
     <div class="tot"><span>이 달 합 (예약금 ${won(b.clean.dep)} · 현장 ${won(b.clean.site)})</span><b>${won(b.clean.net)}</b></div></div>`;
 }
+// 1109: 대표님 '내 수익' 카드 하나 — [오늘] / [이번 달] · 예약금 · 현장 · ★ 내가 간 곳
+function meCard(wait){
+  const W = ['일','월','화','수','목','금','토'], neg = n => n < 0 ? `<b class="ng">${won(n)}</b>` : `<b>${won(n)}</b>`;
+  const tab = P.meTab || 'day', d = P.d;
+  let dep, depN, site, star, sub, extra = '';
+  if (tab === 'day') {
+    dep = (P.deps||[]).reduce((n,j) => n + (+j.deposit_amount||0), 0); depN = (P.deps||[]).length;
+    site = P.jobs.reduce((n,j) => n + dayNet(j), 0); star = P.jobs.filter(j => j.boss_on).reduce((n,j) => n + dayNet(j), 0);
+    sub = `${md(d)} (${W[new Date(d + 'T00:00:00').getDay()]})`;
+  } else {
+    const b = bossRow(); dep = b.clean.dep; depN = b.clean.depN; site = b.clean.site; star = b.clean.star;
+    sub = `${P.mLabel}월 · ${P.mOff ? '그 달 전체' : '오늘까지'}`; extra = dayTable(b);
+  }
+  return `<div class="mec"><div class="mh"><span>내 수익</span><small class="${wait.length ? 'w' : ''}">${wait.length ? '잔금 수금 대기 ' + wait.length : '잔금 수금 완료 ✓'}</small></div>
+    <div class="mt"><button data-a="pyMeTab" data-t="day" aria-pressed="${tab==='day'}">오늘</button><button data-a="pyMeTab" data-t="mon" aria-pressed="${tab==='mon'}">이번 달</button></div>
+    <div class="mv">${neg(dep + site)}<small>${sub}</small></div>
+    <div class="m3"><div><b>${won(dep)}</b>예약금 ${depN}건</div><div>${neg(site)}현장</div><div>${neg(star)}★ 내가 간 곳</div></div>
+    ${extra}</div>`;
+}
+H.ACT.pyMeTab = el => { P.meTab = el.dataset.t; H.render(); };
 function bossRow(){
   const items = P.mJobs.filter(j => j.boss_on && !j.contract_mode).map(j => ({j, ym: String(j.job_date).slice(0, 7), g: share(j)}));
-  if (!items.length) return null;
   const mon = P.mKeys.map(k => { const it = items.filter(i => i.ym === k); return {k, n: it.length, net: it.reduce((a,i) => a + i.g, 0)}; });
   const cur = items.filter(i => i.ym === P.mKeys[2]);
   // 1108: 청소 순수익 (끝난 현장 · 오늘까지) = 매출 − 직원 임금 · 용달 빼고
@@ -80,7 +99,7 @@ function bossRow(){
   // 1109: 대표님 공식 = 이 달 받은 예약금 + (끝난 현장 잔금 − 인건비) — '오늘 내 수익'을 하루하루 더한 것과 같음
   const dps = (P.mDeps||[]), dep = dps.reduce((a,j) => a + (+j.deposit_amount||0), 0);
   const site = cj.reduce((a,j) => a + dayNet(j), 0);
-  return {mon, cur, n: cur.length, net: mon[2].net, clean: {n: cj.length, dep, depN: dps.length, site, net: dep + site, jobs: cj, deps: dps}};
+  return {mon, cur, n: cur.length, net: mon[2].net, clean: {n: cj.length, dep, depN: dps.length, site, net: dep + site, jobs: cj, deps: dps, star: cj.filter(j => j.boss_on).reduce((a,j) => a + dayNet(j), 0)}};
 }
 function monthBox(){
   const rs = monthRows(), tot = k => rs.reduce((a,r) => a + r[k], 0), tag = s => s.ext ? '외부지원' : (lvOf(s) || s.role || '');
@@ -90,14 +109,6 @@ function monthBox(){
   const chg = d => d == null ? '<span class="pd z">새로</span>' : d === 0 ? '<span class="pd z">±0%</span>' : `<span class="pd ${d > 0 ? 'u' : 'd'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}%</span>`;
   return `<section class="pm"><div class="pm-hd"><button class="pm-nav" data-a="pyMon" data-n="-1">‹</button><div><b>📒 ${P.mLabel||''}월 직원별 정산</b><small>${P.mOff ? '그 달 전체 · ▲▼ 전월 대비' : `오늘(${new Date().getDate()}일)까지 · ▲▼ 전월 같은 기간 대비`}</small></div><button class="pm-nav" data-a="pyMon" data-n="1" ${P.mOff >= 0 ? 'disabled' : ''}>›</button></div>
     <div class="pm-k"><div><span>지급 총액</span><b>${won(totM[2])}</b>${chg(dTot)}</div><div><span>입금 완료</span><b class="g">${won(tot('sent'))}</b></div><div class="${tot('left') > 0 ? 'w' : ''}"><span>남은 돈</span><b>${won(tot('left'))}</b></div></div>
-    ${(() => { const b = bossRow(); if (!b) return ''; const mx = Math.max(1, ...b.mon.map(m => m.net)), op = P.mOpen.__boss;
-      return `<div class="pm-list"><div class="pm-g">대표님 (보낼 돈엔 안 들어가요)</div><div class="pm-c">
-        <button class="pm-top" data-a="pyMonOpen" data-k="__boss"><span class="av">${esc((H.S.name||'대표').slice(-2))}</span>
-          <span class="nm"><b>${esc(H.S.name||'대표')}</b><small>대표 · 현장 뛴 몫</small></span><span class="am"><b>${won(b.net)}</b></span></button>
-        <div class="pm-3">${b.mon.map((m, i) => `<div class="${i === 2 ? 'on' : ''}"><i style="height:${Math.max(4, Math.round(m.net / mx * 100))}%"></i><b>${m.net ? man(m.net) : '-'}</b><small>${ml(m.k)} · ${m.n}곳</small></div>`).join('')}</div>
-        <div class="pm-cn" data-a="pyMonOpen" data-k="__boss" role="button" style="cursor:pointer"><span>현장 순수익 <small>(청소+용달 · 끝난 ${b.clean.n}현장 · ${P.mOff ? '그 달' : '오늘까지'})</small></span><b>${won(b.clean.net)}</b><small>예약금 ${won(b.clean.dep)} (${b.clean.depN}건) · 현장 ${won(b.clean.site)} · 외주·운영비는 경영 탭 · ${op ? '접기 ▴' : '날짜별 ▾'}</small></div>
-        <div class="pm-st"><span>날마다 예약금 · 현장(잔금−인건비) 따로 · ★ 대표님이 간 현장</span><button class="lk" data-a="pyMonOpen" data-k="__boss">${op ? '접기 ▴' : '날짜별 ▾'}</button></div>
-        ${op ? dayTable(b) : ''}</div></div>`; })()}
     <div class="pm-list">${rs.map((r, ri) => { const gh = ri === 0 || grp(rs[ri-1]) !== grp(r) ? `<div class="pm-g">${['직영 · 지원', '도급', '외부지원'][grp(r)]}</div>` : ''; const k = r.s.id || r.s.name, op = P.mOpen[k], mx = Math.max(1, ...r.mon.map(m => m.net)), d = diff(r.mon[2].net, r.prevSame);
       return gh + `<div class="pm-c ${r.left > 0 ? 'due' : ''}">
         <button class="pm-top" data-a="pyMonOpen" data-k="${esc(k)}"><span class="av">${esc(r.s.name.length >= 3 ? r.s.name.slice(1) : r.s.name)}</span>
@@ -159,8 +170,8 @@ H.view('pay', {label:'정산', owner:true,
     const wait = bal.filter(x => !x.got);
     return `<div class="pay-m">
       <div class="pay-top"><button class="btn ghost sm" data-a="pyDay" data-n="-1">‹</button><b>${md(d)}${today ? ' 오늘' : ''} 정산</b><button class="btn ghost sm" data-a="pyDay" data-n="1">›</button></div>
-      <div class="pay-sum"><div><span>남은 입금</span><b>${left.length}명</b></div><div><span>보낼 돈</span><b>${won(left.reduce((a,p) => a + p.net, 0))}</b></div><div class="${wait.length?'w':''}"><span>잔금 수금</span><b>${wait.length ? '대기 ' + wait.length : '완료'}</b></div>${H.S.owner ? (() => { const dep = (P.deps||[]).reduce((n,j) => n + (+j.deposit_amount||0), 0), sh = P.jobs.reduce((n,j) => n + dayNet(j), 0);
-          return `<div class="me"><span>오늘 내 수익</span><b>${won(dep + sh)}</b><small>예약금 ${won(dep)}${P.deps ? ` (${P.deps.length}건)` : ''} · 현장 ${sh < 0 ? '<i style="font-style:normal;color:#FCA5A5;font-weight:700">' + won(sh) + '</i>' : won(sh)}</small></div>`; })() : ''}</div>
+      <div class="pay-sum"><div><span>남은 입금</span><b>${left.length}명</b></div><div><span>보낼 돈</span><b>${won(left.reduce((a,p) => a + p.net, 0))}</b></div></div>
+      ${H.S.owner ? meCard(wait) : ''}
       ${wait.length ? `<div class="pay-warn">수금 대기: ${wait.map(x => esc(x.j.title||'')).join(', ')}</div>` : ''}
       ${ps.map(p => { const a = (H.S.accts||{})[p.s.id] || {}, op = P.open[p.s.id];
         return `<div class="pay-card ${p.done?'done':''}">
