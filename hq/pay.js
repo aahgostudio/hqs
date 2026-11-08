@@ -21,6 +21,9 @@ async function loadMonth(){
   P.mLabel = base.getMonth() + 1;
   P.mJobs = (await H.q(sb.from('jobs').select('id,job_date,title,kind,status,helpers,extras,boss_on,contract_mode,total_amount,deposit_amount,balance_amount,work_done_at,assignments(*)').gte('job_date', H.ymd(from)).lte('job_date', H.ymd(to)).order('job_date')))
     .filter(j => j.status !== 'cancelled' && j.status !== 'quote');
+  // 1109: 이 달에 받은 예약금 (받은 날 기준 — 대표님 공식: 예약금 + 잔금 − 인건비)
+  P.mDeps = H.S.owner ? await H.q(sb.from('jobs').select('id,deposit_amount,kind').eq('deposit_paid', true).neq('status', 'cancelled')
+    .gte('deposit_paid_at', H.ymd(base) + 'T00:00:00+09:00').lte('deposit_paid_at', H.ymd(to === T ? T : m1) + 'T23:59:59+09:00')).catch(() => null) : null;
 }
 const grp = p => p.s.ext ? 2 : p.s.team === 'PRT' ? 1 : 0;
 function monthRows(){
@@ -59,8 +62,10 @@ function bossRow(){
   const cur = items.filter(i => i.ym === P.mKeys[2]);
   // 1108: 청소 순수익 (끝난 현장 · 오늘까지) = 매출 − 직원 임금 · 용달 빼고
   const cj = P.mJobs.filter(j => String(j.job_date).slice(0, 7) === P.mKeys[2] && j.kind !== '용달' && (j.status === 'done' || j.work_done_at));
-  const rev = cj.reduce((a,j) => a + H.jobRevenue(j), 0), lab = cj.reduce((a,j) => a + H.jobLabor(j), 0);
-  return {mon, cur, n: cur.length, net: mon[2].net, clean: {n: cj.length, rev, lab, net: rev - lab}};
+  // 1109: 대표님 공식 = 이 달 받은 예약금 + (끝난 현장 잔금 − 인건비) — '오늘 내 수익'을 하루하루 더한 것과 같음
+  const dps = (P.mDeps||[]).filter(j => j.kind !== '용달'), dep = dps.reduce((a,j) => a + (+j.deposit_amount||0), 0);
+  const site = cj.reduce((a,j) => a + dayNet(j), 0);
+  return {mon, cur, n: cur.length, net: mon[2].net, clean: {n: cj.length, dep, depN: dps.length, site, net: dep + site}};
 }
 function monthBox(){
   const rs = monthRows(), tot = k => rs.reduce((a,r) => a + r[k], 0), tag = s => s.ext ? '외부지원' : (lvOf(s) || s.role || '');
@@ -75,7 +80,7 @@ function monthBox(){
         <button class="pm-top" data-a="pyMonOpen" data-k="__boss"><span class="av">${esc((H.S.name||'대표').slice(-2))}</span>
           <span class="nm"><b>${esc(H.S.name||'대표')}</b><small>대표 · 현장 뛴 몫</small></span><span class="am"><b>${won(b.net)}</b></span></button>
         <div class="pm-3">${b.mon.map((m, i) => `<div class="${i === 2 ? 'on' : ''}"><i style="height:${Math.max(4, Math.round(m.net / mx * 100))}%"></i><b>${m.net ? man(m.net) : '-'}</b><small>${ml(m.k)} · ${m.n}곳</small></div>`).join('')}</div>
-        <div class="pm-cn"><span>청소 순수익 <small>(끝난 ${b.clean.n}현장 · ${P.mOff ? '그 달' : '오늘까지'})</small></span><b>${won(b.clean.net)}</b><small>매출 ${won(b.clean.rev)} − 직원 임금 ${won(b.clean.lab)} · 외주·운영비는 경영 탭</small></div>
+        <div class="pm-cn"><span>청소 순수익 <small>(끝난 ${b.clean.n}현장 · ${P.mOff ? '그 달' : '오늘까지'})</small></span><b>${won(b.clean.net)}</b><small>받은 예약금 ${won(b.clean.dep)} (${b.clean.depN}건) + 현장 잔금−인건비 ${won(b.clean.site)} · 외주·운영비는 경영 탭</small></div>
         <div class="pm-st"><span>잔금 − 직원 지급액 · 예약금은 회사 몫</span><button class="lk" data-a="pyMonOpen" data-k="__boss">${op ? '접기 ▴' : '현장별 ▾'}</button></div>
         ${op ? `<div class="pm-det">${b.cur.map(it => `<div><span>${md(it.j.job_date)} ${esc(it.j.title||'')}</span><span>${won(it.g)}</span></div>`).join('') || '<div><span>이 달 현장 없음</span></div>'}</div>` : ''}</div></div>`; })()}
     <div class="pm-list">${rs.map((r, ri) => { const gh = ri === 0 || grp(rs[ri-1]) !== grp(r) ? `<div class="pm-g">${['직영 · 지원', '도급', '외부지원'][grp(r)]}</div>` : ''; const k = r.s.id || r.s.name, op = P.mOpen[k], mx = Math.max(1, ...r.mon.map(m => m.net)), d = diff(r.mon[2].net, r.prevSame);
