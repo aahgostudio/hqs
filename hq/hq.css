@@ -662,3 +662,6 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .cal td .chips2 em.truck{--c:var(--truck)}
 @media(max-width:899px){.cal td .chips2 em.truck{--c:var(--truck)}}
 .tr-rt{display:flex;flex-wrap:wrap;gap:4px 10px}.tr-rt a{color:var(--truck);font-weight:600;text-decoration:none}
+/* 1108: 정산 · 대표님 카드 청소 순수익 */
+.pm-cn{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;margin:10px 0 2px;padding:9px 12px;border-radius:12px;background:#F0FDF4}
+.pm-cn>span{font-size:12.5px;color:var(--sub)}.pm-cn>span small{font-size:11px}.pm-cn>b{margin-left:auto;font-size:16px;color:#047857}.pm-cn>small{flex-basis:100%;font-size:11px;color:var(--sub)}

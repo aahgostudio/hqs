@@ -35,7 +35,7 @@ H.view('home', {label:'홈',
     } catch(_){}
     // 1108: 이번 달 순수익 (오늘까지 · 경영 탭과 같은 계산)
     H.S.homeNet = null;
-    if (H.S.owner && H.calcMonth) try {
+    if (false) try {   // 1108: 홈 순수익 칸은 뺌 (정산 화면 대표님 카드에 청소 순수익)
       const f = H.ymd(m0), t = H.ymd(m1);
       const [jobs, shares, rules, ex, pu, staff] = await Promise.all([
         H.q(H.sb.from('jobs').select('*, assignments(*)').gte('job_date', f).lte('job_date', t)),
@@ -179,9 +179,6 @@ ${deps.filter(j=>!j.deposit_paid).length?`<div class="k wait"><span>예약금 �
         <span class="hm-btns"><button class="btn sm" data-a="payDay" data-d="${j.job_date}">${md(j.job_date)} 정산 열기 →</button></span></div>`).join('')}</section>`:''}
     ${alerts.length?`<section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">누르면 해당 화면으로 가요</span></div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${alerts.map(([c,t,go])=>`<a class="banner ${c==='warn'?'warn':'info'}" ${go[0]==='!'?`data-a="${go.slice(1)}" style="cursor:pointer;`:`href="#${go}" style="`}text-decoration:none;padding:8px 12px">${esc(t)} →</a>`).join('')}</div></section>`:''}
-    ${hn ? `<a class="box" href="#money" style="display:block;text-decoration:none;color:inherit;background:#F0FDF4;border:1px solid #BBF7D0">
-      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-size:13px;color:var(--sub)">이번 달 순수익 <small>(오늘까지 · 클린+부동산)</small></span><b style="font-size:24px;color:#047857;margin-left:auto">${won(hn.done)}</b></div>
-      <div class="note" style="margin-top:4px">매출 ${won(hn.rev)} − 인건비·배분·외주·운영비${hn.boss ? ` · 그중 대표님 현장 몫 ${won(hn.boss)}` : ''}${hn.planN ? ` · 이 달 다 끝나면 예상 ${won(hn.plan)}` : ''}${!hn.ex ? ' · 운영비 아직 0원' : ''} · 경영 탭 →</div></a>` : ''}
     <div class="g2">
       <section class="box"><div class="bh"><h3>오늘 ${md(today)}</h3><span style="display:flex;gap:6px">${S.owner?'<a class="btn sm" href="#pay" style="text-decoration:none">💸 오늘 정산</a>':''}<a class="btn sm ghost" href="#sched">일정판 →</a></span></div>
         ${todayList.map(x=>`<div class="rw"><span>${x.t?x.t.slice(0,5)+' · ':''}${x.h}</span></div>`).join('') || '<div class="note">오늘 일정이 없어요</div>'}</section>
