@@ -80,7 +80,7 @@ function monthBox(){
         <button class="pm-top" data-a="pyMonOpen" data-k="__boss"><span class="av">${esc((H.S.name||'대표').slice(-2))}</span>
           <span class="nm"><b>${esc(H.S.name||'대표')}</b><small>대표 · 현장 뛴 몫</small></span><span class="am"><b>${won(b.net)}</b></span></button>
         <div class="pm-3">${b.mon.map((m, i) => `<div class="${i === 2 ? 'on' : ''}"><i style="height:${Math.max(4, Math.round(m.net / mx * 100))}%"></i><b>${m.net ? man(m.net) : '-'}</b><small>${ml(m.k)} · ${m.n}곳</small></div>`).join('')}</div>
-        <div class="pm-cn"><span>현장 순수익 <small>(청소+용달) (끝난 ${b.clean.n}현장 · ${P.mOff ? '그 달' : '오늘까지'})</small></span><b>${won(b.clean.net)}</b><small>받은 예약금 ${won(b.clean.dep)} (${b.clean.depN}건) + 현장 잔금−인건비 ${won(b.clean.site)} · 외주·운영비는 경영 탭</small></div>
+        <div class="pm-cn"><span>현장 순수익 <small>(청소+용달 · 끝난 ${b.clean.n}현장 · ${P.mOff ? '그 달' : '오늘까지'})</small></span><b>${won(b.clean.net)}</b><small>받은 예약금 ${won(b.clean.dep)} (${b.clean.depN}건) + 현장 잔금−인건비 ${won(b.clean.site)} · 외주·운영비는 경영 탭</small></div>
         <div class="pm-st"><span>잔금 − 직원 지급액 · 예약금은 회사 몫</span><button class="lk" data-a="pyMonOpen" data-k="__boss">${op ? '접기 ▴' : '현장별 ▾'}</button></div>
         ${op ? `<div class="pm-det">${b.cur.map(it => `<div><span>${md(it.j.job_date)} ${esc(it.j.title||'')}</span><span>${won(it.g)}</span></div>`).join('') || '<div><span>이 달 현장 없음</span></div>'}</div>` : ''}</div></div>`; })()}
     <div class="pm-list">${rs.map((r, ri) => { const gh = ri === 0 || grp(rs[ri-1]) !== grp(r) ? `<div class="pm-g">${['직영 · 지원', '도급', '외부지원'][grp(r)]}</div>` : ''; const k = r.s.id || r.s.name, op = P.mOpen[k], mx = Math.max(1, ...r.mon.map(m => m.net)), d = diff(r.mon[2].net, r.prevSame);
