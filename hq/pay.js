@@ -45,7 +45,13 @@ const share = j => { if (!j.boss_on || j.contract_mode) return 0;
   const bal = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
   const lab = (j.assignments||[]).filter(a => a.status === 'approved').reduce((n,a) => n + baseOf(H.P(a.staff_id), a) + (+a.extra_amount||0), 0)
     + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
-  return Math.max(0, bal - lab); };
+  return bal - lab; };   // 1108: 인건비가 잔금보다 많으면 마이너스 그대로
+// 1108: 오늘 현장 수익 = 잔금 + 추가금 − 페이백 − 인건비 (대표님이 안 간 현장도 · 도급 제외 · 마이너스 그대로)
+const dayNet = j => { if (j.contract_mode || ['cancelled','quote'].includes(j.status)) return 0;
+  const bal = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
+  const lab = (j.assignments||[]).filter(a => a.status === 'approved').reduce((n,a) => n + baseOf(H.P(a.staff_id), a) + (+a.extra_amount||0), 0)
+    + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
+  return bal + H.extrasSum(j) - H.refundSum(j) - lab; };
 function bossRow(){
   const items = P.mJobs.filter(j => j.boss_on && !j.contract_mode).map(j => ({j, ym: String(j.job_date).slice(0, 7), g: share(j)}));
   if (!items.length) return null;
@@ -133,8 +139,8 @@ H.view('pay', {label:'정산', owner:true,
     const wait = bal.filter(x => !x.got);
     return `<div class="pay-m">
       <div class="pay-top"><button class="btn ghost sm" data-a="pyDay" data-n="-1">‹</button><b>${md(d)}${today ? ' 오늘' : ''} 정산</b><button class="btn ghost sm" data-a="pyDay" data-n="1">›</button></div>
-      <div class="pay-sum"><div><span>남은 입금</span><b>${left.length}명</b></div><div><span>보낼 돈</span><b>${won(left.reduce((a,p) => a + p.net, 0))}</b></div><div class="${wait.length?'w':''}"><span>잔금 수금</span><b>${wait.length ? '대기 ' + wait.length : '완료'}</b></div>${H.S.owner ? (() => { const dep = (P.deps||[]).reduce((n,j) => n + (+j.deposit_amount||0), 0), sh = P.jobs.reduce((n,j) => n + share(j), 0);
-          return `<div class="me"><span>오늘 내 수익</span><b>${won(dep + sh)}</b><small>예약금 ${won(dep)}${P.deps ? ` (${P.deps.length}건)` : ''} · 현장 ${won(sh)}</small></div>`; })() : ''}</div>
+      <div class="pay-sum"><div><span>남은 입금</span><b>${left.length}명</b></div><div><span>보낼 돈</span><b>${won(left.reduce((a,p) => a + p.net, 0))}</b></div><div class="${wait.length?'w':''}"><span>잔금 수금</span><b>${wait.length ? '대기 ' + wait.length : '완료'}</b></div>${H.S.owner ? (() => { const dep = (P.deps||[]).reduce((n,j) => n + (+j.deposit_amount||0), 0), sh = P.jobs.reduce((n,j) => n + dayNet(j), 0);
+          return `<div class="me"><span>오늘 내 수익</span><b>${won(dep + sh)}</b><small>예약금 ${won(dep)}${P.deps ? ` (${P.deps.length}건)` : ''} · 현장 ${sh < 0 ? '<b style="color:#FCA5A5">' + won(sh) + '</b>' : won(sh)} <span style="opacity:.75">(잔금−인건비)</span></small></div>`; })() : ''}</div>
       ${wait.length ? `<div class="pay-warn">수금 대기: ${wait.map(x => esc(x.j.title||'')).join(', ')}</div>` : ''}
       ${ps.map(p => { const a = (H.S.accts||{})[p.s.id] || {}, op = P.open[p.s.id];
         return `<div class="pay-card ${p.done?'done':''}">
