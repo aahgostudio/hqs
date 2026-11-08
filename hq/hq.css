@@ -654,3 +654,10 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   .cal+.legend{display:none}
   .dbx{border-radius:16px;padding:11px 12px}
 }
+
+/* 1108: 🚚 용달 */
+:root{--truck:#0891B2}
+.ev.truck{background:var(--truck)}.cal td .bars i.truck{background:var(--truck)}.dbx.truck{background:#ECFEFF;border-left-color:var(--truck)}
+.cal td .chips2 em.truck{--c:var(--truck)}
+@media(max-width:899px){.cal td .chips2 em.truck{--c:var(--truck)}}
+.tr-rt{display:flex;flex-wrap:wrap;gap:4px 10px}.tr-rt a{color:var(--truck);font-weight:600;text-decoration:none}

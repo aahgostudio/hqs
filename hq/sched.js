@@ -57,7 +57,7 @@ H.view('sched', {label:'일정',
 function jobMeta(j){
   const ap = H.crewN(j);   // 확정 직원 + 대표 + 외부지원
   const today = ymd(H.today());
-  let cls = j.status==='quote' ? 'quote' : H.isPartner(j) ? 'prt' : (j.status==='open' && ap < j.headcount) ? 'open' : 'clean';
+  let cls = j.status==='quote' ? 'quote' : j.kind === '용달' ? 'truck' : H.isPartner(j) ? 'prt' : (j.status==='open' && ap < j.headcount) ? 'open' : 'clean';
   if (j.status === 'cancelled') cls += ' cancelled'; if (j.status === 'done') cls += ' done';
   let badge = '';
   if ((j.job_date < today || j.status === 'done') && j.status !== 'cancelled' && j.status !== 'quote') {
@@ -70,6 +70,7 @@ function jobMeta(j){
 }
 // 1108: PC 달력 칸 글자 블록용 짧은 이름 (동네·건물만)
 function shortName(x){ let t = String(x.title||'').replace(/^[🔁📢🏢]\s*/u,'').trim();
+  if (/^용달 · /.test(t)) return t.replace(/^용달 · /,'').replace(/\s*→\s*/,'→');
   if (x.cls === 'res' && t.includes(' · ')) { const [n, r] = t.split(' · '); return (n.length >= 3 ? n.slice(1) : n) + ' ' + (r||'').split(' ')[0]; }
   t = t.replace(/^(부산|창원|김해|울산|양산|경남)\s+/,'').replace(/^\S+(구|군)\s+/,'').replace(/(부분인테리어|인테리어|이사|입주|퇴실|정기|상가|사무실|공사후)?청소/g,'').replace(/\s+/g,' ').trim();
   return t.split(' ').slice(0,2).join(' ') || x.title; }
@@ -252,6 +253,7 @@ function jobCard(j){
     <div class="t"><span style="font-variant-numeric:tabular-nums">${j.start_time?j.start_time.slice(0,5):'시간 미정'}</span>${j.series_id?'<span title="정기 반복">🔁 </span>':''}${esc(j.title)} ${(j.teams||[]).map(c=>`<span class="tag" style="background:${H.T(c).color}" title="${c}">${esc(H.T(c).name)}</span>`).join('')}${j.contract_mode?`<span class="tag" style="background:var(--prt)">도급 ${j.contract_mode}</span>`:''}${pill}</div>
     ${spec?`<div class="m" style="color:var(--ink);font-weight:600">${esc(spec)}</div>`:''}<div class="m"><span>${j.headcount}명</span>${j.kind?`<span>${esc(j.kind)}</span>`:''}${j.order_channel?`<span>오더: ${esc(j.order_channel)}</span>`:''}${j.address?`<span>🔒 ${esc(j.address)}</span>`:''}${money}</div>
     ${j.cust_name||j.cust_phone?`<div class="m crow"><span>👤 고객 ${esc(j.cust_name||'')}</span>${j.cust_phone?(()=>{ const n = j.cust_phone.replace(/[^0-9]/g,''), f = n.replace(/^(\d{3})(\d{3,4})(\d{4})$/, '$1-$2-$3'); return `<span class="cph">${esc(f)}</span><a class="cbtn" href="tel:${n}" aria-label="전화">📞</a><a class="cbtn" href="sms:${n}" aria-label="문자">💬</a>`; })():''}</div>`:''}
+    ${j.kind === '용달' ? `<div class="m tr-rt"><span>🚚 ${esc(j.vehicle||'차량 미정')}</span>${j.address?`<a href="https://map.naver.com/p/search/${encodeURIComponent(j.address)}" target="_blank" rel="noopener">출발 ${esc(j.address)}</a>`:''}${j.dest_address?`<a href="https://map.naver.com/p/search/${encodeURIComponent(j.dest_address)}" target="_blank" rel="noopener">도착 ${esc(j.dest_address)}</a>`:''}${j.cust_phone?`<a href="tel:${esc(j.cust_phone)}">${esc(j.cust_name||'고객')} ${esc(j.cust_phone)}</a>`:''}</div>` : ''}
     ${(()=>{ const m = (j.cust_name||j.cust_phone) ? (j.admin_memo||'').replace(/^고객\s+\S+\s+0[\d\s.\-]{8,}\d\s*(·\s*)?/, '').trim() : j.admin_memo; return m?`<div class="m">메모: ${esc(m)}</div>`:''; })()}
     <div class="people">${people}${prtMiss}${j.status!=='quote'?`<button class="who" data-a="collPick" data-j="${j.id}" style="cursor:pointer;${j.collector_id?'background:#FFF7E6;border-color:#FDE68A;color:#92400E':'background:#FEF2F2;border-color:#FECACA;color:#B91C1C'}">💰 수금 ${j.collector_id?esc(H.P(j.collector_id).name):'담당 없음'} ▾</button>`:''}${phs?`<span class="who" data-a="photosSheet" data-j="${j.id}" role="button">📷 사진 ${phs}장</span>`:''}${j.job_date <= ymd(H.today()) && !['cancelled','quote'].includes(j.status) ? `<span class="who" data-a="dyBoss" data-j="${j.id}" role="button" style="background:#FFF8DC;border-color:#EFE3B8;color:#7A6A3A">📔 다이어리</span>` : ''}</div>
     ${j.status!=='quote' ? (j.live_code ? `<div class="croom">
@@ -319,6 +321,7 @@ H.ACT.dayOpen = el => { st().open = st().open === el.dataset.k ? null : el.datas
 H.ACT.schedSide = el => { st().side = el.dataset.s; H.render(); };
 H.ACT.addMenu = () => H.open(`<h3>무엇을 올릴까요?</h3><div style="display:flex;flex-direction:column;gap:8px">
   <button class="btn" data-a="jobNew" data-d="${st().sel}">클린 현장 (일정)</button>
+  <button class="btn ghost" data-a="truckNew">🚚 용달</button>
   <button class="btn ghost" data-a="quoteNew">오더 접수 (견적 중)</button>
   <button class="btn ghost" data-a="evNew" data-d="${st().sel}">내 일정 (사업 꼬리표)</button>
   <button class="btn ghost" data-a="ntcGo">공지</button>
@@ -490,7 +493,7 @@ ${j.id ? repScopeHtml(j) : repHtml(j)}
 }
 H.ACT.jobNew = el => { H.close(); setTimeout(()=>{ jobSheet(null, {job_date: el.dataset.d || st().sel, paste: el.dataset.paste === '1'}); if (el.dataset.paste === '1') { const t = document.getElementById('jpaste'); if (t) t.focus(); } }, 10); };
 H.ACT.quoteNew = () => { H.close(); setTimeout(()=>jobSheet(null, {status:'quote', headcount:2}), 10); };
-H.ACT.jobEdit = el => jobSheet(J(el.dataset.j));
+H.ACT.jobEdit = el => { const j = J(el.dataset.j); return j && j.kind === '용달' ? truckSheet(j) : jobSheet(j); };
 H.ACT.jobDel = async el => { const j = J(el.dataset.j);
   if (j && j.series_id) {
     const {data:after} = await sb.from('jobs').select('id,job_date').eq('series_id', j.series_id).gte('job_date', j.job_date).order('job_date');
@@ -734,4 +737,83 @@ H.CHANGE.dyCover = async el => { const f = el.files && el.files[0]; if (!f) retu
   const {error} = await sb.storage.from('live').upload(path, f, {contentType: f.type || 'image/jpeg', cacheControl: '31536000'});
   if (error) return H.toast('올리기 실패 · ' + error.message);
   await H.q(sb.from('jobs').update({diary_cover: path}).eq('id', id)); H.toast('대문 사진 바꿨어요'); H.ACT.dyBoss(el); };
+
+/* ---------- 1108: 🚚 용달 — 문의글 붙여넣기 → 날짜·시간·성함·전화·출발지·도착지·차량·금액·메모 ---------- */
+const dongOf = a => { a = String(a||'').replace(/^(부산광역시|부산시|부산)\s*/,''); const m = a.match(/(\S+?[동읍면리가])(?=\s|\d|$)/) || a.match(/(\S+[구군])/); return m ? m[1] : a.split(' ')[0] || ''; };
+H.parseTruck = raw => {
+  const t0 = String(raw||'').replace(/\r/g,''), o = {}, base = H.parseOrder ? H.parseOrder(t0) : {};
+  if (base.job_date) o.job_date = base.job_date;
+  else { const md2 = t0.match(/(?:^|[^\d])(\d{1,2})\s*\/\s*(\d{1,2})(?!\d)/); if (md2 && +md2[1] <= 12 && +md2[2] <= 31) { const n = new Date(); let y = n.getFullYear(); if (+md2[1] < n.getMonth() + 1 - 6) y++; o.job_date = `${y}-${String(md2[1]).padStart(2,'0')}-${String(md2[2]).padStart(2,'0')}`; } } if (base.start_time) o.start_time = base.start_time;
+  const segs = t0.split(/\n|(?<!\d)\s*\/\s*|\s*\/\s*(?!\d)/).map(x => x.trim()).filter(Boolean), memo = [];
+  const money = x => { x = String(x).replace(/,/g,''); let m = x.match(/(\d+(?:\.\d+)?)\s*만\s*(\d+)?\s*천?/); if (m) return Math.round(parseFloat(m[1])*10000 + (m[2] ? +m[2]*1000 : 0)); m = x.match(/(\d{4,})\s*원/); return m ? +m[1] : null; };
+  const val = (x, k) => x.replace(new RegExp('^.*?(' + k + ')\\s*[:：]?\\s*'), '').trim();
+  segs.forEach(x => {
+    const ph = x.match(/01\d[-\s.]?\d{3,4}[-\s.]?\d{4}/);
+    if (ph && !o.cust_phone) { o.cust_phone = ph[0].replace(/[\s.]/g,'-').replace(/^(01\d)(\d{3,4})(\d{4})$/,'$1-$2-$3'); const nm = x.replace(ph[0],'').replace(/(고객님?|성함|이름|연락처|전화번호?|[:：,])/g,' ').trim().match(/^([가-힣]{2,4})(?:\s*님)?$/); if (nm && !o.cust_name) o.cust_name = nm[1]; return; }
+    const nm2 = x.match(/(성함|이름|고객명)\s*[:：]?\s*([가-힣]{2,4})/); if (nm2) { if (!o.cust_name) o.cust_name = nm2[2]; return; }
+    if (/(안녕|문의|감사|부탁)/.test(x) && x.length <= 25) return;
+    if (/^(날짜|일시|시간)\s*[:：]/.test(x)) return;
+    if (/(출발지?|상차지?|출발 ?주소)/.test(x)) { o.address = val(x, '출발 ?주소|출발지?|상차지?'); return; }
+    if (/(도착지?|하차지?|도착 ?주소)/.test(x)) { o.dest_address = val(x, '도착 ?주소|도착지?|하차지?'); return; }
+    const vh = x.match(/(\d(?:\.\d)?\s*톤(?:\s*(?:탑차|윙바디|카고))?|다마스|라보|탑차|윙바디)/); if (vh && !o.vehicle && x.length <= 12) { o.vehicle = vh[1].replace(/\s+/g,''); return; }
+    if (/예약금/.test(x)) { const v = money(x); if (v != null) { o.deposit_amount = v; return; } }
+    if (/(금액|비용|운임|요금|가격)/.test(x) || /^\s*\d+(?:\.\d+)?\s*만\s*원?\s*$|^\s*[\d,]{5,}\s*원\s*$/.test(x)) { const v = money(x); if (v != null && o.total_amount == null) { o.total_amount = v; return; } }
+    if (/^([가-힣]{2,4})\s*님?$/.test(x) && !o.cust_name) { o.cust_name = x.replace(/\s*님$/,''); return; }
+    if (/(\d{1,2}\s*월\s*\d{1,2}\s*일|\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}|(오전|오후|아침|저녁)\s*\d{1,2}\s*시|\d{1,2}\s*시)/.test(x) && x.length <= 22) return;
+    if (vh && !o.vehicle) o.vehicle = vh[1].replace(/\s+/g,'');
+    memo.push(x.replace(/^(짐|물품|내용|메모)\s*[:：]?\s*/, ''));
+  });
+  if (!o.cust_name && base.cust_name) o.cust_name = base.cust_name;
+  if (memo.length) o.public_note = memo.join(' · ').slice(0, 200);
+  return o;
+};
+function truckSheet(j){
+  const S = H.S; j = j || {job_date: st().sel < ymd(H.today()) ? ymd(H.today()) : st().sel, start_time: '09:00', boss_on: true};
+  const who = j.id ? (j.boss_on ? 'boss' : /^외주 /.test(j.admin_memo||'') ? 'vendor' : 'staff') : 'boss';
+  const vend = who === 'vendor' ? (j.admin_memo||'').replace(/^외주\s*/,'').split(' · ')[0] : '';
+  const memo = (j.admin_memo||'').replace(/^외주\s*[^·]*(·\s*)?/,'').trim();
+  H.open(`<form data-f="truck"><h3>🚚 ${j.id ? '용달 수정' : '용달'}</h3>
+    ${j.id ? '' : `<details class="jpaste" open><summary>📋 문의글 붙여넣기 → 자동 채우기</summary>
+      <textarea id="tpaste" rows="4" placeholder="카톡·문자 문의글을 통째로 붙여넣으세요&#10;예) 홍길동 / 010-1234-5678 / 11월 12일 오전 9시&#10;출발 수영구 광안동 123 / 도착 해운대구 우동 456 / 1톤 / 냉장고·박스 15개 / 12만"></textarea>
+      <button type="button" class="btn" data-a="truckPaste" style="width:100%">자동 채우기</button><div id="tpaste-out" class="note"></div></details>`}
+    <div class="fg">
+      <div class="field"><label>날짜</label><input type="date" name="job_date" value="${j.job_date}" required></div>
+      <div class="field"><label>시간</label><input type="time" name="start_time" value="${(j.start_time||'').slice(0,5)}"></div>
+      <div class="field"><label>고객 성함</label><input name="cust_name" value="${esc(j.cust_name||'')}" placeholder="홍길동"></div>
+      <div class="field"><label>전화번호</label><input name="cust_phone" type="tel" inputmode="tel" value="${esc(j.cust_phone||'')}" placeholder="010-0000-0000"></div>
+      <div class="field full"><label>● 출발지</label><input name="address" value="${esc(j.address||'')}" placeholder="수영구 광안동 123 3층 (엘베 없음)" required></div>
+      <div class="field full"><label>○ 도착지</label><input name="dest_address" value="${esc(j.dest_address||'')}" placeholder="해운대구 우동 456"></div>
+      <div class="field"><label>차량</label><input name="vehicle" value="${esc(j.vehicle||'')}" list="tvh" placeholder="1톤"><datalist id="tvh">${['1톤','1톤 탑차','1.4톤','2.5톤','다마스','라보'].map(v=>`<option value="${v}">`).join('')}</datalist></div>
+      <div class="field"><label>금액</label><input type="number" name="total_amount" step="1000" value="${j.total_amount??''}"></div>
+      <div class="field"><label>예약금 <small>(없으면 비움 · 당일 전액)</small></label><input type="number" name="deposit_amount" step="1000" value="${j.deposit_amount??''}"></div>
+      <div class="field"><label>상태</label><select name="status">${[['full','확정'],['quote','견적 중'],['done','완료'],['cancelled','취소']].map(([v,l])=>`<option value="${v}" ${(j.status||'full')===v||(v==='full'&&j.status==='open')?'selected':''}>${l}</option>`).join('')}</select></div>
+      <div class="field full"><label>짐 · 메모</label><input name="public_note" value="${esc(j.public_note||'')}" placeholder="냉장고 · 세탁기 · 박스 15개 · 엘베 없음"></div>
+      <div class="field full"><label>누가 가요</label><div class="chips">${[['boss','대표님'],['staff','직원 배정'],['vendor','외주 기사']].map(([v,l])=>`<label><input type="radio" name="who" value="${v}" ${who===v?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
+      <div class="field full"><label>외주 기사 <small>(외주일 때 · 이름·연락처·기사비)</small></label><input name="vendor" value="${esc(vend)}" placeholder="김기사 010-0000-0000 기사비 8만"></div>
+      <div class="field full"><label>대표 메모 <small>(직원에게 안 보임)</small></label><input name="admin_memo" value="${esc(memo)}"></div>
+    </div>${H.sacts(j.id ? '저장' : '올리기', j.id ? `<button type="button" class="btn danger" data-a="jobDel" data-j="${j.id}" style="flex:0 0 auto">삭제</button>` : '')}
+    <input type="hidden" name="id" value="${j.id||''}"></form>`);
+}
+H.ACT.truckNew = () => { H.close(); setTimeout(() => { truckSheet(null); const t = document.getElementById('tpaste'); if (t) t.focus(); }, 10); };
+H.ACT.truckPaste = () => {
+  const f = document.querySelector('#sheet form[data-f="truck"]'), ta = document.getElementById('tpaste'), out = document.getElementById('tpaste-out');
+  if (!ta.value.trim()) { out.textContent = '문의글을 먼저 붙여넣어 주세요'; return; }
+  const L = {job_date:'날짜', start_time:'시간', cust_name:'성함', cust_phone:'전화', address:'출발지', dest_address:'도착지', vehicle:'차량', total_amount:'금액', deposit_amount:'예약금', public_note:'메모'};
+  const o = H.parseTruck(ta.value), got = [];
+  Object.entries(o).forEach(([k, v]) => { const el = f.elements[k]; if (!el || v == null || v === '') return; el.value = v; el.classList.add('filled'); got.push(L[k] || k); });
+  out.innerHTML = got.length ? `✅ 채웠어요: ${got.join(' · ')}<br><small>빈 칸·틀린 칸만 고치고 [올리기]</small>` : '찾은 내용이 없어요. 직접 넣어주세요';
+};
+H.FORM.truck = async v => {
+  const id = +v.get('id') || null, who = v.get('who') || 'boss', from = (v.get('address')||'').trim(), to = (v.get('dest_address')||'').trim();
+  const tot = v.get('total_amount') ? +v.get('total_amount') : null, dep = v.get('deposit_amount') ? +v.get('deposit_amount') : null;
+  const vend = (v.get('vendor')||'').trim(), memo = (v.get('admin_memo')||'').trim();
+  const row = {kind: '용달', title: `용달 · ${dongOf(from) || '출발'} → ${dongOf(to) || '도착'}`, job_date: v.get('job_date'), start_time: v.get('start_time') || null,
+    cust_name: H.nn(v.get('cust_name')), cust_phone: H.nn(v.get('cust_phone')), address: H.nn(from), dest_address: H.nn(to), vehicle: H.nn(v.get('vehicle')),
+    total_amount: tot, deposit_amount: dep, balance_amount: tot != null ? tot - (dep || 0) : null, public_note: H.nn(v.get('public_note')),
+    status: who === 'staff' && v.get('status') === 'full' ? 'open' : v.get('status'), boss_on: who === 'boss', headcount: 1,
+    admin_memo: H.nn([who === 'vendor' && vend ? '외주 ' + vend : '', memo].filter(Boolean).join(' · ')), order_channel: '용달'};
+  if (!id) row.teams = ['OPS'];
+  try { if (id) await H.q(sb.from('jobs').update(row).eq('id', id)); else await H.q(sb.from('jobs').insert(row)); }
+  catch(e){ if (/dest_address|vehicle/.test(String(e && e.message || e))) return H.toast('용달 SQL(update_truck.sql)을 먼저 넣어주세요'); throw e; }
+  H.close(); H.toast(id ? '저장했어요' : '용달 올렸어요'); H.refresh(); };
 })(window.HQ);

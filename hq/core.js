@@ -239,6 +239,7 @@ H.ACT.quickAdd = () => { const S = H.S;
     ${S.owner ? `<button class="qa" data-a="bossSheet"><b>🕘 내 상태 · 출퇴근</b><small>사무실 · 현장 · 외근 · 통화불가 · 휴무 · 퇴근</small></button>
     <button class="qa" data-a="bossPast"><b>🗓 지난 출퇴근 넣기</b><small>깜빡한 날 시간 직접 넣기</small></button>` : ''}
     <button class="qa" data-a="jobNew" data-paste="1"><b>🧹 클린 현장</b><small>예약글 붙여넣으면 자동으로 채워져요</small></button>
+    <button class="qa" data-a="truckNew"><b>🚚 용달</b><small>문의글 붙여넣으면 출발지·도착지까지 자동</small></button>
     <button class="qa" data-a="evNew"><b>📅 내 일정</b><small>계약 · 잔금 · 안내 · 미팅 · 견적</small></button>
     ${S.owner && S.mcode ? `<a class="qa" href="../maemul/?k=${encodeURIComponent(S.mcode)}&new=1"><b>🏠 매물 등록</b><small>매물노트에서 캡처·글로 자동 채우기</small></a>` : ''}
     <button class="qa" data-a="quoteNew"><b>📝 오더 접수 (견적 중)</b><small>아직 날짜 안 정해진 문의</small></button>
