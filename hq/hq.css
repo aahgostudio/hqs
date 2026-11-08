@@ -669,3 +669,5 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .pm-nl>div{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;padding:5px 0;border-bottom:1px dashed #EEF2F7}
 .pm-nl>div>span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-nl em{font-style:normal;color:var(--sub);font-size:11px}
 .pm-nl b{min-width:70px;text-align:right}.pm-nl b.neg{color:#DC2626}.pm-nl .tot{border-bottom:0;font-weight:700}
+.pm-nl .dh{background:#F8FAFC;margin:6px -10px 0;padding:6px 10px;font-weight:700;border-bottom:0}.pm-nl .dh:first-child{margin-top:-6px;border-radius:12px 12px 0 0}
+.pm-nl>div:not(.dh):not(.tot)>span{padding-left:8px;color:#374151}
