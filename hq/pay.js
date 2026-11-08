@@ -19,7 +19,7 @@ async function loadMonth(){
   const to = P.mOff === 0 ? T : m1;
   P.mKeys = [2, 1, 0].map(n => { const d = new Date(base.getFullYear(), base.getMonth() - n, 1); return H.ymd(d).slice(0, 7); });   // [2달 전, 전월, 이번]
   P.mLabel = base.getMonth() + 1;
-  P.mJobs = (await H.q(sb.from('jobs').select('id,job_date,title,kind,status,helpers,extras,boss_on,contract_mode,total_amount,deposit_amount,balance_amount,work_done_at,assignments(*)').gte('job_date', H.ymd(from)).lte('job_date', H.ymd(to)).order('job_date')))
+  P.mJobs = (await H.q(sb.from('jobs').select('id,job_date,title,kind,status,helpers,extras,boss_on,contract_mode,total_amount,deposit_amount,balance_amount,work_done_at,collected_at,assignments(*)').gte('job_date', H.ymd(from)).lte('job_date', H.ymd(to)).order('job_date')))
     .filter(j => j.status !== 'cancelled' && j.status !== 'quote');
   // 1109: 이 달에 받은 예약금 (받은 날 기준 — 대표님 공식: 예약금 + 잔금 − 인건비)
   P.mDeps = H.S.owner ? await H.q(sb.from('jobs').select('id,deposit_amount,kind,title,deposit_paid_at').eq('deposit_paid', true).neq('status', 'cancelled')
@@ -67,7 +67,8 @@ function dayTable(b){
   return `<div class="pm-nl">${keys.map(k => { const d = days[k], dep = d.dep.reduce((a,j) => a + (+j.deposit_amount||0), 0), site = d.jobs.reduce((a,j) => a + dayNet(j), 0), t = dep + site;
     return `<div class="dh"><span>${md(k)} (${W[new Date(k + 'T00:00:00').getDay()]})</span><b class="${t<0?'neg':''}">${won(t)}</b></div>
       ${dep ? `<div><span>예약금 ${d.dep.length}건</span><b>+${won(dep)}</b></div>` : ''}
-      ${d.jobs.map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${j.contract_mode ? ' (도급·안 셈)' : ''}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('')}`; }).join('')}
+      ${d.jobs.map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${j.contract_mode ? ' (도급·안 셈)' : ''}${(() => { const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
+        return j.contract_mode ? '' : !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; })()}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('')}`; }).join('')}
     <div class="tot"><span>이 달 합 (예약금 ${won(b.clean.dep)} · 현장 ${won(b.clean.site)})</span><b>${won(b.clean.net)}</b></div></div>`;
 }
 // 1109: 대표님 '내 수익' 카드 하나 — [오늘] / [이번 달] · 예약금 · 현장 · ★ 내가 간 곳
