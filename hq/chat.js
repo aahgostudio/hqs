@@ -474,7 +474,7 @@ H.ACT.chMsgMenu = el => { const id = +el.dataset.id, m = MSG(id);
   H.open(`<div class="mm"><div class="mm-rx">${K.RX.map(e => `<button type="button" data-a="chRx" data-id="${id}" data-e="${e}">${e}</button>`).join('')}</div>
     ${m.body ? `<div class="mm-pv">${H.esc(String(m.body).slice(0, 80))}</div>` : ''}
     ${it('chMmReply','↩︎','답장')}${m.body ? it('chMmCopy','⧉','복사') : ''}
-    ${m.mine && m.body && !m.photo && !m.photos ? it('chMmEdit','✏️','수정') : ''}${m.mine ? it('chMmDel','🗑','삭제', 'style="color:#DC2626"') : ''}
+    ${m.mine && m.body && !m.photo && !m.photos ? it('chMmEdit','✏️','수정') : ''}${m.mine ? it('chMmDel','🗑','삭제', 'style="color:#DC2626"') : H.S.owner && /^\d+$/.test(String(m.id)) && !m.deleted ? it('chMmDel','🗑','삭제 (대표님만)', 'style="color:#DC2626" data-o="1"') : ''}
     ${m.body ? it('chMmNtc','📢','공지로 올리기') + it('chMmEv','📅','일정으로 만들기') : ''}
     ${it('chMmFwd','➡️','다른 방으로 전달')}${it('chMmPin','📌', pinned ? '고정 해제' : '방 위에 고정')}
     ${H.S.owner ? it('chReaders','👥','안 읽은 멤버 확인') : ''}
@@ -487,9 +487,9 @@ document.addEventListener('click', async e => { const b = e.target.closest('[dat
 H.ACT.chMmEdit = el => { const id = +el.dataset.id, m = MSG(id);
   H.open(`<form data-f="chEditMsg" data-id="${id}"><h3>메시지 수정</h3><textarea class="in" name="body" rows="4" required>${H.esc(m.body||'')}</textarea><p class="note">수정하면 '수정됨'으로 표시되고, 원래 글은 이력에 남아요.</p>${H.sacts('수정')}</form>`); };
 H.FORM.chEditMsg = async (v, f) => { try { await rpc('chat_admin_edit', {p_id: +f.dataset.id, p_body: v.get('body'), p_delete: false}); H.close(); H.toast('수정했어요'); await reloadRoom(); } catch(e){ v38(e); } };
-H.ACT.chMmDel = el => H.open(`<h3>이 메시지를 삭제할까요?</h3><p class="note">직원 화면엔 '삭제된 메시지'로 보이고, 원래 글은 이력에 남아요.</p>
-  <div class="sacts"><button type="button" class="btn ghost" data-a="close">취소</button><button type="button" class="btn" style="background:#DC2626" data-a="chMmDelOk" data-id="${el.dataset.id}">삭제</button></div>`);
-H.ACT.chMmDelOk = async el => { try { await rpc('chat_admin_edit', {p_id: +el.dataset.id, p_body: null, p_delete: true}); H.close(); H.toast('삭제했어요'); await reloadRoom(); } catch(e){ v38(e); } };
+H.ACT.chMmDel = el => H.open(`<h3>이 메시지를 삭제할까요?</h3><p class="note">${el.dataset.o ? '직원이 올린 글도 지울 수 있어요 (대표님만). ' : ''}직원 화면엔 '삭제된 메시지'로 보이고, 원래 글은 이력에 남아요.</p>
+  <div class="sacts"><button type="button" class="btn ghost" data-a="close">취소</button><button type="button" class="btn" style="background:#DC2626" data-a="chMmDelOk" data-id="${el.dataset.id}" ${el.dataset.o ? 'data-o="1"' : ''}>삭제</button></div>`);
+H.ACT.chMmDelOk = async el => { try { if (el.dataset.o) { try { await rpc('chat_owner_del', {p_id: +el.dataset.id}); } catch(e){ if (/chat_owner_del|function|schema/i.test(String(e && e.message || e))) return H.toast('SQL(update_chat_owner_del.sql)을 먼저 넣어주세요'); throw e; } } else await rpc('chat_admin_edit', {p_id: +el.dataset.id, p_body: null, p_delete: true}); H.close(); H.toast('삭제했어요'); await reloadRoom(); } catch(e){ v38(e); } };
 H.ACT.chMmNtc = el => { const m = MSG(el.dataset.id), g = (C.room && C.room.room && C.room.room.grp) || '';
   const def = g === 'res' ? 'RES' : ['clean','prt'].includes(g) ? 'OPS' : '';
   H.open(`<form data-f="chNtc"><h3>공지로 올리기</h3><input class="in" name="title" placeholder="제목 (선택)" style="margin-bottom:8px"><textarea class="in" name="body" rows="4" required>${H.esc(m.body||'')}</textarea>
