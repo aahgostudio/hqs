@@ -139,9 +139,13 @@ function bindDnd(L){
 
 // 메시지 목록을 통째로 다시 그리지 않고 바뀐 줄만 교체 → 4초마다 사진이 다시 불러와지며 화면이 튀던 문제
 function morph(oM, nM){
-  if (oM.innerHTML === nM.innerHTML) return;
-  const pool = new Map(); [...oM.children].forEach(el => { const k = el.outerHTML; (pool.get(k) || pool.set(k, []).get(k)).push(el); });
-  const next = [...nM.children].map(el => { const a = pool.get(el.outerHTML); return a && a.length ? a.shift() : el; });
+  // 1108: 사진은 thumb.js가 그린 뒤 주소를 바꿔서 outerHTML로 비교하면 매번 '다름' → 다시 그리며 깜빡임(잔상)
+  //       그래서 처음 그릴 때의 글(_k)로 비교
+  const key = el => el._k || el.outerHTML;
+  const pool = new Map(); [...oM.children].forEach(el => { const k = key(el); (pool.get(k) || pool.set(k, []).get(k)).push(el); });
+  let same = oM.children.length === nM.children.length;
+  const next = [...nM.children].map((el, i) => { const k = el.outerHTML; el._k = k; const a = pool.get(k); const o = a && a.length ? a.shift() : el; if (o !== oM.children[i]) same = false; return o; });
+  if (same) return;
   const atB = oM.scrollHeight - oM.scrollTop - oM.clientHeight < 80, fromB = oM.scrollHeight - oM.scrollTop;
   oM.replaceChildren(...next);
   if (atB) oM.scrollTop = oM.scrollHeight; else oM.scrollTop = oM.scrollHeight - fromB;
@@ -160,7 +164,7 @@ function paint(keep){
   if (same && newIn && oldIn.querySelector('#chT') && newIn.querySelector('#chT') && oRh && nRh && oM && nM) {
     // 입력칸은 건드리지 않고(움직이기만 해도 키보드가 닫힘) 위쪽 줄과 메시지만 바꿈
     if (oRh.classList.contains('open')) nRh.classList.add('open'); oRh.replaceWith(nRh); morph(oM, nM); const oP = R.querySelector('.kit-pin'), nP = tmp.querySelector('.kit-pin'); if (oP) oP.remove(); if (nP) R.querySelector('#chMsgs').before(nP);
-  } else { R.replaceChildren(...tmp.childNodes); }
+  } else { if (nM) [...nM.children].forEach(el => el._k = el.outerHTML); R.replaceChildren(...tmp.childNodes); }
   R.dataset.room = String(C.cur);
   const box = document.getElementById('chMsgs'); if (box) box.scrollTop = keep && !atB ? top : box.scrollHeight;
   // 사진·동영상은 늦게 불러와져서 높이가 바뀜 → 맨 아래 보고 있었으면 다시 맨 아래로

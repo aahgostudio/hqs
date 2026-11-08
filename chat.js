@@ -223,9 +223,12 @@
       w.querySelector('.epc-h').replaceWith(tmp.querySelector('.epc-h'));
       { const os = w.querySelector('.kit-seen'), ns = tmp.querySelector('.kit-seen'); if (os && ns && os.outerHTML !== ns.outerHTML) os.replaceWith(ns); }
       { const oM = w.querySelector('.epc-msgs'), nM = tmp.querySelector('.epc-msgs');   // 바뀐 줄만 교체 (사진 다시 불러오며 튀지 않게)
-        if (oM.innerHTML !== nM.innerHTML) { const pool = new Map(); [...oM.children].forEach(el => { const k = el.outerHTML; (pool.get(k) || pool.set(k, []).get(k)).push(el); });
-          oM.replaceChildren(...[...nM.children].map(el => { const a = pool.get(el.outerHTML); return a && a.length ? a.shift() : el; })); } }
-    } else w.innerHTML = html;
+        // 1108: thumb.js가 사진 주소를 바꿔도 같은 말풍선으로 보게 처음 글(_k)로 비교 → 깜빡임(잔상) 없앰
+        { const key = el => el._k || el.outerHTML, pool = new Map(); [...oM.children].forEach(el => { const k = key(el); (pool.get(k) || pool.set(k, []).get(k)).push(el); });
+          let same = oM.children.length === nM.children.length;
+          const next = [...nM.children].map((el, i) => { const k = el.outerHTML; el._k = k; const a = pool.get(k); const o = a && a.length ? a.shift() : el; if (o !== oM.children[i]) same = false; return o; });
+          if (!same) oM.replaceChildren(...next); } }
+    } else { w.innerHTML = html; const m0 = w.querySelector('.epc-msgs'); if (m0) [...m0.children].forEach(el => el._k = el.outerHTML); }
     w.dataset.room = String(room.room.id); w.dataset.ed = edKey;
     const box = w.querySelector('.epc-msgs');
     box.scrollTop = keepScroll && !atBottom ? prevTop : box.scrollHeight;
