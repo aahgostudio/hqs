@@ -334,10 +334,12 @@ function toBottom(){ const go = () => { const b = document.getElementById('chMsg
 // 아이폰: 키보드가 올라오면 방 높이를 보이는 화면에 맞춤 → 위쪽 대화가 가려지지 않고 입력칸 바로 위에 최신 대화
 (function fitKeyboard(){
   const vv = window.visualViewport; if (!vv) return;
-  const fit = () => { if (!document.body.classList.contains('chroom')) { document.documentElement.style.removeProperty('--vvh'); return; }
-    const b = document.getElementById('chMsgs'), atB = !b || b.scrollHeight - b.scrollTop - b.clientHeight < 80;
-    document.documentElement.style.setProperty('--vvh', vv.height + 'px'); window.scrollTo(0, 0);
-    if (atB) toBottom(); };
+  // 1108: 화면을 끌어올리지 않고(scrollTo 없음) 방을 보이는 화면에 고정 → 키보드 올라올 때 잔상·출렁임 없앰
+  const R = document.documentElement.style;
+  const fit = () => { if (!document.body.classList.contains('chroom')) { R.removeProperty('--vvh'); R.removeProperty('--vvt'); return; }
+    const b = document.getElementById('chMsgs'), atB = !b || b.scrollHeight - b.scrollTop - b.clientHeight < 80, h0 = R.getPropertyValue('--vvh');
+    R.setProperty('--vvh', vv.height + 'px'); R.setProperty('--vvt', vv.offsetTop + 'px');
+    if (atB && h0 !== vv.height + 'px') toBottom(); };
   vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
 })();
 // 🔒 계좌·통장 → 인사카드 대표 전용 칸 (암호화) + 대화에서 완전히 지우기
