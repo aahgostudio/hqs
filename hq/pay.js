@@ -65,10 +65,11 @@ function dayTable(b){
   if (!keys.length) return '<div class="pm-nl"><p class="note">이 달 기록이 없어요</p></div>';
   const W = ['일','월','화','수','목','금','토'];
   return `<div class="pm-nl">${keys.map(k => { const d = days[k], dep = d.dep.reduce((a,j) => a + (+j.deposit_amount||0), 0), site = d.jobs.reduce((a,j) => a + dayNet(j), 0), t = dep + site;
-    return `<div class="dh"><span>${md(k)} (${W[new Date(k + 'T00:00:00').getDay()]})</span><b class="${t<0?'neg':''}">${won(t)}</b></div>
-      ${dep ? `<div><span>예약금 ${d.dep.length}건</span><b>+${won(dep)}</b></div>` : ''}
+    const op = (P.dOpen||(P.dOpen={}))[k];
+    return `<div class="dh" data-a="pyDayOpen" data-k="${k}" role="button"><span>${op ? '▾' : '▸'} ${md(k)} (${W[new Date(k + 'T00:00:00').getDay()]})<small>${dep ? ` 예약금 ${won(dep)}` : ''}${d.jobs.length ? ` · 현장 ${d.jobs.length}곳` : ''}</small></span><b class="${t<0?'neg':''}">${won(t)}</b></div>
+      ${!op ? '' : `${dep ? `<div><span>예약금 ${d.dep.length}건</span><b>+${won(dep)}</b></div>` : ''}
       ${d.jobs.map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${j.contract_mode ? ' (도급·안 셈)' : ''}${(() => { const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
-        return j.contract_mode ? '' : !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; })()}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('')}`; }).join('')}
+        return j.contract_mode ? '' : !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; })()}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('')}`}`; }).join('')}
     <div class="tot"><span>이 달 합 (예약금 ${won(b.clean.dep)} · 현장 ${won(b.clean.site)})</span><b>${won(b.clean.net)}</b></div></div>`;
 }
 // 1109: 대표님 '내 수익' 카드 하나 — [오늘] / [이번 달] · 예약금 · 현장 · ★ 내가 간 곳
@@ -90,6 +91,7 @@ function meCard(wait){
     <div class="m3"><div><b>${won(dep)}</b>예약금 ${depN}건</div><div>${neg(site)}현장</div><div>${neg(star)}★ 내가 간 곳</div></div>
     ${extra}</div>`;
 }
+H.ACT.pyDayOpen = el => { (P.dOpen||(P.dOpen={}))[el.dataset.k] = !P.dOpen[el.dataset.k]; H.render(); };
 H.ACT.pyMeTab = el => { P.meTab = el.dataset.t; H.render(); };
 function bossRow(){
   const items = P.mJobs.filter(j => j.boss_on && !j.contract_mode).map(j => ({j, ym: String(j.job_date).slice(0, 7), g: share(j)}));
