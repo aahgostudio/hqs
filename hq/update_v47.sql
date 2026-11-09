@@ -32,6 +32,7 @@ create table if not exists public.select_items (
 alter table public.select_items enable row level security;
 drop policy if exists "owner_all" on public.select_items;
 create policy "owner_all" on public.select_items for all to authenticated using (public.is_owner()) with check (public.is_owner());
+grant select, insert, update, delete on public.select_items to authenticated;   -- 1109: 빠져서 권한 오류
 
 -- 사입 사진 저장소 (공개 주소 · 대표님만 올리고 지움)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
