@@ -648,7 +648,7 @@ function evSheet(e){
     <div class="field full"><label>사업 꼬리표</label><div class="chips">${BIZ.map(([k,l])=>`<label><input type="radio" name="biz" value="${k}" ${e.biz===k?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
     <div class="field"><label>날짜</label><input type="date" name="ev_date" value="${e.ev_date}" required></div>
     <div class="field"><label>시간</label><input type="time" name="ev_time" value="${(e.ev_time||'').slice(0,5)}"></div>
-    <div class="field"><label>종류</label><select name="kind">${['기타','회의','계약','잔금','안내','견적','임장','개인'].map(k=>`<option ${e.kind===k?'selected':''}>${k}</option>`).join('')}</select></div>
+    <div class="field"><label>종류</label><select name="kind">${['기타','미팅','외근','회의','계약','잔금','안내','견적','임장','개인'].map(k=>`<option ${e.kind===k?'selected':''}>${k}</option>`).join('')}</select></div>
     <div class="field"><label>매물번호 (선택)</label><input name="maemul_id" value="${esc(e.maemul_id||'')}" placeholder="2610-원001"></div>
     <div class="field full"><label>제목</label><input name="title" value="${esc(e.title||'')}" required></div>
     <div class="field full"><label>메모 (나만 보기)</label><input name="memo" value="${esc(e.memo||'')}"></div>
