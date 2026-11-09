@@ -185,7 +185,7 @@ H.photosOf = jid => (H.S.photos||[]).filter(p => p.job_id === jid);
 
 /* ---------- 화면 틀 ---------- */
 H.view = (key, def) => { H.views[key] = def; };
-const ORDER = ['home','pay','team','chat','sched','ops','promo','money','staff'];
+const ORDER = ['home','pay','team','chat','sched','ops','promo','select','money','staff'];
 H.cur = () => { const h = (location.hash||'').replace('#',''); const k = h.split('/')[0]; return H.views[k] && (!H.views[k].owner || H.S.owner) ? k : 'home'; };
 H.go = k => { if (location.hash !== '#'+k) location.hash = k; else H.render(); };
 
@@ -243,6 +243,7 @@ H.ACT.quickAdd = () => { const S = H.S;
     <button class="qa" data-a="truckNew"><b>🚚 용달</b><small>문의글 붙여넣으면 출발지·도착지까지 자동</small></button>
     <button class="qa" data-a="evNew"><b>📅 내 일정</b><small>계약 · 잔금 · 안내 · 미팅 · 견적</small></button>
     ${S.owner && S.mcode ? `<a class="qa" href="../maemul/?k=${encodeURIComponent(S.mcode)}&new=1"><b>🏠 매물 등록</b><small>매물노트에서 캡처·글로 자동 채우기</small></a>` : ''}
+    ${S.owner ? `<button class="qa" data-a="selQuick"><b>🏷 셀렉트 사입</b><small>사진 한 번에 올리고 사입가·수량만 적기</small></button>` : ''}
     <button class="qa" data-a="quoteNew"><b>📝 오더 접수 (견적 중)</b><small>아직 날짜 안 정해진 문의</small></button>
     <button class="qa" data-a="ntcGo"><b>📣 공지</b><small>직원 일정판에 공지 올리기</small></button>
   </div><div class="sacts"><button type="button" class="btn ghost" data-a="close">닫기</button></div>`); };
