@@ -228,9 +228,13 @@ async function custSeen(){
 async function tick(){
   if (H.cur() !== 'chat' || document.hidden) return;
   try {
-    if (C.cur) { const real = C.msgs.filter(m => typeof m.id === 'number'), last = real.length ? real[real.length-1].id : 0;
+    if (C.cur) { const id0 = C.cur, real = C.msgs.filter(m => typeof m.id === 'number'), last = real.length ? real[real.length-1].id : 0;
       const d = await rpc('chat_admin_load', {p_room: C.cur, p_after: last, p_before: null, p_limit: 300});
-      Object.assign(C.unread, d.unread || {}); if (d.msgs.length) C.msgs = C.msgs.concat(d.msgs);
+      if (id0 !== C.cur) return;   // 1109: 기다리는 사이 방이 바뀌면 버림
+      Object.assign(C.unread, d.unread || {});
+      // 1109: 새로고침이 두 번 겹치면 같은 글이 두 번 붙던 것 → 이미 있는 글은 빼고, 보내는 중(tmp) 말풍선보다 위에
+      const have = new Set(C.msgs.map(m => m.id)); d.msgs = d.msgs.filter(m => !have.has(m.id));
+      if (d.msgs.length) { const tmps = C.msgs.filter(m => typeof m.id !== 'number'); C.msgs = C.msgs.filter(m => typeof m.id === 'number').concat(d.msgs, tmps); }
       if (C.cache && C.room) C.cache[C.cur] = {room: C.room, msgs: C.msgs.filter(m => typeof m.id === 'number'), unread: C.unread};
       if (d.msgs.length || Object.keys(d.unread || {}).length) paint(true);   // 새 글은 바로 (목록 기다리지 않음)
       if ((C.tk = (C.tk || 0) + 1) % 3 === 0) await custSeen(); }

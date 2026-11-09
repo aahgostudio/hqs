@@ -322,11 +322,14 @@
   }
   async function refreshRoom(){
     if (view !== 'room' || !room || opt.demo || document.hidden) return;
-    try { const real = msgs.filter(m => !m.tmp), lastId = real.length ? real[real.length-1].id : 0;
+    try { const rid0 = room.room.id, real = msgs.filter(m => !m.tmp), lastId = real.length ? real[real.length-1].id : 0;
       const d = await rpc('chat_load', {p_token: opt.token, p_room: room.room.id, p_after: lastId, p_before: null});
       // 새 글 + 읽음 수 갱신 (수정·삭제는 다시 열 때 반영)
       const nu = Object.assign(unreadMap, d.unread || {}); unreadMap = nu;
-      if (d.msgs.length) msgs = real.concat(d.msgs).concat(msgs.filter(m => m.tmp && !d.msgs.some(x => x.mine && x.body === m.body)));
+      // 1109: 새로고침이 겹쳐도 같은 글 두 번 안 붙게 (지금 목록 기준으로 이미 있는 글 빼기)
+      if (!room || room.room.id !== rid0) return;
+      { const cur = msgs.filter(m => !m.tmp), have = new Set(cur.map(m => m.id)); d.msgs = d.msgs.filter(m => !have.has(m.id));
+        if (d.msgs.length) msgs = cur.concat(d.msgs).concat(msgs.filter(m => m.tmp && !d.msgs.some(x => x.mine && x.body === m.body))); }
       if (CACHE[room.room.id]) CACHE[room.room.id] = {room, msgs: msgs.filter(m => !m.tmp), unread: unreadMap};
       if (d.msgs.length || Object.keys(d.unread || {}).length) { const t = document.getElementById('epc-t'); const v = t ? t.value : ''; drawRoom(true); const t2 = document.getElementById('epc-t'); if (t2 && !editing) t2.value = v; }
     } catch(_){}
