@@ -90,7 +90,7 @@ function meCard(wait){
     const b = bossRow(); dep = b.clean.dep; depN = b.clean.depN; site = b.clean.site; star = b.clean.star;
     sub = `${P.mLabel}월 · ${P.mOff ? '그 달 전체' : '오늘까지'}`; extra = dayTable(b);
   }
-  return `<div class="mec"><div class="mh"><span>내 수익</span><small class="${wait.length ? 'w' : ''}">${wait.length ? '잔금 수금 대기 ' + wait.length : '잔금 수금 완료 ✓'}</small></div>
+  return `<div class="mec"><div class="mh"><span>내 수익 <small style="font-size:10.5px;opacity:.7">· 돈 받은 날 기준</small></span><small class="${wait.length ? 'w' : ''}">${wait.length ? '잔금 수금 대기 ' + wait.length : '잔금 수금 완료 ✓'}</small></div>
     <div class="mt"><button data-a="pyMeTab" data-t="day" aria-pressed="${tab==='day'}">오늘</button><button data-a="pyMeTab" data-t="mon" aria-pressed="${tab==='mon'}">이번 달</button></div>
     <div class="mv">${neg(dep + site)}<small>${sub}</small></div>
     <div class="m3"><div><b>${won(dep)}</b>예약금 ${depN}건</div><div>${neg(site)}현장</div><div>${neg(star)}★ 내가 간 곳</div></div>
