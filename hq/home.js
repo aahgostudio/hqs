@@ -12,6 +12,9 @@ H.view('home', {label:'홈',
     ]);
     H.S.puWait = pu; H.S.dealsMonth = dl;
     // 1107: 이번 달에 실제로 받은 예약금 (받은 날 기준) — SQL 안 돌렸으면 null → 예전 방식
+    // 1112: 못 받은 예약금 — 날짜 상관없이 일정 올린 뒤 안 받은 건 전부 (다음 달 현장도)
+    H.S.depWait = await H.q(H.sb.from('jobs').select('id,title,job_date,deposit_amount').eq('deposit_paid', false).gt('deposit_amount', 0)
+      .not('status', 'in', '(cancelled,quote)').is('contract_mode', null).gte('job_date', H.ymd(new Date(T.getFullYear(), T.getMonth(), T.getDate() - 60))).order('job_date')).catch(() => null);
     H.S.depMonth = await H.q(H.sb.from('jobs').select('id,deposit_amount').eq('deposit_paid', true).neq('status', 'cancelled')
       .gte('deposit_paid_at', H.ymd(m0) + 'T00:00:00+09:00').lte('deposit_paid_at', H.ymd(m1) + 'T23:59:59+09:00')).catch(() => null);
     // 지난달 같은 날짜까지 받은 예약 건수 (비교용)
@@ -131,7 +134,7 @@ H.view('home', {label:'홈',
         <div class="k"><span>임금 보냄 (이번 달)</span><b>${won(month.reduce((n,j)=>n+(j.assignments||[]).filter(a=>a.status==='approved'&&a.paid).reduce((m,a)=>m+(+a.pay_amount||0)+(+a.extra_amount||0),0)+H.helpers(j).filter(x=>x.paid).reduce((m,x)=>m+(+x.pay||0)+(+x.extra||0),0),0))}</b><small>예정 포함 ${won(month.reduce((n,j)=>n+H.jobLabor(j),0))} · 원</small></div>
         ${S.depMonth ? `<div class="k"><span>예약금 받음 (이번 달)</span><b>${won(S.depMonth.reduce((n,j)=>n+(+j.deposit_amount||0),0))}</b><small>예약 ${S.depMonth.length}건${S.depPrevN!=null?` · 지난달 ${S.depPrevN}건 ${S.depMonth.length>S.depPrevN?`<i style="font-style:normal;color:#16A34A;font-weight:800">▲${S.depMonth.length-S.depPrevN}</i>`:S.depMonth.length<S.depPrevN?`<i style="font-style:normal;color:#DC2626;font-weight:800">▼${S.depPrevN-S.depMonth.length}</i>`:'(같음)'}`:''}</small></div>`
           : `<div class="k"><span>예약금 받음 (이번 달 현장)</span><b>${won(deps.filter(j=>j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>j.deposit_paid).length}건 · 그중 다가오는 현장 ${won(deps.filter(j=>j.deposit_paid&&j.job_date>today).reduce((n,j)=>n+(+j.deposit_amount),0))}</small></div>`}
-${deps.filter(j=>!j.deposit_paid).length?`<div class="k wait"><span>예약금 대기</span><b>${won(deps.filter(j=>!j.deposit_paid).reduce((n,j)=>n+(+j.deposit_amount),0))}</b><small>${deps.filter(j=>!j.deposit_paid).length}건 · 원</small></div>`:`<div class="k"><span>예약금 대기</span><b style="color:#16A34A">✓</b><small>밀린 예약금 없음</small></div>`}
+${(() => { const w = S.depWait || deps.filter(j=>!j.deposit_paid); return w.length ? `<div class="k wait" data-a="depWaitList" role="button"><span>예약금 못 받음</span><b>${won(w.reduce((n,j)=>n+(+j.deposit_amount||0),0))}</b><small>${w.length}건 · ${w.slice(0,2).map(j=>`${md(j.job_date)} ${esc(String(j.title||'').slice(0,8))}`).join(', ')}${w.length>2?' 외':''}</small></div>` : `<div class="k"><span>예약금 못 받음</span><b style="color:#16A34A">✓</b><small>밀린 예약금 없음</small></div>`; })()}
       </div>` : '';
     const cleanHtml = `<div class="kp">
         <div class="k"><span>오늘 현장</span><b>${todayJ.length}</b><small>인원 확정 ${todayJ.filter(j=>appr(j).length>=j.headcount).length}</small></div>
@@ -213,6 +216,10 @@ H.FORM.mmLink = async v => {
   H.close(); H.toast('매물노트를 연결했어요'); await H.loadMaemul(); H.refresh();
 };
 // 1107: 현금영수증 발행할 것 목록 — 홈택스에서 발행하고 [발행했어요] 누르면 목록에서 빠짐
+H.ACT.depWaitList = () => { const w = H.S.depWait || [];
+  H.open(`<h3>예약금 못 받음 ${w.length}건</h3><p class="note">일정 올린 뒤 아직 '예약금 받음' 체크가 안 된 현장이에요. 받으면 현장 카드 [금액 · 증빙]에서 체크해 주세요.</p>
+    ${w.map(j => `<div class="rw" style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)"><span>${H.md ? H.md(j.job_date) : j.job_date} ${H.esc(j.title||'')}</span><b>${Number(j.deposit_amount||0).toLocaleString()}</b></div>`).join('')}
+    <div class="sacts"><button class="btn ghost" data-a="close">닫기</button></div>`); };
 H.ACT.rcptList = () => {
   const ym = H.ymd(H.today()).slice(0,7), md = d => +d.slice(5,7) + '/' + +d.slice(8,10);
   const rows = (H.S.jobs||[]).filter(j => j.job_date.startsWith(ym)).flatMap(j => H.jobProofSplit(j).items.map(x => ({j, x})))
