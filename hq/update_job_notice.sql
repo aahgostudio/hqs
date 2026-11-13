@@ -49,7 +49,7 @@ begin
     rid := private.jn_room();
     if rid is not null then
       insert into public.chat_messages (room_id, staff_id, body)
-      values (rid, null, '🆕 새 현장 올라왔어요' || E'\n' || private.jn_line(new) || E'\n'
+      values (rid, null, '📢 [새 현장] 올라왔어요' || E'\n' || private.jn_line(new) || E'\n'
               || coalesce(new.headcount, 1) || '명 중 ' || (coalesce(new.headcount, 1) - ap) || '자리 남음' || E'\n' || '👉 일정판에서 신청해 주세요');
     end if;
   end if;
