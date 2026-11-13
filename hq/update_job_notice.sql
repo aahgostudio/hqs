@@ -44,7 +44,8 @@ begin
   select count(*) into ap from public.assignments where job_id = new.id and status = 'approved';
 
   -- 🆕 새 현장 (처음 올릴 때 · 견적 중 → 모집 중으로 바뀔 때) — 정기 묶음으로 한꺼번에 만든 건 뺌
-  if new.status = 'open' and new.series_id is null and coalesce(new.kind, '') <> '용달'
+  -- 1113: 7일 안 현장만 바로 알림 (더 먼 현장은 7일 전 아침 9시에 자동으로 알림) · 정기 제외
+  if new.status = 'open' and new.series_id is null and coalesce(new.kind, '') <> '용달' and new.job_date <= public._today() + 7
      and (tg_op = 'INSERT' or old.status is distinct from 'open') and ap < coalesce(new.headcount, 1) then
     rid := private.jn_room();
     if rid is not null then
@@ -103,5 +104,27 @@ end $$;
 select cron.unschedule('job_tomorrow') where exists (select 1 from cron.job where jobname = 'job_tomorrow');
 select cron.schedule('job_tomorrow', '0 11 * * *', 'select private.job_tomorrow()');   -- UTC 11시 = 한국 저녁 8시
 
+-- 1113: 매일 아침 9시 — 7일 뒤 현장 중 아직 사람 필요한 것 (정기 제외) 한 번에 알림
+create or replace function private.job_week_notice() returns int
+language plpgsql security definer set search_path = public, private as $$
+declare rid bigint := private.jn_room(); txt text; n int;
+begin
+  if rid is null then return 0; end if;
+  select count(*), string_agg(private.jn_day(j.job_date) || coalesce(' ' || to_char(j.start_time, 'HH24:MI'), '') || ' ' || coalesce(nullif(j.live_title, ''), j.title)
+           || ' · ' || (coalesce(j.headcount, 1) - (select count(*) from public.assignments a where a.job_id = j.id and a.status = 'approved')) || '자리', E'\n' order by j.start_time nulls first)
+    into n, txt
+    from public.jobs j
+   where j.status = 'open' and j.series_id is null and coalesce(j.kind, '') <> '용달' and j.job_date = public._today() + 7
+     and (select count(*) from public.assignments a where a.job_id = j.id and a.status = 'approved') < coalesce(j.headcount, 1);
+  if n > 0 then
+    insert into public.chat_messages (room_id, staff_id, body)
+    values (rid, null, '📢 [새 현장] 사람이 필요해요' || E'\n' || txt || E'\n' || '👉 일정판에서 신청해 주세요');
+  end if;
+  return n;
+end $$;
+select cron.unschedule('job_week_notice') where exists (select 1 from cron.job where jobname = 'job_week_notice');
+select cron.schedule('job_week_notice', '0 0 * * *', 'select private.job_week_notice()');   -- UTC 0시 = 한국 아침 9시
+
+revoke all on function private.job_week_notice() from public, anon, authenticated;
 revoke all on function private.on_job_notice(), private.job_tomorrow(), private.jn_dm(uuid), private.jn_room() from public, anon, authenticated;
 select '업데이트 완료 · 새 현장·바뀐 현장·내일 일정 자동 알림' as result;
