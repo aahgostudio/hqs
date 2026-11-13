@@ -99,6 +99,17 @@ begin
     insert into public.chat_messages (room_id, staff_id, body) values (private.jn_dm(s.staff_id), null, txt);
     n := n + 1;
   end loop;
+  -- 1113: 대표님 — 내일 직접 가는 현장 (폰 알림, 대화방 글은 아님)
+  select string_agg(coalesce(to_char(j.start_time, 'HH24:MI') || ' ', '') || coalesce(nullif(j.live_title, ''), j.title)
+           || coalesce(' (' || (select string_agg(st.name, '·' order by st.name) from public.assignments a join public.staff st on st.id = a.staff_id
+                               where a.job_id = j.id and a.status = 'approved') || ' 함께)', ''), E'\n' order by j.start_time nulls first)
+    into txt from public.jobs j where j.job_date = d and j.boss_on and j.status not in ('cancelled', 'quote');
+  if txt is not null and exists (select 1 from public.push_subs where who = 'boss') then
+    perform private.push_send(jsonb_build_array(jsonb_build_object(
+      'subs', (select jsonb_agg(sub) from public.push_subs where who = 'boss'),
+      'title', '🌙 내일 대표님 현장 · ' || private.jn_day(d), 'body', txt, 'tag', 'boss-tomorrow',
+      'url', 'https://team.earningplace.kr/hq/#sched')));
+  end if;
   return n;
 end $$;
 select cron.unschedule('job_tomorrow') where exists (select 1 from cron.job where jobname = 'job_tomorrow');
