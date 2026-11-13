@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="일정판"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="../diary.css?v=1112a">
+<link rel="stylesheet" href="../diary.css?v=1113a">
 <style>
 body{background:var(--bg)}
 .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
@@ -73,6 +73,8 @@ body{background:var(--bg)}
 .week button[aria-pressed=true] b{color:#fff}
 .week button.today:not([aria-pressed=true]) b{color:var(--info)}
 /* cards */
+.newbox{background:#FFF7ED;border:1.5px solid #FDBA74;border-radius:16px;padding:11px 14px;margin:4px 2px 8px}.newbox b{display:block;color:#C2410C;font-size:15px}.newbox small{color:#7C2D12;font-size:12.5px}
+.isnew{position:relative;margin-bottom:4px}.isnew>*{box-shadow:0 0 0 2px #EF4444!important}.isnew:before{content:'NEW';position:absolute;right:12px;top:-6px;z-index:2;background:#EF4444;color:#fff;font-size:11px;font-weight:900;border-radius:99px;padding:1px 8px}
 .dayh{font-size:13.5px;font-weight:700;color:var(--ink2);margin:14px 4px 8px}
 .card{background:var(--card);border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:var(--sh);border:1px solid var(--line);position:relative}
 .card.alert{border-color:var(--warn);box-shadow:0 0 0 2px var(--warnb)}
@@ -200,7 +202,7 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 .okline{font-size:13px;background:var(--okb);color:#065F46;border-radius:10px;padding:8px 11px}
 .ics{font-size:12px;word-break:break-all;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-family:ui-monospace,Menlo,monospace}
 </style>
-<script src="../thumb.js?v=1112a"></script>
+<script src="../thumb.js?v=1113a"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -226,14 +228,14 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1112a"></script>
+<script src="../status.js?v=1113a"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1112a'</script>
-<script src="../chatkit.js?v=1112a"></script>
-<script src="../chat.js?v=1112a"></script>
-<script src="../mymoney.js?v=1112a"></script>
-<script src="../diary.js?v=1112a"></script>
+<script>window.EP_VER='1113a'</script>
+<script src="../chatkit.js?v=1113a"></script>
+<script src="../chat.js?v=1113a"></script>
+<script src="../mymoney.js?v=1113a"></script>
+<script src="../diary.js?v=1113a"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -295,6 +297,7 @@ async function load(){
   D = await rpc('staff_board', {p_token: TOKEN, p_from: from < wkFrom ? from : wkFrom, p_to: to > wkTo ? to : wkTo});
   if (D.today) { today = parse(D.today); }
   D.avail = D.avail || {}; D.events = D.events || [];
+  markNew();
   // 1104G: 대표님 근무한 날·휴무 (작은 점) — v36 전이면 조용히 건너뜀
   D.bossDays = {}; try { (await rpc('staff_boss_days', {p_token: TOKEN, p_from: from < wkFrom ? from : wkFrom, p_to: to > wkTo ? to : wkTo}) || []).forEach(x => D.bossDays[x.day] = x); } catch(_){}
 }
@@ -433,6 +436,20 @@ function monthGrid(){
   return h + '</div></div>';
 }
 
+// 1113: 마지막으로 본 뒤 새로 올라온 현장 (이 폰 기준 · 누를 것 없음 · 다음에 열면 사라짐)
+let SEEN = null, NEWJ = new Set();
+function markNew(){
+  if (!D || !D.jobs || isRES()) return;
+  if (SEEN === null) { try { SEEN = new Set(JSON.parse(localStorage.getItem('ep_seen_jobs') || 'null') || []); SEEN.first = !localStorage.getItem('ep_seen_jobs'); } catch(_){ SEEN = new Set(); SEEN.first = true; } }
+  const t = ymd(today);
+  D.jobs.forEach(j => { if (!SEEN.has(j.id)) { if (!SEEN.first && j.status === 'open' && j.date >= t && !j.my_status && j.approved < j.headcount) NEWJ.add(j.id); SEEN.add(j.id); } });
+  try { localStorage.setItem('ep_seen_jobs', JSON.stringify([...SEEN].slice(-800))); } catch(_){}
+}
+function newBox(){
+  const t = ymd(today), list = D.jobs.filter(j => NEWJ.has(j.id) && j.status === 'open' && j.date >= t && !j.my_status && j.approved < j.headcount).sort((a,b) => a.date.localeCompare(b.date));
+  if (!list.length) return '';
+  return `<div class="newbox"><b>🆕 새 현장 ${list.length}곳</b><small>마지막으로 본 뒤 올라왔어요 · 신청하기를 누르면 돼요</small></div>` + list.map(j => `<div class="isnew">${card(j)}</div>`).join('');
+}
 function boardView(){
   const p = parse(pick);
   const head = `<div class="bar">
@@ -449,7 +466,7 @@ function boardView(){
       <span class="segs"><button data-work="1" aria-pressed="${avW}">🏢 출근</button><button data-av1="no" aria-pressed="${av==='no'}">휴무</button>${av?'<button data-av1="clear">지우기</button>':''}</span></div>`
     : `<div class="bar" style="margin:4px 2px 0"><span style="font-size:12.5px;color:var(--sub)">이날 나는: ${av==='ok'?`<b style="color:var(--ok)">${isRES()?'출근 가능':'일할 수 있어요'}</b>`:av==='no'?'<b style="color:var(--warn)">안 돼요</b>':'표시 안 함'}</span>
       <span class="segs"><button data-av1="ok" aria-pressed="${av==='ok'}">✓ 가능</button><button data-av1="no" aria-pressed="${av==='no'}">✕ 불가</button>${av?'<button data-av1="clear">지우기</button>':''}</span></div>`;
-  return head + nav + (view==='month' ? monthGrid() : weekStrip()) + bossLine(pick) + (isRES() && scope==='team' ? teamWorkWeek() : '') + avBox +
+  return newBox() + head + nav + (view==='month' ? monthGrid() : weekStrip()) + bossLine(pick) + (isRES() && scope==='team' ? teamWorkWeek() : '') + avBox +
     `<div class="dayh">${p.getMonth()+1}월 ${p.getDate()}일 ${DOW[p.getDay()]}요일 · ${list.length + evs.length}건</div>` +
     (evs.map(evCard).join('') + list.map(card).join('') || `<p class="empty">${scope==='mine'?'이 날 내 일정이 없어요':'이 날은 일정이 없어요'}${V2()?'<br><button class="btn ghost sm" style="margin-top:10px" data-plus="1">＋ 일정 · 가능일 넣기</button>':''}</p>`);
 }
