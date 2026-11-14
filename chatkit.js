@@ -331,7 +331,9 @@
   const RX = ['👍','✅','🙏','❤️'];
   function reacts(m){ const rs = m && m.reacts; if (!rs || !rs.length) return '';
     const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    return `<div class="kit-rx">${rs.map(r => `<button type="button" class="${r.me ? 'me' : ''}" data-kitrx="${m.id}" data-e="${e(r.e)}" title="${e((r.who||[]).join(', '))}">${e(r.e)} ${r.n}</button>`).join('')}</div>`; }
+    return `<div class="kit-rx">${rs.map(r => `<button type="button" class="${r.me ? 'me' : ''}" data-kitrx="${m.id}" data-e="${e(r.e)}" title="${e((r.who||[]).join(', '))}">${e(r.e)} ${(() => { const w = (r.who||[]).map(n => { n = String(n||''); return n.length >= 3 && n !== '관리자' ? n.slice(-2) : n; });
+      // 1114: 폰에선 누른 사람 이름이 안 보여서 — 2명까지는 이름, 더 많으면 앞 2명 + 외 N
+      return w.length ? (w.length <= 2 ? e(w.join('·')) : e(w.slice(0, 2).join('·')) + ' 외 ' + (w.length - 2)) : r.n; })()}</button>`).join('')}</div>`; }
   function pinBar(p, canX){ if (!p || !p.id) return '';
     const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     return `<div class="kit-pin" data-kitjump="${p.id}"><span>📌</span><div><b>${e(p.name)}</b> ${e(p.body || (p.photo ? '사진' : ''))}</div>${canX ? `<button type="button" data-kitunpin="1" aria-label="고정 해제">✕</button>` : ''}</div>`; }
