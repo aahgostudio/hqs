@@ -477,6 +477,7 @@ H.ACT.chMsgMenu = el => { const id = +el.dataset.id, m = MSG(id);
   const pinned = C.pin && C.pin.id === id;
   H.open(`<div class="mm"><div class="mm-rx">${K.RX.map(e => `<button type="button" data-a="chRx" data-id="${id}" data-e="${e}">${e}</button>`).join('')}</div>
     ${m.body ? `<div class="mm-pv">${H.esc(String(m.body).slice(0, 80))}</div>` : ''}
+    ${H.S.owner && (m.reacts||[]).length ? `<div class="mm-pv" style="background:#FFF7ED">${m.reacts.map(r => `${H.esc(r.e)} ${H.esc((r.who||[]).join(', '))}`).join('<br>')}</div>` : ''}
     ${it('chMmReply','↩︎','답장')}${m.body ? it('chMmCopy','⧉','복사') : ''}
     ${m.mine && m.body && !m.photo && !m.photos ? it('chMmEdit','✏️','수정') : ''}${m.mine ? it('chMmDel','🗑','삭제', 'style="color:#DC2626"') : H.S.owner && /^\d+$/.test(String(m.id)) && !m.deleted ? it('chMmDel','🗑','삭제 (대표님만)', 'style="color:#DC2626" data-o="1"') : ''}
     ${m.body ? it('chMmNtc','📢','공지로 올리기') + it('chMmEv','📅','일정으로 만들기') : ''}
