@@ -48,6 +48,7 @@
 .kit-day span{background:var(--kit-card,#fff);border:1px solid var(--kit-line,#E3E7F0);border-radius:20px;padding:5px 14px;font-weight:500}
 .kit-read{align-self:center;display:flex;align-items:center;gap:7px;background:rgba(84,90,104,.82);color:#fff;font-size:12.5px;border-radius:20px;padding:7px 16px;margin:12px 0}
 .kit-mn{color:var(--kit-acc,#2F6FEB);font-weight:700}
+.kit-lk{color:#1D4ED8;text-decoration:underline;text-underline-offset:2px;word-break:break-all}.mine .kit-lk{color:inherit}
 .kit-mn.me{background:color-mix(in srgb,var(--kit-acc,#2F6FEB) 14%,transparent);border-radius:4px;padding:0 2px}
 .kit-view{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.92);display:flex;flex-direction:column;color:#fff}
 .kit-view .vh{display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 12px 10px}
@@ -154,7 +155,11 @@
 
   // 말풍선 글: 이스케이프 + @이름 파란 글씨 (names = 방 인원 이름들)
   function text(body, names, me){
-    let h = esc(body); if (!h || h.indexOf('@') < 0) return h;
+    // 1115: 링크 누르면 바로 열리게 (새 창 — 대화방은 그대로 남음)
+    const lk = x => x.replace(/(https?:\/\/[^\s<]+[^\s<.,!?)\]'"])|(?<![\w@.\/])((?:team\.)?earningplace\.kr\/[^\s<]*[^\s<.,!?)\]'"])/g, u => {
+      const href = /^https?:/.test(u) ? u : 'https://' + u, own = /^https?:\/\/(team\.)?earningplace\.kr/.test(href);
+      return `<a class="kit-lk" href="${href}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${u}</a>`; });
+    let h = lk(esc(body)); if (!h || h.indexOf('@') < 0) return h;
     const ns = ['all', ...(names || [])].filter(Boolean).map(n => esc(n)).sort((a, b) => b.length - a.length).map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     return h.replace(new RegExp('@(' + ns.join('|') + ')', 'g'), (m, n) => `<span class="kit-mn${n === 'all' || n === esc(me || '') ? ' me' : ''}">@${n}</span>`);
   }
