@@ -83,7 +83,7 @@ function meCard(wait){
     site = P.jobs.reduce((n,j) => n + dayNet(j), 0); star = P.jobs.filter(j => j.boss_on).reduce((n,j) => n + dayNet(j), 0);
     sub = `${md(d)} (${W[new Date(d + 'T00:00:00').getDay()]})`;
     // 1109: 오늘도 접었다 펴기 — 그날 받은 예약금 · 그날 현장
-    const op = P.todayOpen, tag = j => { if (j.contract_mode) return ' (도급·안 셈)'; const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0)); return !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; };
+    const op = P.todayOpen, tag = j => { if (j.contract_mode) return H.refundSum(j) ? ' (도급 · 페이백만)' : ' (도급·안 셈)'; const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0)); return !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; };
     const rows = (P.deps||[]).map(j => `<div><span>예약금 · ${esc(String(j.title||'').slice(0, 18))}${j.job_date ? ` <small style="color:var(--sub)">(${md(j.job_date)} 현장)</small>` : ''}</span><b>+${won(+j.deposit_amount||0)}</b></div>`).join('')
       + P.jobs.filter(j => !['cancelled','quote'].includes(j.status)).map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${tag(j)}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('');
     extra = `<div class="pm-nl"><div class="dh" data-a="pyTodayOpen" role="button"><span>${op ? '▾' : '▸'} 오늘 내역<small>${depN ? ` 예약금 ${depN}건` : ''}${P.jobs.length ? ` · 현장 ${P.jobs.length}곳` : ''}</small></span><b class="${dep+site<0?'neg':''}">${won(dep + site)}</b></div>${op ? (rows || '<p class="note">오늘 기록이 없어요</p>') : ''}</div>`;
