@@ -250,7 +250,7 @@ function jobCard(j){
   const spec = [py && !(j.public_note||'').includes(py+'평') ? py+'평' : '', j.public_note||''].filter(Boolean).join(' · ');
   const showPromo = j.job_date <= ymd(H.today()) && j.status !== 'cancelled' && j.status !== 'quote';
   return `<div class="card" style="--tc:${tc}">
-    <div class="t"><span style="font-variant-numeric:tabular-nums">${j.start_time?j.start_time.slice(0,5):'시간 미정'}</span>${j.series_id?'<span title="정기 반복">🔁 </span>':''}${esc(j.title)} ${(j.teams||[]).map(c=>`<span class="tag" style="background:${H.T(c).color}" title="${c}">${esc(H.T(c).name)}</span>`).join('')}${j.contract_mode?`<span class="tag" style="background:var(--prt)">도급 ${j.contract_mode}</span>`:''}${pill}</div>
+    <div class="t"><span style="font-variant-numeric:tabular-nums">${j.start_time?j.start_time.slice(0,5):'시간 미정'}</span>${j.series_id?'<span title="정기 반복">🔁 </span>':''}${esc(j.title)} ${(j.target_staff||[]).length ? `<span class="tag" style="background:#FEF3C7;color:#92400E">🔒 ${esc(j.target_staff.map(id => (H.P(id)||{}).name || '').filter(Boolean).join('·'))}에게만</span> ` : ''}${(j.teams||[]).map(c=>`<span class="tag" style="background:${H.T(c).color}" title="${c}">${esc(H.T(c).name)}</span>`).join('')}${j.contract_mode?`<span class="tag" style="background:var(--prt)">도급 ${j.contract_mode}</span>`:''}${pill}</div>
     ${spec?`<div class="m" style="color:var(--ink);font-weight:600">${esc(spec)}</div>`:''}<div class="m"><span>${j.headcount}명</span>${j.kind?`<span>${esc(j.kind)}</span>`:''}${j.order_channel?`<span>오더: ${esc(j.order_channel)}</span>`:''}${j.address?`<span>🔒 ${esc(j.address)}</span>`:''}${money}</div>
     ${j.cust_name||j.cust_phone?`<div class="m crow"><span>👤 고객 ${esc(j.cust_name||'')}</span>${j.cust_phone?(()=>{ const n = j.cust_phone.replace(/[^0-9]/g,''), f = n.replace(/^(\d{3})(\d{3,4})(\d{4})$/, '$1-$2-$3'); return `<span class="cph">${esc(f)}</span><a class="cbtn" href="tel:${n}" aria-label="전화">📞</a><a class="cbtn" href="sms:${n}" aria-label="문자">💬</a>`; })():''}</div>`:''}
     ${j.kind === '용달' ? `<div class="m tr-rt"><span>🚚 ${esc(j.vehicle||'차량 미정')}</span>${j.address?`<a href="https://map.naver.com/p/search/${encodeURIComponent(j.address)}" target="_blank" rel="noopener">출발 ${esc(j.address)}</a>`:''}${j.dest_address?`<a href="https://map.naver.com/p/search/${encodeURIComponent(j.dest_address)}" target="_blank" rel="noopener">도착 ${esc(j.dest_address)}</a>`:''}${j.cust_phone?`<a href="tel:${esc(j.cust_phone)}">${esc(j.cust_name||'고객')} ${esc(j.cust_phone)}</a>`:''}</div>` : ''}
@@ -473,7 +473,7 @@ ${j.id ? repScopeHtml(j) : repHtml(j)}
     <div class="sec">${lock} 확정자에게만</div>
     <div class="field full"><label>상세 주소</label><input name="address" value="${esc(j.address||'')}" placeholder="부산 수영구 광안동 ○○아파트 103동 2302호"></div>
     <div class="field full"><label>출입 비번 · 고객 요청</label><input name="private_note" value="${esc(j.private_note||'')}"></div>
-    <div class="field full"><label>특정 사람에게만 보이기 <small>(도급 지정 등 · 비우면 팀 전체)</small></label><div class="chips">${S.staff.filter(s=>s.status!=='left').map(s=>`<label><input type="checkbox" name="target" value="${s.id}" ${tgt.includes(s.id)?'checked':''}><span>${esc(s.name)}</span></label>`).join('')}</div></div>
+    <div class="field full"><label>🔒 특정 사람에게만 보이기 <small>(고르면 팀은 안 골라도 돼요 · 그 사람에게만 1:1 알림, 팀 대화방 안내 안 나감 · 비우면 팀 전체)</small></label><div class="chips">${S.staff.filter(s=>s.status!=='left').map(s=>`<label><input type="checkbox" name="target" value="${s.id}" ${tgt.includes(s.id)?'checked':''}><span>${esc(s.name)}</span></label>`).join('')}</div></div>
     <div class="sec">${lock} 고객 정보 (대표님 · 수금 담당만 보임)</div>
     <div class="field"><label>고객 이름</label><input name="cust_name" value="${esc(j.cust_name||'')}" placeholder="홍길동"></div>
     <div class="field"><label>고객 전화번호</label><input name="cust_phone" type="tel" inputmode="tel" value="${esc(j.cust_phone||'')}" placeholder="010-0000-0000"></div>
@@ -525,7 +525,10 @@ H.ACT.custRoom = async el => { const j = J(el.dataset.j);
   H._loaded = null; H.close(); location.hash = 'chat/' + data.id; };
 H.autoLive = () => { const c = H.setting('live'); return !c || c.auto_issue !== false; };
 H.FORM.job = async v => {
-  const tms = v.getAll('teams'); if (!tms.length) return H.toast('팀을 하나 이상 골라주세요');
+  // 1119: '특정 사람에게만'을 골랐으면 팀은 안 골라도 됨 (그 사람들 팀으로 자동)
+  let tms = v.getAll('teams'); const tgs = v.getAll('target');
+  if (!tms.length && tgs.length) tms = [...new Set(tgs.map(id => (H.P(id) || {}).team).filter(Boolean))];
+  if (!tms.length) return H.toast('팀을 고르거나, 특정 사람을 골라주세요');
   const row = { job_date:v.get('job_date'), start_time:H.nn(v.get('start_time')), title:v.get('title').trim(), kind:H.nn(v.get('kind')), headcount:+v.get('headcount')||1, teams:tms,
     target_staff: v.getAll('target').length ? v.getAll('target') : null, public_note:H.nn(v.get('public_note')), address:H.nn(v.get('address')), private_note:H.nn(v.get('private_note')),
     order_channel:H.nn(v.get('order_channel')), collector_id:H.nn(v.get('collector_id')), total_amount:H.nnum(v.get('total_amount')), deposit_amount:H.nnum(v.get('deposit_amount')),
