@@ -462,6 +462,13 @@ function jobSheet(j, def){
       <button type="button" class="btn" data-a="jobPaste" style="width:100%">자동 채우기</button><div id="jpaste-out" class="note"></div></details>`}
     <div class="fg">
     <div class="field full"><label>볼 수 있는 팀 (여러 개 가능)</label><div class="chips">${S.teams.filter(t=>t.code!=='HQS').map(t=>`<label><input type="checkbox" name="teams" value="${t.code}" ${(j.teams||[]).includes(t.code)?'checked':''}><span>${t.code} · ${esc(t.name)}</span></label>`).join('')}</div></div>
+    ${(() => { const ps = S.staff.filter(s => s.status !== 'left' && s.team === 'PRT'); if (!ps.length) return '';
+      const pick = tgt.length > 0;   // 1120: 도급파트너 팀 골랐을 때만 — 전체 알림 / 개별 안내
+      return `<div class="field full prtbox"><b>도급파트너에게 어떻게 알릴까요?</b>
+        <div class="prt-rd"><label><input type="radio" name="prt_mode" value="all" ${pick ? '' : 'checked'}><span>📢 전체 알림</span></label><label><input type="radio" name="prt_mode" value="pick" ${pick ? 'checked' : ''}><span>👤 개별 안내</span></label></div>
+        <div class="prt-all note">도급파트너 팀 전원이 보고, 새 현장 알림이 가요</div>
+        <div class="prt-pick"><div class="chips">${ps.map(s => `<label><input type="checkbox" name="target" value="${s.id}" ${tgt.includes(s.id) ? 'checked' : ''}><span>${esc(s.name)}</span></label>`).join('')}</div>
+          <div class="note">고른 분만 이 현장을 보고, 그분 1:1 방으로만 알림이 가요 · 바꾸면 새로 고른 분에게 알림</div></div></div>`; })()}
     <div class="field"><label>날짜${j.id?'':' (첫 날)'}</label><input type="date" name="job_date" value="${j.job_date}" required data-c="repPrev"></div>
     <div class="field"><label>시간</label><input type="time" name="start_time" value="${(j.start_time||'').slice(0,5)}" data-c="repPrev"></div>
     <div class="field full"><label>지역 · 현장 이름 <small>(팀 전체 공개)</small></label><input name="title" value="${esc(j.title||'')}" placeholder="예) 수영구 광안동 아파트 이사청소 24평" required></div>
@@ -473,7 +480,6 @@ ${j.id ? repScopeHtml(j) : repHtml(j)}
     <div class="sec">${lock} 확정자에게만</div>
     <div class="field full"><label>상세 주소</label><input name="address" value="${esc(j.address||'')}" placeholder="부산 수영구 광안동 ○○아파트 103동 2302호"></div>
     <div class="field full"><label>출입 비번 · 고객 요청</label><input name="private_note" value="${esc(j.private_note||'')}"></div>
-    <div class="field full"><label>🔒 특정 사람에게만 보이기 <small>(고르면 팀은 안 골라도 돼요 · 그 사람에게만 1:1 알림, 팀 대화방 안내 안 나감 · 비우면 팀 전체)</small></label><div class="chips">${S.staff.filter(s=>s.status!=='left').map(s=>`<label><input type="checkbox" name="target" value="${s.id}" ${tgt.includes(s.id)?'checked':''}><span>${esc(s.name)}</span></label>`).join('')}</div></div>
     <div class="sec">${lock} 고객 정보 (대표님 · 수금 담당만 보임)</div>
     <div class="field"><label>고객 이름</label><input name="cust_name" value="${esc(j.cust_name||'')}" placeholder="홍길동"></div>
     <div class="field"><label>고객 전화번호</label><input name="cust_phone" type="tel" inputmode="tel" value="${esc(j.cust_phone||'')}" placeholder="010-0000-0000"></div>
@@ -526,11 +532,12 @@ H.ACT.custRoom = async el => { const j = J(el.dataset.j);
 H.autoLive = () => { const c = H.setting('live'); return !c || c.auto_issue !== false; };
 H.FORM.job = async v => {
   // 1119: '특정 사람에게만'을 골랐으면 팀은 안 골라도 됨 (그 사람들 팀으로 자동)
-  let tms = v.getAll('teams'); const tgs = v.getAll('target');
-  if (!tms.length && tgs.length) tms = [...new Set(tgs.map(id => (H.P(id) || {}).team).filter(Boolean))];
-  if (!tms.length) return H.toast('팀을 고르거나, 특정 사람을 골라주세요');
+  // 1120: 도급파트너 팀 + '개별 안내'일 때만 고른 분에게만 보이기
+  const tms = v.getAll('teams'); if (!tms.length) return H.toast('팀을 하나 이상 골라주세요');
+  const tgs = tms.includes('PRT') && v.get('prt_mode') === 'pick' ? v.getAll('target') : [];
+  if (tms.includes('PRT') && v.get('prt_mode') === 'pick' && !tgs.length) return H.toast('개별 안내할 도급파트너를 골라주세요');
   const row = { job_date:v.get('job_date'), start_time:H.nn(v.get('start_time')), title:v.get('title').trim(), kind:H.nn(v.get('kind')), headcount:+v.get('headcount')||1, teams:tms,
-    target_staff: v.getAll('target').length ? v.getAll('target') : null, public_note:H.nn(v.get('public_note')), address:H.nn(v.get('address')), private_note:H.nn(v.get('private_note')),
+    target_staff: tgs.length ? tgs : null, public_note:H.nn(v.get('public_note')), address:H.nn(v.get('address')), private_note:H.nn(v.get('private_note')),
     order_channel:H.nn(v.get('order_channel')), collector_id:H.nn(v.get('collector_id')), total_amount:H.nnum(v.get('total_amount')), deposit_amount:H.nnum(v.get('deposit_amount')),
     balance_amount:H.nnum(v.get('balance_amount')), status:v.get('status'), admin_memo:H.nn(v.get('admin_memo')), contract_mode:H.nn(v.get('contract_mode')), live_title:H.nn(v.get('live_title')) };
   if (!H.S.needV19) { row.cust_name = H.nn((v.get('cust_name')||'').trim()); row.cust_phone = H.nn((v.get('cust_phone')||'').trim()); }
