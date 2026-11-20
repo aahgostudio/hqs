@@ -28,7 +28,7 @@ H.view('staff', {label:'직원',
     const b = S.boss || {state:'근무중'};
     const leftOn = s => { const d = leftMap()[s.id]; return d ? ` <span class="note">${d.slice(5).replace('-','/')} ${H.STL(s).left}</span>` : ''; };
     const row = s => { const m = mStaff.find(x=>x.name===s.name); const mis = s.team==='RES' && m && M2S[m.status||'재직'] !== s.status;
-      return `<tr><td><span data-a="stCard" data-s="${s.id}" style="cursor:pointer">${H.av(s, 26, s.team==='RES'?'':'cl')}</span> <button class="st-name" data-a="stCard" data-s="${s.id}" title="인사카드 열기"><b>${esc(s.name)}</b></button> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}</span>${s.status==='leave'?` <span class="pill p-leave">${H.STL(s).leave}</span>`:''}${s.status==='left'?leftOn(s):''}</td>
+      return `<tr><td><span data-a="stCard" data-s="${s.id}" style="cursor:pointer">${H.av(s, 26, s.team==='RES'?'':'cl')}</span> <button class="st-name" data-a="stCard" data-s="${s.id}" title="인사카드 열기"><b>${esc(s.name)}</b></button> <span class="note">${esc(s.role||'')}${s.partner_area?' · '+esc(s.partner_area):''}${s.crew_lead ? ` · <b style="color:#C2410C">${esc((H.P(s.crew_lead)||{}).name||'')}팀</b>` : (S.staff||[]).some(x => x.crew_lead === s.id) ? ' · <b style="color:#C2410C">팀장</b>' : ''}</span>${s.status==='leave'?` <span class="pill p-leave">${H.STL(s).leave}</span>`:''}${s.status==='left'?leftOn(s):''}</td>
         <td><span class="tag" style="background:${H.T(s.team).color}">${s.team}</span></td>
         <td><select class="in sm" style="width:auto" data-c="stStatus" data-s="${s.id}">${Object.entries(H.STL(s)).map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select>
           ${mis?`<div class="note" style="color:var(--warn)">매물노트는 '${esc(m.status)}' <button class="btn sm ghost" style="padding:0 6px" data-a="stSync" data-s="${s.id}">맞추기</button></div>`:''}</td>
@@ -72,6 +72,9 @@ function staffSheet(s){
     <div class="field"><label>직책 <small>(아고 파트너는 사장님)</small></label><input name="role" value="${esc(s.role||'')}"></div>
     <div class="field"><label>연락처</label><input name="phone" value="${esc(s.phone||'')}"></div>
     <div class="field full"><label>파트너 지역 · 분야 (도급)</label><input name="partner_area" value="${esc(s.partner_area||'')}"></div>
+    ${(() => { const ls = (S.staff||[]).filter(x => x.team === 'PRT' && x.status !== 'left' && x.id !== s.id && !x.crew_lead);
+      // 1120: 도급 파트너 한 팀으로 묶기 — 팀장이 현장에 들어가면 팀원도 그 현장 대화방·고객님 방에 같이 들어감
+      return `<div class="field full"><label>도급 팀장 <small>(같은 팀으로 묶기 · 도급 파트너만)</small></label><select name="crew_lead"><option value="">없음 (본인이 팀장이거나 혼자)</option>${ls.map(x => `<option value="${x.id}" ${s.crew_lead === x.id ? 'selected' : ''}>${esc(x.name)}팀</option>`).join('')}</select></div>`; })()}
     <div class="field"><label>지급 방식</label><select name="pay_type">${Object.entries(H.PT).map(([v,l])=>`<option value="${v}" ${s.pay_type===v?'selected':''}>${l}</option>`).join('')}</select><div class="hint">세금 방식은 세무사 확인 후 정해 주세요</div></div>
     <div class="field"><label>상태</label><select name="status">${[['active','근무'],['leave',H.STL(s).leave+' (링크 유지)'],['left',H.STL(s).left+' (링크 막힘)']].map(([v,l])=>`<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="field"><label>입사 · 계약일</label><input type="date" name="joined_on" value="${s.joined_on||''}"></div>
@@ -88,6 +91,7 @@ H.ACT.stToken = async el => { if (!confirm('새 링크를 만들면 예전 링�
   await H.q(sb.from('staff').update({token: tok}).eq('id', el.dataset.s)); H.close(); H.toast('새 링크 발급 · [링크 복사]로 다시 보내주세요'); H.refresh(); };
 H.FORM.staff = async v => {
   const row = {name:v.get('name').trim(), team:v.get('team'), role:H.nn(v.get('role')) || (v.get('team')==='AGO' ? '사장님' : null), phone:H.nn(v.get('phone')), partner_area:H.nn(v.get('partner_area')), pay_type:v.get('pay_type'), status:v.get('status'), joined_on:H.nn(v.get('joined_on')), can_collect:v.get('can_collect')==='on'};
+  if ('crew_lead' in (H.S.staff[0] || {})) row.crew_lead = H.nn(v.get('crew_lead'));
   if ((H.S.schemaV||0) >= 39) { const b = String(v.get('birthday')||'').replace(/[^0-9]/g,''); row.birthday = b.length >= 3 ? (b.length === 3 ? '0' + b : b).replace(/^(\d\d)(\d\d)$/, '$1-$2') : null; }
   const id = v.get('id'); await H.q(id ? sb.from('staff').update(row).eq('id', id) : sb.from('staff').insert(row));
   if (id) await saveLeft(id, row.status);
