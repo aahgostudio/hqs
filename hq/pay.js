@@ -56,6 +56,11 @@ const dayNet = j => { if (['cancelled','quote'].includes(j.status)) return 0;
   const lab = (j.assignments||[]).filter(a => a.status === 'approved').reduce((n,a) => n + baseOf(H.P(a.staff_id), a) + (+a.extra_amount||0), 0)
     + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
   return bal + H.extrasSum(j) - H.refundSum(j) - lab; };
+// 1122: 부가세 = 받은 돈(예약금+잔금) − 계약금액 (계약금액의 10% 근처일 때만)
+const vatOf = j => { if (['cancelled','quote'].includes(j.status) || H.prtOnly(j) || j.balance_amount == null) return 0;
+  const t = +j.total_amount||0, v = (+j.deposit_amount||0) + (+j.balance_amount||0) - t;
+  return v > 0 && Math.abs(v - t * 0.1) <= 1000 ? v : 0; };
+const vatBox = (v, tot) => v ? `<div class="vt"><span>🧾 부가세 <small>(나중에 낼 돈)</small></span><b>−${won(v)}</b></div><div class="vk">부가세 빼면 <b>${won(tot - v)}</b></div>` : '';
 // 1109: 날짜별 — 그날 받은 예약금 / 그날 현장(잔금−인건비, 마이너스 그대로) / 그날 합
 function dayTable(b){
   const days = {};
@@ -69,7 +74,7 @@ function dayTable(b){
     const op = (P.dOpen||(P.dOpen={}))[k];
     return `<div class="dh" data-a="pyDayOpen" data-k="${k}" role="button"><span>${op ? '▾' : '▸'} ${md(k)} (${W[new Date(k + 'T00:00:00').getDay()]})<small>${dep ? ` 예약금 ${won(dep)}` : ''}${d.jobs.length ? ` · 현장 ${d.jobs.length}곳` : ''}</small></span><b class="${t<0?'neg':''}">${won(t)}</b></div>
       ${!op ? '' : `${dep ? `<div><span>예약금 ${d.dep.length}건</span><b>+${won(dep)}</b></div>` : ''}
-      ${d.jobs.map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${H.prtOnly(j) ? (H.refundSum(j) ? ' (도급 · 페이백만)' : ' (도급·안 셈)') : H.collab(j) ? ' (콜라보)' : ''}${(() => { const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
+      ${d.jobs.map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${H.prtOnly(j) ? (H.refundSum(j) ? ' (도급 · 페이백만)' : ' (도급·안 셈)') : H.collab(j) ? ' (콜라보)' : ''}${vatOf(j) ? `<small class="vi">🧾 부가세 ${won(vatOf(j))} 포함</small>` : ''}${(() => { const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
         return H.prtOnly(j) ? '' : !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; })()}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('')}`}`; }).join('')}
     <div class="tot"><span>이 달 합 (예약금 ${won(b.clean.dep)} · 현장 ${won(b.clean.site)})</span><b>${won(b.clean.net)}</b></div></div>`;
 }
@@ -77,23 +82,24 @@ function dayTable(b){
 function meCard(wait){
   const W = ['일','월','화','수','목','금','토'], neg = n => n < 0 ? `<b class="ng">${won(n)}</b>` : `<b>${won(n)}</b>`;
   const tab = P.meTab || 'day', d = P.d;
-  let dep, depN, site, star, sub, extra = '';
+  let dep, depN, site, star, sub, extra = '', vat = 0;
   if (tab === 'day') {
     dep = (P.deps||[]).reduce((n,j) => n + (+j.deposit_amount||0), 0); depN = (P.deps||[]).length;
-    site = P.jobs.reduce((n,j) => n + dayNet(j), 0); star = P.jobs.filter(j => j.boss_on).reduce((n,j) => n + dayNet(j), 0);
+    site = P.jobs.reduce((n,j) => n + dayNet(j), 0); vat = P.jobs.reduce((n,j) => n + vatOf(j), 0); star = P.jobs.filter(j => j.boss_on).reduce((n,j) => n + dayNet(j), 0);
     sub = `${md(d)} (${W[new Date(d + 'T00:00:00').getDay()]})`;
     // 1109: 오늘도 접었다 펴기 — 그날 받은 예약금 · 그날 현장
     const op = P.todayOpen, tag = j => { if (H.prtOnly(j)) return H.refundSum(j) ? ' (도급 · 페이백만)' : ' (도급·안 셈)'; if (H.collab(j)) return ' (콜라보)'; const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0)); return !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; };
     const rows = (P.deps||[]).map(j => `<div><span>예약금 · ${esc(String(j.title||'').slice(0, 18))}${j.job_date ? ` <small style="color:var(--sub)">(${md(j.job_date)} 현장)</small>` : ''}</span><b>+${won(+j.deposit_amount||0)}</b></div>`).join('')
-      + P.jobs.filter(j => !['cancelled','quote'].includes(j.status)).map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${tag(j)}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('');
+      + P.jobs.filter(j => !['cancelled','quote'].includes(j.status)).map(j => { const n = dayNet(j), v = vatOf(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${tag(j)}${v ? `<small class="vi">🧾 부가세 ${won(v)} 포함</small>` : ''}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('');
     extra = `<div class="pm-nl"><div class="dh" data-a="pyTodayOpen" role="button"><span>${op ? '▾' : '▸'} 오늘 내역<small>${depN ? ` 예약금 ${depN}건` : ''}${P.jobs.length ? ` · 현장 ${P.jobs.length}곳` : ''}</small></span><b class="${dep+site<0?'neg':''}">${won(dep + site)}</b></div>${op ? (rows || '<p class="note">오늘 기록이 없어요</p>') : ''}</div>`;
   } else {
-    const b = bossRow(); dep = b.clean.dep; depN = b.clean.depN; site = b.clean.site; star = b.clean.star;
+    const b = bossRow(); dep = b.clean.dep; depN = b.clean.depN; site = b.clean.site; star = b.clean.star; vat = b.clean.jobs.reduce((n,j) => n + vatOf(j), 0);
     sub = `${P.mLabel}월 · ${P.mOff ? '그 달 전체' : '오늘까지'}`; extra = dayTable(b);
   }
   return `<div class="mec"><div class="mh"><span>내 수익 <small style="font-size:10.5px;opacity:.7">· 돈 받은 날 기준</small></span><small class="${wait.length ? 'w' : ''}">${wait.length ? '잔금 수금 대기 ' + wait.length : '잔금 수금 완료 ✓'}</small></div>
     <div class="mt"><button data-a="pyMeTab" data-t="day" aria-pressed="${tab==='day'}">오늘</button><button data-a="pyMeTab" data-t="mon" aria-pressed="${tab==='mon'}">이번 달</button></div>
     <div class="mv">${neg(dep + site)}<small>${sub}</small></div>
+    ${vatBox(vat, dep + site)}
     <div class="m3"><div><b>${won(dep)}</b>예약금 ${depN}건</div><div>${neg(site)}현장</div><div>${neg(star)}★ 내가 간 곳</div></div>
     ${extra}</div>`;
 }
