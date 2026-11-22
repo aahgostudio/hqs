@@ -61,6 +61,9 @@ H.HOW = ['계좌이체','카드','현금','플랫폼'];
 H.extrasSum = j => (j.extras||[]).filter(x => x.agreed !== false).reduce((a,x) => a + (+x.amount||0), 0);
 H.isClean = j => !(j.teams||[]).includes('RES') || (j.teams||[]).some(t => t !== 'RES');
 H.isPartner = j => (j.teams||[]).includes('PRT') || !!j.contract_mode;
+// 1122: 도급 B인데 대표님·직영 직원도 같이 뛴 콜라보 현장 → 일반 현장처럼 셈 (도급 팀장 몫 = 그 사람 지급액)
+H.collab = j => j.contract_mode === 'B' && (!!j.boss_on || (j.assignments||[]).some(a => a.status === 'approved' && !H.isPrt(a.staff_id)));
+H.prtOnly = j => !!j.contract_mode && !H.collab(j);
 // 본사 매출로 잡히는 금액: 도급 A = 예약금만, 그 외 = 계약금액 + 추가금
 H.refundSum = j => (j.refunds||[]).reduce((n,r) => n + (+r.amount||0), 0);
 H.jobRevenue = j => {
@@ -78,7 +81,7 @@ H.crewN = j => H.prtOn(j) ? Math.max(j.headcount||0, 1) : (j.assignments||[]).fi
 H.jobLabor = j => (j.assignments||[]).filter(a => a.status === 'approved').reduce((n,a) => n + (+a.pay_amount||0) + (+a.extra_amount||0), 0)
   + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
 // 1107: 대표님이 직접 뛴 현장의 대표님 몫 = 잔금 − 그 현장 직원 지급액 (예약금은 회사 몫)
-H.bossShare = j => { if (!j || !j.boss_on || j.contract_mode || ['cancelled','quote'].includes(j.status)) return 0;
+H.bossShare = j => { if (!j || !j.boss_on || H.prtOnly(j) || ['cancelled','quote'].includes(j.status)) return 0;
   const bal = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
   return bal - H.jobLabor(j); };   // 1108: 마이너스 그대로
 // 증빙 발행/미발행 나누기: 예약금 · 잔금 · 추가금 줄마다

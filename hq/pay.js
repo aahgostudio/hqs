@@ -44,14 +44,14 @@ function monthRows(){
     .sort((a,b) => grp(a) - grp(b) || b.net - a.net || b.mon[1].net - a.mon[1].net);   // 직영·지원 → 도급 → 외부, 그 안에서 많이 받은 순
 }
 // 1107: 대표님도 현장 뛴 건 직원처럼 — 대표님 몫 = 잔금 − 그 현장 직원 지급액 (보낼 돈엔 안 들어감)
-const share = j => { if (!j.boss_on || j.contract_mode) return 0;
+const share = j => { if (!j.boss_on || H.prtOnly(j)) return 0;
   const bal = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
   const lab = (j.assignments||[]).filter(a => a.status === 'approved').reduce((n,a) => n + baseOf(H.P(a.staff_id), a) + (+a.extra_amount||0), 0)
     + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
   return bal - lab; };   // 1108: 인건비가 잔금보다 많으면 마이너스 그대로
 // 1108: 오늘 현장 수익 = 잔금 + 추가금 − 페이백 − 인건비 (대표님이 안 간 현장도 · 도급 제외 · 마이너스 그대로)
 const dayNet = j => { if (['cancelled','quote'].includes(j.status)) return 0;
-  if (j.contract_mode) return -H.refundSum(j);   // 1115: 도급도 회사가 낸 페이백·클레임은 마이너스
+  if (H.prtOnly(j)) return -H.refundSum(j);   // 1115: 도급도 회사가 낸 페이백·클레임은 마이너스
   const bal = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
   const lab = (j.assignments||[]).filter(a => a.status === 'approved').reduce((n,a) => n + baseOf(H.P(a.staff_id), a) + (+a.extra_amount||0), 0)
     + H.helpers(j).reduce((n,x) => n + (+x.pay||0) + (+x.extra||0), 0);
@@ -69,8 +69,8 @@ function dayTable(b){
     const op = (P.dOpen||(P.dOpen={}))[k];
     return `<div class="dh" data-a="pyDayOpen" data-k="${k}" role="button"><span>${op ? '▾' : '▸'} ${md(k)} (${W[new Date(k + 'T00:00:00').getDay()]})<small>${dep ? ` 예약금 ${won(dep)}` : ''}${d.jobs.length ? ` · 현장 ${d.jobs.length}곳` : ''}</small></span><b class="${t<0?'neg':''}">${won(t)}</b></div>
       ${!op ? '' : `${dep ? `<div><span>예약금 ${d.dep.length}건</span><b>+${won(dep)}</b></div>` : ''}
-      ${d.jobs.map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${j.contract_mode ? (H.refundSum(j) ? ' (도급 · 페이백만)' : ' (도급·안 셈)') : ''}${(() => { const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
-        return j.contract_mode ? '' : !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; })()}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('')}`}`; }).join('')}
+      ${d.jobs.map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${H.prtOnly(j) ? (H.refundSum(j) ? ' (도급 · 페이백만)' : ' (도급·안 셈)') : H.collab(j) ? ' (콜라보)' : ''}${(() => { const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0));
+        return H.prtOnly(j) ? '' : !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; })()}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('')}`}`; }).join('')}
     <div class="tot"><span>이 달 합 (예약금 ${won(b.clean.dep)} · 현장 ${won(b.clean.site)})</span><b>${won(b.clean.net)}</b></div></div>`;
 }
 // 1109: 대표님 '내 수익' 카드 하나 — [오늘] / [이번 달] · 예약금 · 현장 · ★ 내가 간 곳
@@ -83,7 +83,7 @@ function meCard(wait){
     site = P.jobs.reduce((n,j) => n + dayNet(j), 0); star = P.jobs.filter(j => j.boss_on).reduce((n,j) => n + dayNet(j), 0);
     sub = `${md(d)} (${W[new Date(d + 'T00:00:00').getDay()]})`;
     // 1109: 오늘도 접었다 펴기 — 그날 받은 예약금 · 그날 현장
-    const op = P.todayOpen, tag = j => { if (j.contract_mode) return H.refundSum(j) ? ' (도급 · 페이백만)' : ' (도급·안 셈)'; const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0)); return !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; };
+    const op = P.todayOpen, tag = j => { if (H.prtOnly(j)) return H.refundSum(j) ? ' (도급 · 페이백만)' : ' (도급·안 셈)'; if (H.collab(j)) return ' (콜라보)'; const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0)); return !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; };
     const rows = (P.deps||[]).map(j => `<div><span>예약금 · ${esc(String(j.title||'').slice(0, 18))}${j.job_date ? ` <small style="color:var(--sub)">(${md(j.job_date)} 현장)</small>` : ''}</span><b>+${won(+j.deposit_amount||0)}</b></div>`).join('')
       + P.jobs.filter(j => !['cancelled','quote'].includes(j.status)).map(j => { const n = dayNet(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${tag(j)}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('');
     extra = `<div class="pm-nl"><div class="dh" data-a="pyTodayOpen" role="button"><span>${op ? '▾' : '▸'} 오늘 내역<small>${depN ? ` 예약금 ${depN}건` : ''}${P.jobs.length ? ` · 현장 ${P.jobs.length}곳` : ''}</small></span><b class="${dep+site<0?'neg':''}">${won(dep + site)}</b></div>${op ? (rows || '<p class="note">오늘 기록이 없어요</p>') : ''}</div>`;
@@ -101,7 +101,7 @@ H.ACT.pyDayOpen = el => { (P.dOpen||(P.dOpen={}))[el.dataset.k] = !P.dOpen[el.da
 H.ACT.pyTodayOpen = () => { P.todayOpen = !P.todayOpen; H.render(); };
 H.ACT.pyMeTab = el => { P.meTab = el.dataset.t; H.render(); };
 function bossRow(){
-  const items = P.mJobs.filter(j => j.boss_on && !j.contract_mode).map(j => ({j, ym: String(j.job_date).slice(0, 7), g: share(j)}));
+  const items = P.mJobs.filter(j => j.boss_on && !H.prtOnly(j)).map(j => ({j, ym: String(j.job_date).slice(0, 7), g: share(j)}));
   const mon = P.mKeys.map(k => { const it = items.filter(i => i.ym === k); return {k, n: it.length, net: it.reduce((a,i) => a + i.g, 0)}; });
   const cur = items.filter(i => i.ym === P.mKeys[2]);
   // 1108: 청소 순수익 (끝난 현장 · 오늘까지) = 매출 − 직원 임금 · 용달 빼고
