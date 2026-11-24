@@ -834,3 +834,20 @@ button.ago-g2{background:none;border:0;padding:0;width:100%;text-align:left;font
   .ago-wk .on{background:#1E4A37;color:#CFE3D6}.ago-wk .on b{color:#fff}.ago-wk .ev{box-shadow:inset 0 -3px 0 #C8F04C}
 }
 .ago-croc.ago-logo{background:#08241A;width:44px;height:44px;border-radius:12px;padding:4px;box-shadow:inset 0 0 0 1px #ffffff1f}
+/* 1124 리츠 효과 기록판 */
+.imp{max-width:1240px;margin:0 auto}
+.imp-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}.imp-top h2{margin:0;font-size:20px}.imp-top small{color:var(--sub);font-size:12.5px}
+.imp-r{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.imp-hero{background:linear-gradient(120deg,#16347A,#2B4FB0);color:#fff;border-radius:20px;padding:18px;display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:12px;align-items:center;margin-bottom:12px}
+.imp-hero .big span{font-size:12.5px;opacity:.8}.imp-hero .big b{display:block;font-size:46px;font-weight:900;line-height:1.1}.imp-hero .big b small{font-size:18px}.imp-hero .big p{margin:4px 0 0;font-size:12.5px;opacity:.8}
+.imp-hero .k{background:rgba(255,255,255,.1);border-radius:14px;padding:12px}.imp-hero .k span{font-size:12px;opacity:.8}.imp-hero .k b{display:block;font-size:22px}.imp-hero .k small{display:block;font-size:11.5px;opacity:.8}.imp-hero .k em{font-style:normal;font-size:11px;color:#86EFAC}
+.imp-g{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}.imp-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.imp .box{margin:0}
+.imp-bars{display:flex;align-items:flex-end;gap:12px;height:180px;padding:0 4px;border-bottom:1px solid var(--line)}
+.imp-bars>div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;font-size:11px;color:var(--sub);gap:2px}
+.imp-bars .s{display:flex;flex-direction:column;width:70%}.imp-bars i{display:block;width:100%}.imp-bars .s i:first-child{border-radius:6px 6px 0 0}
+.imp-lg{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--sub);margin-top:8px}.imp-lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.imp-ba{width:100%;border-collapse:collapse;font-size:13px}.imp-ba th{color:var(--sub);font-weight:500;text-align:left;font-size:11.5px;padding:6px 0}.imp-ba td{padding:8px 0;border-top:1px solid var(--line)}
+.imp-ba .now{font-weight:800;color:#16347A}.imp-ba .up{color:#16A34A;font-weight:800;font-size:12px;text-align:right}
+@media (max-width:900px){.imp-hero{grid-template-columns:1fr 1fr}.imp-hero .big{grid-column:1/-1}.imp-g,.imp-g3{grid-template-columns:1fr}}
+@media print{body[data-tab=impact] header.top,body[data-tab=impact] .imp-r,body[data-tab=impact] #fab,body[data-tab=impact] .lk{display:none!important}body[data-tab=impact]{background:#fff}.imp-hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}}

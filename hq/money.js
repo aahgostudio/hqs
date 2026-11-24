@@ -21,7 +21,7 @@ H.view('money', {label:'경영', owner:true,
   },
   render(){ const R = H.calcMonth(); const m = V.money.month; const sec = V.money.sec || 'sum';
     return `<div class="bh" style="margin:0"><div style="display:flex;gap:6px;align-items:center"><button class="btn ghost sm" data-a="monNav" data-n="-1">${H.I('left')}</button><b>${m.getFullYear()}년 ${m.getMonth()+1}월</b><button class="btn ghost sm" data-a="monNav" data-n="1">${H.I('right')}</button></div><span class="note">세금·공제는 기본 계산이에요 · 신고 전 세무사 확인</span></div>
-    <section class="box money"><div class="bh"><h3>${m.getMonth()+1}월 전체 수익</h3><button class="btn sm ghost" data-a="monXlsx">엑셀 받기 (세무사용)</button></div>
+    <section class="box money"><div class="bh"><h3>${m.getMonth()+1}월 전체 수익</h3><span style="display:flex;gap:6px"><a class="btn sm" href="#impact">📈 리츠 효과 기록판</a><button class="btn sm ghost" data-a="monXlsx">엑셀 받기 (세무사용)</button></span></div>
       <div class="mrow">
         <div><span>확정 매출 <small style="opacity:.75">끝난 현장 ${R.doneN}건</small></span><b>${won(R.revDone)}</b><small> 클린 ${won(R.cleanRevDone)} · 부동산 ${won(R.resRevDone)}${R.planN ? ` · 예정 ${R.planN}건 +${won(R.rev - R.revDone)}` : ''}</small></div>
         <div><span>− 클린 인건비</span><b style="font-size:20px">${won(R.laborDone)}</b></div>
