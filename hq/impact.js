@@ -36,9 +36,9 @@ H.view('impact', {label:'리츠 효과', owner:true,
       ['미수금 7일 넘김', `월 ${bs.miss}건`, `${d.unpaid_n}건`, '']];
     return `<div class="imp">${head}
       <section class="imp-hero"><div class="big"><span>이번 달 대표님이 아낀 시간</span><b>${hrs}<small>시간</small></b><p>하루 약 ${Math.floor(perDay/60) ? Math.floor(perDay/60) + '시간 ' : ''}${perDay % 60}분 · 자동 처리 ${n(d.auto + d.cust_sent + d.pays)}건</p></div>
-        <div class="k"><span>대신 보낸 연락</span><b>${n(d.auto)}건</b><small>새 현장·내일 일정·변경 알림</small><em>전화·카톡 개별 연락 대신</em></div>
-        <div class="k"><span>늦게라도 받아낸 돈</span><b>${won(d.late_amt)}</b><small>미수 잔금·예약금 ${d.late_n}건 회수</small><em>놓칠 뻔한 돈</em></div>
-        <div class="k"><span>일정 변경 자동 전달</span><b>${n(d.changes)}회</b><small>날짜·시간·주소 바뀌면 바로</small><em>일정 사고 예방</em></div></section>
+        <div class="ik"><span>대신 보낸 연락</span><b>${n(d.auto)}건</b><small>새 현장·내일 일정·변경 알림</small><em>전화·카톡 개별 연락 대신</em></div>
+        <div class="ik"><span>늦게라도 받아낸 돈</span><b>${won(d.late_amt)}</b><small>미수 잔금·예약금 ${d.late_n}건 회수</small><em>놓칠 뻔한 돈</em></div>
+        <div class="ik"><span>일정 변경 자동 전달</span><b>${n(d.changes)}회</b><small>날짜·시간·주소 바뀌면 바로</small><em>일정 사고 예방</em></div></section>
       <div class="imp-g"><section class="box"><div class="bh"><h3>주별 아낀 시간</h3><span class="sub">사람이 했으면 걸렸을 시간</span></div>
         <div class="imp-bars">${wk.map((w, i) => { const tt = wv[i] || 1, h = v => Math.round(v / 60 / mx * 130);
           return `<div><div class="s"><i style="height:${h(w.auto*rt.msg)}px;background:#16347A"></i><i style="height:${h(w.pays*rt.pay)}px;background:#6E88D4"></i><i style="height:${h(w.cust*rt.cust)}px;background:#F59E0B"></i></div>${(+w.w.slice(5,7))}/${(+w.w.slice(8))}주<b>${Math.round(wv[i]*10)/10}h</b></div>`; }).join('')}</div>
@@ -47,13 +47,13 @@ H.view('impact', {label:'리츠 효과', owner:true,
         <table class="imp-ba"><tr><th>항목</th><th>도입 전</th><th>지금</th><th></th></tr>${rows.map(r => `<tr><td>${r[0]}</td><td>${esc(r[1])}</td><td class="now">${esc(r[2])}</td><td class="up">${esc(r[3])}</td></tr>`).join('')}</table></section></div>
       <div class="imp-g3">
         <section class="box"><div class="bh"><h3>👥 직원 참여</h3><span class="sub">앱 설치 없이 링크로</span></div>
-          <div class="rw"><span>최근 7일 접속한 직원</span><b>${d.staff_7d} / ${d.staff_all}명</b></div><div class="rw"><span>현장 사진</span><b>${n(d.photos)}장</b></div>
-          <div class="rw"><span>현장 다이어리 이야기</span><b>${n(d.diary)}개</b></div><div class="rw"><span>배정된 현장 인원</span><b>${n(d.assign)}명</b></div></section>
+          <div class="irow"><span>최근 7일 접속한 직원</span><b>${d.staff_7d} / ${d.staff_all}명</b></div><div class="irow"><span>현장 사진</span><b>${n(d.photos)}장</b></div>
+          <div class="irow"><span>현장 다이어리 이야기</span><b>${n(d.diary)}개</b></div><div class="irow"><span>배정된 현장 인원</span><b>${n(d.assign)}명</b></div></section>
         <section class="box"><div class="bh"><h3>🙂 고객 반응</h3></div>
-          <div class="rw"><span>고객님 방 연 고객</span><b>${d.cust_rooms ? Math.round(d.cust_open / d.cust_rooms * 100) : 0}% <small>(${d.cust_open}/${d.cust_rooms})</small></b></div>
-          <div class="rw"><span>이번 달 현장</span><b>${n(d.jobs)}곳</b></div><div class="rw"><span>정기 고객</span><b>${n(d.regular)}곳</b></div></section>
+          <div class="irow"><span>고객님 방 연 고객</span><b>${d.cust_rooms ? Math.round(d.cust_open / d.cust_rooms * 100) : 0}% <small>(${d.cust_open}/${d.cust_rooms})</small></b></div>
+          <div class="irow"><span>이번 달 현장</span><b>${n(d.jobs)}곳</b></div><div class="irow"><span>정기 고객</span><b>${n(d.regular)}곳</b></div></section>
         <section class="box"><div class="bh"><h3>🧾 이 숫자는 어디서?</h3></div>
-          <div class="rw"><span>자동 알림·변경 전달</span><span class="pill">대화 기록</span></div><div class="rw"><span>정산·미수 회수</span><span class="pill">정산 기록</span></div><div class="rw"><span>사진·다이어리·접속</span><span class="pill">일정판 기록</span></div>
+          <div class="irow"><span>자동 알림·변경 전달</span><span class="pill">대화 기록</span></div><div class="irow"><span>정산·미수 회수</span><span class="pill">정산 기록</span></div><div class="irow"><span>사진·다이어리·접속</span><span class="pill">일정판 기록</span></div>
           <p class="note">아낀 시간 = 자동 처리 건수 × 건당 기준 시간 (연락 ${rt.msg}분 · 정산 ${rt.pay}분 · 고객 응대 ${rt.cust}분) <button class="lk" data-a="impBase">기준 고치기</button></p></section></div></div>`;
   }
 });
