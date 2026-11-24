@@ -334,7 +334,14 @@
       if (d.msgs.length || Object.keys(d.unread || {}).length) { const t = document.getElementById('epc-t'); const v = t ? t.value : ''; drawRoom(true); const t2 = document.getElementById('epc-t'); if (t2 && !editing) t2.value = v; }
     } catch(_){}
   }
-  function poll(){ clearInterval(pollT); let n = 0; pollT = setInterval(() => { refreshRoom(); if (++n % 5 === 0) custSeen(); }, 2500); }
+  // 1124: 속도 — 글이 오가는 1분 동안만 2.5초마다, 조용하면 10초마다 확인 (서버 부담 ↓)
+  let act = Date.now(); const bump = () => { act = Date.now(); };
+  function poll(){ clearTimeout(pollT); bump(); let n = 0;
+    const go = async () => { const before = msgs.length; await refreshRoom(); if (msgs.length !== before) bump(); if (++n % 5 === 0) custSeen();
+      if (view === 'room' && room) pollT = setTimeout(go, Date.now() - act < 60000 ? 2500 : 10000); };
+    pollT = setTimeout(go, 2500); }
+  document.addEventListener('input', e => { if (e.target && e.target.id === 'epc-t') bump(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) bump(); });
   // 👀 고객님이 링크를 봤는지 (SQL v26 전이면 조용히 건너뜀)
   async function custSeen(){
     if (view !== 'room' || !room || room.room.kind !== 'cust' || opt.demo || document.hidden) return;
@@ -348,7 +355,7 @@
   let hereR, hereT = 0;
   function here(force){
     if (opt.demo || !opt.token) return; const r = view === 'room' && room && !document.hidden ? room.room.id : null;
-    if (!force && r === hereR && (r === null || Date.now() - hereT < 4000)) return; hereR = r; hereT = Date.now();
+    if (!force && r === hereR && (r === null || Date.now() - hereT < 15000)) return; hereR = r; hereT = Date.now();
     fetch(`${URL_}/rest/v1/rpc/chat_here`, {method:'POST', keepalive:true, headers:Object.assign({'content-type':'application/json'}, H), body:JSON.stringify({p_token: opt.token, p_room: r})}).catch(() => {});
   }
 
@@ -445,7 +452,7 @@
     if (b.dataset.appadd) return appGuide();
     if (b.dataset.badgeok) return K().badgeOk().then(() => { drawList(); loadHome(); });
     if (b.dataset.pushok) return K().pushOn(pushKey, pushSave, true).then(r => { if (r !== 'ok') alert(r === 'denied' ? '알림이 꺼져 있어요. 폰 설정 → 알림 → 어닝톡에서 켜주세요' : '이 폰에서는 알림을 켤 수 없어요. 카톡 알림으로 계속 받아요'); drawList(); loadHome(); });
-    if (b.dataset.list) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }
+    if (b.dataset.list) { view = 'list'; clearTimeout(pollT); room = null; drawList(); loadHome(); return; }
     if (b.dataset.showdone) { showDone = !showDone; return drawList(); }
     if (b.dataset.showlater) { showLater = !showLater; return drawList(); }
     if (b.dataset.room) return openRoom(+b.dataset.room);
@@ -474,8 +481,8 @@
   const pushKey = () => rpc('push_pub', {}).then(k => { pushReady = !!k; return k; }).catch(() => null);
   const pushSave = (sub, ua) => rpc('push_subscribe', {p_token: opt.token, p_sub: sub, p_ua: ua});
   function close(){
-    if (APP) { view = 'list'; clearInterval(pollT); room = null; drawList(); loadHome(); return; }   // 앱 모드: 닫기 = 목록
-    const w = document.getElementById('epc'); if (!w) return; view = null; clearInterval(pollT); room = null;
+    if (APP) { view = 'list'; clearTimeout(pollT); room = null; drawList(); loadHome(); return; }   // 앱 모드: 닫기 = 목록
+    const w = document.getElementById('epc'); if (!w) return; view = null; clearTimeout(pollT); room = null;
     w.classList.remove('on'); setTimeout(() => w.remove(), 230);
     try { if (new URLSearchParams(location.search).has('chat')) { const u = new URL(location.href); u.searchParams.delete('chat'); history.replaceState(null, '', u); } } catch(_){}
     loadHome();

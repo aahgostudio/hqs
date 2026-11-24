@@ -242,12 +242,19 @@ async function tick(){
     if (!C.cur || (C.hk = (C.hk || 0) + 1) % 5 === 0) { await loadHome(); paint(true); }
   } catch(_){}
 }
-function poll(){ clearInterval(C.t); C.t = setInterval(tick, 3000); }
+// 1124: 속도 — 글이 오가는 1분 동안만 3초마다, 조용하면 10초마다
+C.act = Date.now();
+function poll(){ clearTimeout(C.t); C.act = Date.now();
+  const go = async () => { const before = (C.msgs || []).length; await tick(); if ((C.msgs || []).length !== before) C.act = Date.now();
+    if (H.cur() === 'chat') C.t = setTimeout(go, Date.now() - C.act < 60000 ? 3000 : 10000); };
+  C.t = setTimeout(go, 3000); }
+document.addEventListener('input', e => { if (e.target && e.target.id === 'chT') C.act = Date.now(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) C.act = Date.now(); });
 // 지금 이 방 보고 있음 → 서버에 알려서 이 방 새 글은 어닝톡 알림 안 보냄 (SQL v18) · 방 나가거나 화면 내리면 바로 해제
 let hereR, hereT = 0;
 function here(force){
   const r = H.cur() === 'chat' && !document.hidden && C.cur ? C.cur : null;
-  if (!force && r === hereR && (r === null || Date.now() - hereT < 4000)) return; hereR = r; hereT = Date.now();
+  if (!force && r === hereR && (r === null || Date.now() - hereT < 15000)) return; hereR = r; hereT = Date.now();
   H.sb.rpc('chat_here_boss', {p_room: r}).then(() => {}, () => {});
 }
 setInterval(here, 3000); document.addEventListener('visibilitychange', () => here(true)); addEventListener('pagehide', () => here(true));
