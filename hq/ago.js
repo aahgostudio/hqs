@@ -53,6 +53,8 @@ function homePage(){
   const selKc = sel ? sel.filter(x => x.kc === '표시없음').length : 0;
   const selNet = sel && H.selCalc ? sel.reduce((a, it) => a + H.selCalc(it).net, 0) : null;
   const todo = [
+    m && m.users_new > 0 && !set('ago_first_seen') && ['#E0A020', `🎉 이내만 첫 가입! (지금까지 ${n(m.users_new)}명)`, '이내만', '!agoFirst'],
+    m && m.users_today > 0 && set('ago_first_seen') && ['#6C4DFF', `🎉 오늘 이내만 새 가입 ${n(m.users_today)}명`, '이내만', '#ago/inaeman'],
     m && m.reports_open && ['#DC2626', `이내만 신고 ${m.reports_open}건 처리`, '이내만', '#ago/inaeman'],
     !m && ['#6C4DFF', H.S.inmErr ? '이내만 숫자를 못 불러왔어요 (연결 확인)' : '이내만 현황판 연결하기 (처음 한 번)', '이내만', '!agoLink'],
     selKc && ['#E0A020', `셀렉트 KC·표시 확인 ${selKc}건`, '셀렉트', '#select'],
@@ -215,5 +217,6 @@ H.ACT.agoDl = () => { const d = set('ago_dl') || {};
   H.open(`<form data-f="agoDl"><h3>스토어 다운로드 (누적)</h3><p class="note">App Store Connect › 분석, Play Console › 통계에서 누적 숫자를 보고 적어 주세요.</p><div class="fg">
     <div class="field"><label>App Store</label><input name="ios" type="number" min="0" value="${d.ios ?? ''}"></div>
     <div class="field"><label>Google Play</label><input name="and" type="number" min="0" value="${d.and ?? ''}"></div></div>${H.sacts('저장')}</form>`); };
+H.ACT.agoFirst = async () => { await saveSet('ago_first_seen', H.ymd(H.today())); location.hash = '#ago/inaeman'; };   // 1124: 첫 가입 축하 한 번 보고 나면 '오늘 새 가입'으로 바뀜
 H.FORM.agoDl = async v => { await saveSet('ago_dl', {ios: H.nnum(v.get('ios')), and: H.nnum(v.get('and')), on: H.ymd(H.today())}); H.close(); H.toast('저장했어요'); H.render(); };
 })(window.HQ);
