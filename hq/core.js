@@ -188,7 +188,7 @@ H.photosOf = jid => (H.S.photos||[]).filter(p => p.job_id === jid);
 
 /* ---------- 화면 틀 ---------- */
 H.view = (key, def) => { H.views[key] = def; };
-const ORDER = ['home','pay','team','chat','sched','ops','promo','select','money','staff'];
+const ORDER = ['home','pay','team','chat','sched','ops','promo','ago','select','money','staff'];
 H.cur = () => { const h = (location.hash||'').replace('#',''); const k = h.split('/')[0]; return H.views[k] && (!H.views[k].owner || H.S.owner) ? k : 'home'; };
 H.go = k => { if (location.hash !== '#'+k) location.hash = k; else H.render(); };
 

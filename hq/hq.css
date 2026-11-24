@@ -756,3 +756,54 @@ form:has(input[name=teams][value=PRT]:checked) .prtbox{display:block}
 .ch-pp label.n:has(input:checked){background:#ECFDF5;border-color:#6EE7B7;color:#047857;font-weight:700}
 .ch-pp label.n:has(input:checked)::before{content:'✓ '}
 .ch-pp label.n:has(input:checked)::after{content:' 초대';font-size:10.5px;margin-left:3px}
+/* ---------- 🐊 아고스튜디오 (1124) ---------- */
+.ago{--ag:#1E4A37;--al:#C8F04C;max-width:720px;margin:0 auto;padding-bottom:40px}
+.ago-hero{background:var(--ag);color:#fff;border-radius:20px;padding:18px;margin-bottom:12px}
+.ago-hero.inm{background:#171225}
+.ago-h1{font-size:21px;font-weight:900;display:flex;align-items:center;gap:10px}
+.ago-croc{width:36px;height:36px;border-radius:10px;background:var(--al);display:grid;place-items:center;font-size:20px;flex:none}
+.ago-slo{font-size:12.5px;color:#BFD8C9;margin-top:6px}.ago-hero.inm .ago-slo{color:#C9C0E6}
+.ago-dd{margin-left:auto;background:var(--al);color:var(--ag);font-size:12.5px;font-weight:800;padding:4px 10px;border-radius:999px}
+.ago-re{background:none;border:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer;padding:0}
+.ago-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.ago-sum div{background:rgba(255,255,255,.09);border-radius:12px;padding:9px 4px;text-align:center}
+.ago-sum b{display:block;font-size:19px;color:var(--al)}.ago-sum b.hot{color:#FF9A8A}.ago-sum span{font-size:11px;color:#CFE3D6}
+.ago-todo{display:flex;align-items:center;gap:10px;font-size:14px;padding:9px 0;border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left;color:inherit;text-decoration:none;cursor:pointer;font-family:inherit}
+.ago-todo:last-child{border-bottom:0}.ago-todo i{width:8px;height:8px;border-radius:50%;flex:none}
+.ago-todo em{font-style:normal;margin-left:auto;font-size:11px;padding:3px 8px;border-radius:6px;background:var(--soft);color:var(--sub);flex:none}
+.ago-sec{font-size:14px;font-weight:800;margin:16px 4px 8px;display:flex;justify-content:space-between;align-items:baseline}.ago-sec span{font-weight:400;font-size:12px;color:var(--sub)}
+.ago-app{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;text-decoration:none;color:inherit;width:100%;text-align:left;font-family:inherit;cursor:pointer;box-shadow:var(--sh)}
+.ago-app.dim{opacity:.7;cursor:default}
+.ago-ic{width:52px;height:52px;border-radius:14px;flex:none;display:grid;place-items:center}
+.ago-tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.ago-nm{font-size:16px;font-weight:800;display:flex;align-items:center;gap:6px}
+.ago-nm em{font-style:normal;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px}
+.ago-nm .live{background:#DDF5E3;color:#1F7A3F}.ago-nm .dev{background:#E8E4FF;color:#4B36C9}.ago-nm .prep{background:#EEF1EC;color:#5E7166}
+.ago-tx>small{font-size:12px;color:var(--sub);margin-top:2px}
+.ago-kp{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--sub)}
+.ago-kp b{display:block;font-size:17px;color:var(--ink,#111);font-variant-numeric:tabular-nums}.ago-kp b.warn{color:#DC2626}
+.ago-nx{margin-top:9px;font-size:12px;background:#F3F7EC;border-radius:8px;padding:7px 9px;color:#2E4A39}
+.ago-ar{color:#B5C2BA;font-size:20px;align-self:center}
+.ago-bar{height:6px;background:#E4EADF;border-radius:99px;margin-top:8px;overflow:hidden;display:block}.ago-bar i{display:block;height:100%;background:#6C4DFF;border-radius:99px}
+.ago-bar.big{height:9px;margin-top:8px}.ago-bar.big i{background:#2D8A4E}.ago-bar.gold i{background:#E0A020}
+.ago-tl{position:relative;padding-left:22px}.ago-tl:before{content:'';position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:#DCE5D8}
+.ago-tl div{position:relative;font-size:13.5px;padding:6px 0}.ago-tl div:before{content:'';position:absolute;left:-21px;top:11px;width:10px;height:10px;border-radius:50%;background:var(--al);border:2px solid var(--ag)}
+.ago-tl b{display:inline-block;min-width:54px;color:var(--ag);margin-right:6px}
+.ago-links{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ago-links a{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center;font-size:11.5px;color:#2E4A39;text-decoration:none;line-height:1.35}
+.ago-links i{display:block;font-style:normal;font-size:20px;margin-bottom:3px}
+.ago-back{margin:0 4px 10px}.ago-back a{color:var(--sub);text-decoration:none;font-size:13px}
+.ago-alert{display:flex;align-items:center;gap:8px;background:#FFF0EE;border:1.5px solid #F2B8B0;border-radius:14px;padding:12px 14px;font-size:14px;margin-bottom:12px;color:inherit;text-decoration:none}
+.ago-alert b{color:#C8372D;font-size:18px}.ago-alert span{margin-left:auto;background:#C8372D;color:#fff;font-size:12px;padding:5px 10px;border-radius:8px}
+.ago-ok{background:#EEF8F0;border:1px solid #CDE8D3;color:#1F7A3F;border-radius:14px;padding:10px 14px;font-size:13.5px;margin-bottom:12px}
+.ago-g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button.ago-g2{background:none;border:0;padding:0;width:100%;text-align:left;font-family:inherit;cursor:pointer;color:inherit}
+.ago-c{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;box-shadow:var(--sh)}
+.ago-c small{font-size:12px;color:var(--sub);display:block}.ago-c b{display:block;font-size:27px;font-weight:900;margin-top:2px;font-variant-numeric:tabular-nums}
+.ago-c b i{font-style:normal;font-size:13px;color:var(--sub);font-weight:500;margin-left:2px}.ago-c em{font-style:normal;font-size:12px;color:#2D8A4E}
+.ago-mr{display:flex;justify-content:space-between;font-size:13.5px}
+.ago-chart{display:flex;align-items:flex-end;gap:8px;height:130px}
+.ago-chart div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;font-size:11px;color:var(--sub);height:100%}
+.ago-chart b{font-size:11px;color:var(--ink,#111);min-height:14px}
+.ago-chart i{width:100%;background:#CFE3D6;border-radius:6px 6px 2px 2px}.ago-chart .t i{background:#2D8A4E}
+.ago-say{background:var(--ag);color:#fff;border-radius:14px;padding:14px;margin-top:12px;font-size:13.5px;line-height:1.65}
