@@ -61,10 +61,26 @@ function homePage(){
   const link = (go, inner, cls) => go[0] === '!' ? `<button class="${cls}" data-a="${go.slice(1)}">${inner}</button>` : `<a class="${cls}" href="${go}">${inner}</a>`;
   const appsLive = 1 + (sel ? 1 : 0);
 
+  // 1124: PC(넓은 화면)에선 왼쪽 = 앱 카드(오른쪽에 그래프·단계), 오른쪽 = 챙길 것·이번 주·일정·바로가기 — 폰은 그대로 한 줄
+  const daily = (m && m.daily) || [], dmx = Math.max(1, ...daily.map(x => +x.n || 0));
+  const spark = daily.length ? (() => { const W = 260, Hh = 64, st = W / Math.max(1, daily.length - 1);
+      const pts = daily.map((x, i) => `${Math.round(i * st)},${Math.round(Hh - 4 - (+x.n || 0) / dmx * (Hh - 12))}`).join(' ');
+      return `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#6C4DFF" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg>
+        <div class="ago-vx">${daily.map((x, i) => `<span>${i === daily.length - 1 ? '오늘' : (+String(x.d).slice(8)) + '일'}<b>${+x.n || 0}</b></span>`).join('')}</div>`; })()
+    : '<div class="note">이내만 연결 후 보여요</div>';
+  const steps = op.steps || ['✓ 일정판 · 직원 링크', '✓ 팀 대화 · 3년 보관', '● 정산 · 수익 화면', '○ 외부 업체 시범 (1월)'];
+  const stepHtml = steps.map(t => { const c = /^✓/.test(t) ? 'ok' : /^●/.test(t) ? 'now' : 'no'; return `<div class="${c}">${esc(t)}</div>`; }).join('');
+  const selN = sel ? [['판매 중', selLive], ['접수 대기', selWait], ['판매 완료', sel.filter(x => x.status === '판매완료' || x.sold).length]] : [];
+  const selMx = Math.max(1, ...selN.map(x => +x[1] || 0));
+  const selViz = sel ? `<div class="ago-bars">${selN.map(([t, v]) => `<div><i style="height:${Math.max(4, (+v || 0) / selMx * 100)}%"></i><b>${v || 0}</b><span>${t}</span></div>`).join('')}</div>` : '<div class="note">셀렉트 업데이트 후 보여요</div>';
+  const W7 = ['일','월','화','수','목','금','토'], t0 = H.today(), mon = new Date(t0); mon.setDate(t0.getDate() - ((t0.getDay() + 6) % 7));
+  const week = Array.from({length: 7}, (_, k) => { const d = new Date(mon); d.setDate(mon.getDate() + k); return d; });
+  const jd = H.parse(JUDGE);
+
   return `
   <section class="ago-hero">
-    <div class="ago-h1"><span class="ago-croc">🐊</span>아고스튜디오</div>
-    <div class="ago-slo">Aah, then Go. 아~ 하는 순간, 바로 만든다.</div>
+    <div class="ago-ht"><div class="ago-h1"><span class="ago-croc">🐊</span>아고스튜디오</div>
+    <div class="ago-slo">Aah, then Go. 아~ 하는 순간, 바로 만든다.</div></div>
     <div class="ago-sum">
       <div><b>${appsLive}</b><span>운영 중</span></div><div><b>1</b><span>개발 중</span></div>
       <div><b>${m ? n(m.users_new) : '-'}</b><span>이내만 사용자</span></div>
@@ -72,30 +88,37 @@ function homePage(){
     </div>
   </section>
 
-  <section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">앱 전체에서 모음</span></div>
-    ${todo.map(([c, t, tag, go]) => link(go, `<i style="background:${c}"></i><span>${esc(t)}</span><em>${tag}</em>`, 'ago-todo')).join('') || '<div class="note">✓ 급한 일 없어요</div>'}
-  </section>
-
-  <div class="ago-sec">우리 앱</div>
+  <div class="ago-g"><div class="ago-main">
+  <div class="ago-sec">우리 앱 <span class="pc-only">카드 누르면 앱별 현황판</span></div>
   <a class="ago-app" href="#ago/inaeman">
     <span class="ago-ic" style="background:#171225">${sealSvg(36)}</span>
     <span class="ago-tx"><span class="ago-nm">이내만 <em class="live">운영 중 D+${-dday(LAUNCH)}</em></span><small>창작자 플랫폼 · iOS · Android · v1.0</small>
       ${m ? `<span class="ago-kp"><span><b>${n(m.users_new)}</b>가입</span><span><b>${n(m.active_today)}</b>오늘 접속</span><span><b>${m.users_new ? pct(m.makers_new, m.users_new) + '%' : '-'}</b>작품 등록률</span><span><b class="${m.reports_open ? 'warn' : ''}">${n(m.reports_open)}</b>신고</span></span>`
         : `<span class="ago-kp"><span class="note">${H.S.inmErr ? '숫자를 못 불러왔어요 · 눌러서 확인' : '아직 연결 전 · 눌러서 연결'}</span></span>`}
-      <span class="ago-nx">📌 다음: 12/8 지표 보고 계속 키울지 판단 (${dday(JUDGE) >= 0 ? 'D-' + dday(JUDGE) : '지남'})</span></span><span class="ago-ar">›</span></a>
+      <span class="ago-nx">📌 다음: 12/8 지표 보고 계속 키울지 판단 (${dday(JUDGE) >= 0 ? 'D-' + dday(JUDGE) : '지남'})</span></span>
+    <span class="ago-viz"><span class="ago-vh">최근 7일 가입</span>${spark}</span><span class="ago-ar">›</span></a>
   <button class="ago-app" data-a="agoOpini">
     <span class="ago-ic" style="background:#FFF4C2;font-size:28px">🐤</span>
-    <span class="ago-tx"><span class="ago-nm">오피니 <em class="dev">개발 중</em></span><small>사업자 운영 플랫폼 · 리츠에서 실사용 테스트</small>
+    <span class="ago-tx"><span class="ago-nm">오피니 <em class="dev">개발 중</em></span><small>사업자 운영 플랫폼 · 직원은 앱 설치 없이 링크 하나로</small>
       <span class="ago-bar"><i style="width:${Math.max(0, Math.min(100, +op.pct || 0))}%"></i></span>
-      <span class="ago-kp"><span><b>${+op.pct || 0}%</b>준비</span><span><b>${+op.pilots || 0}/5</b>외부 시범 업체</span></span>
-      <span class="ago-nx">📌 다음: ${esc(op.next)}</span></span><span class="ago-ar">✎</span></button>
+      <span class="ago-kp"><span><b>${+op.pct || 0}%</b>준비</span><span><b>${+op.pilots || 0}/5</b>외부 시범 업체</span><span><b>${(H.S.staff || []).filter(x => x.status !== 'left' && !x.hidden).length}</b>리츠 직원 사용 중</span></span>
+      <span class="ago-nx">📌 다음: ${esc(op.next)}</span></span>
+    <span class="ago-viz ago-ms"><span class="ago-vh">단계</span>${stepHtml}</span><span class="ago-ar">✎</span></button>
   <a class="ago-app" href="#select">
     <span class="ago-ic" style="background:#1E4A37;color:#C8F04C;font-size:26px;font-weight:900">✓</span>
     <span class="ago-tx"><span class="ago-nm">아고셀렉트 <em class="live">운영 중</em></span><small>쇼핑몰 · 스마트스토어</small>
-      ${sel ? `<span class="ago-kp"><span><b>${selLive}</b>판매 중</span><span><b>${selWait}</b>접수 대기</span><span><b>${won(selNet)}</b>순이익</span></span>` : '<span class="ago-kp"><span class="note">셀렉트 업데이트(v47) 후 보여요</span></span>'}
-    </span><span class="ago-ar">›</span></a>
+      ${sel ? `<span class="ago-kp"><span><b>${selLive}</b>판매 중</span><span><b>${selWait}</b>접수 대기</span><span><b>${won(selNet)}</b>순이익</span><span><b class="${selKc ? 'warn' : ''}">${selKc}</b>KC 확인</span></span>` : '<span class="ago-kp"><span class="note">셀렉트 업데이트(v47) 후 보여요</span></span>'}
+    </span><span class="ago-viz"><span class="ago-vh">상품 현황</span>${selViz}</span><span class="ago-ar">›</span></a>
   <div class="ago-app dim"><span class="ago-ic" style="background:#EEF1EC;color:#5E7166;font-size:24px">＋</span>
     <span class="ago-tx"><span class="ago-nm">다음 앱 <em class="prep">아이디어</em></span><small>이내만 피드 앱 · 스튜디오 임대 · 쇼호스트 교육 (2027 하반기)</small></span></div>
+  </div>
+
+  <div class="ago-side">
+  <section class="box"><div class="bh"><h3>오늘 챙길 것</h3><span class="sub">앱 전체에서 모음</span></div>
+    ${todo.map(([c, t, tag, go]) => link(go, `<i style="background:${c}"></i><span>${esc(t)}</span><em>${tag}</em>`, 'ago-todo')).join('') || '<div class="note">✓ 급한 일 없어요</div>'}
+  </section>
+  <section class="box pc-only"><div class="bh"><h3>이번 주</h3></div>
+    <div class="ago-wk">${week.map(d => `<div class="${H.ymd(d) === H.ymd(t0) ? 'on' : ''} ${H.ymd(d) === H.ymd(jd) ? 'ev' : ''}">${W7[d.getDay()]}<b>${d.getDate()}</b></div>`).join('')}</div></section>
 
   <section class="box"><div class="bh"><h3>다가오는 일정</h3><button class="btn sm ghost" data-a="agoPlan">고치기</button></div>
     <div class="ago-tl">${plan.map(l => { const s = String(l).trim(), i = s.indexOf(' ');
@@ -109,7 +132,8 @@ function homePage(){
     <a href="https://github.com/aahgostudio" target="_blank" rel="noopener"><i>🐙</i>GitHub</a>
     <a href="https://sell.smartstore.naver.com/" target="_blank" rel="noopener"><i>🛒</i>스마트<br>스토어</a>
     <a href="https://business.kakao.com/dashboard/" target="_blank" rel="noopener"><i>💬</i>카톡 채널<br>관리자</a>
-  </div>`;
+  </div>
+  </div></div>`;
 }
 
 /* ---------- 이내만 현황판 ---------- */
