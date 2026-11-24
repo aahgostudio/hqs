@@ -99,7 +99,7 @@ function roomHtml(){
   });
   const mem = (R.members||[]).map(x => x.name).join(' · ');
   return `<div class="ch-rh"><button class="ch-back" data-a="chBack" aria-label="목록으로">←</button><div style="min-width:0;flex:1"><b>${icOf(R)} ${esc(R.title)}</b> <span class="note">${KIND[R.kind]} · ${(R.members||[]).length}명</span><div class="note ch-mem">${esc(mem || '인원 없음')}</div>${R.kind === 'cust' && C.seen ? `<div data-a="chLive" role="button" title="고객님 방 링크·안내 멘트" style="margin-top:4px;border-radius:8px;overflow:hidden;cursor:pointer">${K.seenLine(C.seen)}</div>` : ''}</div>
-      <button class="ch-more" data-a="chMore" aria-label="방 설정">⋯</button><div class="ch-ra">${OWN() ? `${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':(R.kind!=='dm'?'<button class="btn sm ghost" data-a="chGuest">👥 초대</button>':'')+'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}<button class="btn sm ghost" data-a="chIcon">🙂 아이콘</button>
+      <button class="ch-more" data-a="chMore" aria-label="방 설정">⋯</button><div class="ch-ra">${OWN() ? `${R.kind==='custom'?'<button class="btn sm ghost" data-a="chEdit">이름·인원</button>':(R.kind!=='dm'?'<button class="btn sm ghost" data-a="chGuest">👥 인원</button>':'')+'<button class="btn sm ghost" data-a="chRename">✏️ 이름</button>'}<button class="btn sm ghost" data-a="chIcon">🙂 아이콘</button>
         ${H.S.needV6?'':`<button class="btn sm ghost" data-a="chMgr" title="관리자(HQS)도 이 방을 보고 대화">${r.mgr?'👥 관리자 참여 중':'👥 관리자 빼고'}</button>`}
         <button class="btn sm ghost" data-a="chKeep" title="기간이 지나도 정리하지 않아요">${r.keep?'📌 고정 해제':'📌 보관 고정'}</button>
         <button class="btn sm ghost" data-a="chExport">내보내기(PDF)</button>
@@ -441,18 +441,19 @@ H.ACT.chBack = () => { if (history.state && history.state.chRoom) history.back()
 H.ACT.chMore = el => el.closest('.ch-rh').classList.toggle('open');
 window.addEventListener('popstate', () => { if (C.cur && H.cur() === 'chat' && !(history.state && history.state.chRoom)) { C.cur = null; C.room = null; paint(); } });
 // 1120: 팀·전체·현장 방에도 사람 초대 (원래 멤버는 그대로, 초대한 사람만 더하기·빼기)
+// 1124: 방 인원 넣고 빼기 — 원래 멤버도 뺄 수 있음 (chat_out), 다른 사람은 초대 (chat_members)
 H.ACT.chGuest = async () => { const r = C.home.rooms.find(x => x.id === C.cur); if (!r) return;
-  let g = []; try { g = await rpc('chat_admin_guests', {p_id: r.id}) || []; } catch(e){ return H.toast('초대 SQL(update_chat_guest.sql)을 먼저 넣어주세요'); }
-  const gs = new Set(g), base = new Set(((C.room && C.room.room && C.room.room.members) || []).map(x => x.id).filter(id => id && !gs.has(id)));
-  const staff = (H.S.staff||[]).filter(s => s.status !== 'left'), byTeam = {}; staff.forEach(s => (byTeam[s.team] = byTeam[s.team] || []).push(s));
-  H.open(`<form data-f="chGuest"><h3>👥 ${esc(r.title)} · 초대</h3><input type="hidden" name="id" value="${r.id}">
-    <p class="note" style="margin:-4px 0 10px">체크한 사람이 이 방에 들어와요. 원래 멤버(회색)는 그대로예요.</p>
-    ${Object.entries(byTeam).map(([t, a]) => `<div class="ptitle">${esc(H.T(t).name)}</div><div class="ch-pick">${a.map(s => base.has(s.id)
-      ? `<label style="opacity:.5"><input type="checkbox" checked disabled> ${esc(s.name)} <small>원래 멤버</small></label>`
-      : `<label><input type="checkbox" name="m" value="${s.id}" ${gs.has(s.id)?'checked':''}> ${esc(s.name)} <small>${esc(s.role||'')}</small></label>`).join('')}</div>`).join('')}
+  let d; try { d = await rpc('chat_admin_people', {p_id: r.id}); } catch(e){ return H.toast('인원 SQL(update_chat_people.sql)을 먼저 넣어주세요'); }
+  const base = new Set(d.base||[]), outs = new Set(d.outs||[]), gs = new Set(d.guests||[]);
+  const staff = (H.S.staff||[]).filter(s => s.status !== 'left' && !s.hidden), byTeam = {}; staff.forEach(s => (byTeam[s.team] = byTeam[s.team] || []).push(s));
+  H.open(`<form data-f="chGuest"><h3>👥 ${esc(r.title)} · 인원</h3><input type="hidden" name="id" value="${r.id}">
+    <p class="note" style="margin:-4px 0 10px">누르면 넣고 빼요 · 대화 기록은 그대로 남아요</p>
+    <div class="ch-pp">${Object.entries(byTeam).map(([t, a]) => `<div class="ptitle">${esc(H.T(t).name)}</div><div class="g">${a.map(s => { const b = base.has(s.id), on = b ? !outs.has(s.id) : gs.has(s.id);
+      return `<label class="${b ? 'b' : 'n'}"><input type="checkbox" name="m" value="${s.id}" ${on?'checked':''}>${esc(s.name)}</label>`; }).join('')}</div>`).join('')}</div>
+    <p class="note" style="margin-top:10px">파랑 = 지금 멤버 · 초록 = 새로 초대 · 빨강 줄 = 뺄 사람</p>
     ${H.sacts('저장')}</form>`); };
 H.FORM.chGuest = async (fd0, f) => { const fd = new FormData(f), id = +fd.get('id');
-  await rpc('chat_admin_guests_set', {p_id: id, p_members: fd.getAll('m')}); H.close(); await loadHome(); await openRoom(id); H.toast('초대했어요 · 그분 앱 대화 목록에 이 방이 생겨요'); };
+  await rpc('chat_admin_people_set', {p_id: id, p_in: fd.getAll('m')}); H.close(); await loadHome(); await openRoom(id); H.toast('저장했어요 · 뺀 사람은 목록에서 이 방이 사라져요'); };
 H.ACT.chNew = () => roomForm(null);
 H.ACT.chEdit = () => roomForm(C.home.rooms.find(x => x.id === C.cur));
 H.FORM.chRoom = async (fd0, f) => {

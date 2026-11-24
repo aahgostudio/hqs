@@ -744,3 +744,15 @@ form:has(input[name=teams][value=PRT]:checked) .prtbox{display:block}
 .mec .vt{display:flex;justify-content:space-between;background:#ffffff1C;border-radius:10px;padding:7px 11px;font-size:12.5px;margin-top:8px}.mec .vt b{color:#FFD76B}.mec .vt small{opacity:.75;font-size:11px}
 .mec .vk{font-size:12px;opacity:.85;margin:4px 2px 0}.mec .vk b{font-size:13px}
 .vi{display:block;color:#B7791F;font-size:10.5px;font-weight:400}
+
+/* 1124 방 인원 넣고 빼기 */
+.ch-pp .g{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.ch-pp label{border:1.5px solid #E2E5EC;border-radius:99px;padding:6px 12px;font-size:13.5px;cursor:pointer;user-select:none;background:#fff}
+.ch-pp input{display:none}
+.ch-pp label.b:has(input:checked){background:#EAF0FF;border-color:#9DB4EA;color:#16347A;font-weight:700}
+.ch-pp label.b:has(input:checked)::before{content:'✓ '}
+.ch-pp label.b:not(:has(input:checked)){background:#FEF2F2;border-color:#FCA5A5;color:#B91C1C;text-decoration:line-through}
+.ch-pp label.b:not(:has(input:checked))::after{content:' 빠짐';font-size:10.5px;display:inline-block;margin-left:3px}
+.ch-pp label.n:has(input:checked){background:#ECFDF5;border-color:#6EE7B7;color:#047857;font-weight:700}
+.ch-pp label.n:has(input:checked)::before{content:'✓ '}
+.ch-pp label.n:has(input:checked)::after{content:' 초대';font-size:10.5px;margin-left:3px}
