@@ -235,9 +235,9 @@
     const t = w.querySelector('#epc-t');
     if (keepIn) { bindBox(box); return; }
     // 입력줄: 카카오워크식 · @멘션 · 이모지 (PC는 Enter 전송, 폰은 [↑])
-    K().drop(w, fs => { if (view === 'room' && room) (async () => { for (const f of fs) await sendPhoto(f); })(); });   // PC: 끌어다 놓기 · 붙여넣기
+    K().drop(w, fs => { if (view === 'room' && room) sendMany(fs); });   // PC: 끌어다 놓기 · 붙여넣기
     K().attach(w.querySelector('.kit-bar'), {members: memList, onSend: send,
-      onMedia: k => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); }, k === 'album' ? 'alb' : null)});
+      onMedia: k => pickMedia(fs => sendMany(fs), k === 'album' ? 'alb' : null)});
     if (editing) { t.value = editing.body || ''; K().sync(t); t.focus(); }
     else if (replying) t.focus();
     bindBox(box);
@@ -398,6 +398,24 @@
     if (direct) d.querySelector(`[data-pk="${direct}"]`).click();   // [사진] 버튼: 바로 앨범
   }
   
+  // 1124: 사진 여러 장 — 3장씩 동시에 올리고, 다 올라가면 고른 순서대로 대화방에 붙임 · 입력칸에 '사진 올리는 중 2/5'
+  let slotKey = null; const slot = async () => slotKey || (slotKey = await rpc('staff_avatar_slot', {p_token: opt.token}));
+  async function sendMany(fs){
+    const imgs = fs.filter(f => K().kind(f) === 'img'), rest = fs.filter(f => K().kind(f) !== 'img');
+    for (const f of rest) await sendPhoto(f);
+    if (!imgs.length) return; if (opt.demo) { for (const f of imgs) await sendPhoto(f); return; }
+    const ta = document.getElementById('epc-t'), ph0 = ta ? ta.placeholder : '', rid = room.room.id; let done = 0, bad = 0;
+    const show = () => { if (ta) ta.placeholder = `📷 사진 올리는 중 ${done}/${imgs.length}…`; }; show();
+    const paths = await K().pool(imgs, 3, async f => { try {
+        f = await K().shrink(f); const key = await slot(), path = `${key}/${rid}/${Date.now()}-${Math.random().toString(36).slice(2,6)}.${extOf(f)}`;
+        const r = await fetch(`${URL_}/storage/v1/object/chat/${path}`, {method:'POST', headers:Object.assign({'cache-control':'max-age=31536000','content-type': f.type || 'image/jpeg'}, H), body: f});
+        if (!r.ok) throw 0;
+        const tb = await K().thumb(f); if (tb) fetch(`${URL_}/storage/v1/object/chat/${path}${K().T}`, {method:'POST', headers:Object.assign({'cache-control':'max-age=31536000','content-type':'image/jpeg'}, H), body: tb}).catch(() => {});
+        return path; } catch(_) { bad++; return null; } finally { done++; show(); } });
+    for (const path of paths) if (path) { try { await rpc('chat_send', {p_token: opt.token, p_room: rid, p_body: null, p_photo: path}); } catch(_) { bad++; } }
+    if (ta) ta.placeholder = ph0; await refreshRoom();
+    if (bad) alert(`사진 ${bad}장을 올리지 못했어요. 잠시 뒤 다시 해주세요.`);
+  }
   async function sendPhoto(f){
     const kd = K().kind(f); if (!kd) return alert('사진·동영상·문서(PDF·한글·엑셀·워드·PPT·ZIP)만 보낼 수 있어요');
     if (kd === 'doc') { if (f.size > 50 * 1024 * 1024) return alert('파일은 50MB까지 보낼 수 있어요'); if (opt.demo) return;
@@ -433,7 +451,7 @@
     if (b.dataset.room) return openRoom(+b.dataset.room);
     if (b.dataset.cdone) return custConfirm(+b.dataset.cdone);
     if (b.dataset.send) return send();
-    if (b.dataset.photo) return pickMedia(async fs => { for (const f of fs) await sendPhoto(f); });
+    if (b.dataset.photo) return pickMedia(fs => sendMany(fs));
     if (b.dataset.epccancel) { editing = null; return drawRoom(true); }
     if (b.dataset.kitrpx) { replying = null; return drawRoom(true); }
   }

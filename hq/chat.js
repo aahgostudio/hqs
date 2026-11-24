@@ -188,9 +188,9 @@ function paint(keep){
       if (Math.abs(dx) > 45 && b.dataset.mid && /^\d+$/.test(b.dataset.mid)) { box._busy = Date.now(); if (navigator.vibrate) navigator.vibrate(10); H.ACT.chReply({dataset:{id: b.dataset.mid}}); } }, {passive:true}); }
   // 입력줄: 카카오워크식 (PC는 Enter 전송 · 폰은 [↑]로 전송) · @멘션 · 이모지
   syncReply();
-  K.drop(R, fs => (async () => { for (const f of fs) await sendPhoto(f); })());   // PC: 끌어다 놓기 · 붙여넣기
+  K.drop(R, fs => sendMany(fs));   // PC: 끌어다 놓기 · 붙여넣기
   K.attach(R.querySelector('.kit-bar'), {members: memList, onSend: () => H.ACT.chSend(),
-    onMedia: k => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); }, k === 'album' ? 'alb' : null)});
+    onMedia: k => pickMedia(fs => sendMany(fs), k === 'album' ? 'alb' : null)});
   const q = L.querySelector('[data-chq]'); if (q) q.oninput = () => { C.q = q.value; const pos = q.selectionStart; L.innerHTML = listHtml(); const q2 = L.querySelector('[data-chq]'); q2.focus(); q2.setSelectionRange(pos,pos); q2.oninput = q.oninput; };
   const tg = document.getElementById('chOnTg'); if (tg) tg.checked = !!(C.home && C.home.on);
 }
@@ -279,7 +279,21 @@ function pickMedia(onFiles, direct){
   if (direct) { const b = d.querySelector(`[data-pk="${direct}"]`); document.body.appendChild(d); return b.click(); }   // [사진] 버튼: 바로 앨범
   document.body.appendChild(d);
 }
-H.ACT.chMedia = () => pickMedia(async fs => { for (const f of fs) await sendPhoto(f); });
+H.ACT.chMedia = () => pickMedia(fs => sendMany(fs));
+// 1124: 사진 여러 장 — 3장씩 동시에 올리고 고른 순서대로 붙임
+async function sendMany(fs){
+  const imgs = fs.filter(f => K.kind(f) === 'img'), rest = fs.filter(f => K.kind(f) !== 'img');
+  for (const f of rest) await sendPhoto(f);
+  if (!imgs.length) return; const rid = C.cur; let done = 0, bad = 0;
+  const show = () => H.toast(`📷 사진 올리는 중 ${done}/${imgs.length}…`); show();
+  const paths = await K.pool(imgs, 3, async f => { try {
+      f = await K.shrink(f); const path = `boss/${rid}/${Date.now()}-${Math.random().toString(36).slice(2,6)}.${extOf(f)}`;
+      const {error} = await H.sb.storage.from('chat').upload(path, f, {contentType: f.type || 'image/jpeg', cacheControl: '31536000'}); if (error) throw error;
+      K.thumb(f).then(tb => tb && H.sb.storage.from('chat').upload(path + K.T, tb, {contentType: 'image/jpeg', cacheControl: '31536000'})).catch(() => {});
+      return path; } catch(_) { bad++; return null; } finally { done++; show(); } });
+  for (const path of paths) if (path) { try { await rpc('chat_admin_send', {p_room: rid, p_body: null, p_photo: path}); } catch(_) { bad++; } }
+  await tick(); H.toast(bad ? `사진 ${bad}장 실패 · 다시 해주세요` : `사진 ${paths.filter(Boolean).length}장 보냈어요`);
+}
 async function sendPhoto(f){
   const kd = K.kind(f); if (!kd) return H.toast('사진·동영상·문서(PDF·한글·엑셀·워드·PPT·ZIP)만 보낼 수 있어요');
   if (kd === 'doc') { if (f.size > 50*1024*1024) return H.toast('파일은 50MB까지 보낼 수 있어요');

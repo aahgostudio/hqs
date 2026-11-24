@@ -290,21 +290,23 @@
       return await new Promise(r => c.toBlob(r, 'image/jpeg', 0.72)); } catch(_) { return null; } }
   const T = '.t.jpg';
   function timg(u, alt){ return `<img src="${esc(u + T)}" data-orig="${esc(u)}" onerror="if(this.dataset.orig){this.src=this.dataset.orig;this.dataset.orig=''}" alt="${alt || '사진'}" loading="lazy">`; }
-  // 📷 큰 사진(15MB 넘음)은 올리기 전에 폰에서 줄임 — 긴 쪽 4000px · 화질 90% (홍보용으로 충분) · 15MB 이하 사진은 원본 그대로
+  // 📷 1124: 현장에서 찍자마자 바로 올라가게 — 사진은 모두 긴 쪽 2560px · 화질 82%로 줄여서 올림 (한 장 약 0.5~1MB)
+  //    줄인 게 원본보다 크면 원본 그대로 · GIF는 그대로
   async function shrink(f){
-    const LIM = 15 * 1024 * 1024;
-    if (!f || f.size <= LIM || !/^image\//.test(f.type || '') || /gif/i.test(f.type)) return f;
+    if (!f || !/^image\//.test(f.type || '') || /gif/i.test(f.type) || f.size < 400 * 1024) return f;
     let bmp; try { bmp = await createImageBitmap(f, {imageOrientation: 'from-image'}); } catch(_) {
-      try { bmp = await new Promise((ok, no) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => { URL.revokeObjectURL(u); no(); }; im.src = u; }); } catch(_) { return f; } }   // 못 읽는 형식(일부 HEIC)은 원본 그대로
-    const W = bmp.width, Hh = bmp.height;
-    for (const [side, q] of [[4000, 0.9], [3200, 0.85], [2400, 0.8]]) {
-      const s = Math.min(1, side / Math.max(W, Hh)), c = document.createElement('canvas');
+      try { bmp = await new Promise((ok, no) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => { URL.revokeObjectURL(u); no(); }; im.src = u; }); } catch(_) { return f; } }
+    try { const W = bmp.width, Hh = bmp.height, s = Math.min(1, 2560 / Math.max(W, Hh)), c = document.createElement('canvas');
       c.width = Math.round(W * s); c.height = Math.round(Hh * s); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-      const b = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
-      if (b && b.size <= LIM) { try { bmp.close && bmp.close(); } catch(_){} return new File([b], (f.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', {type: 'image/jpeg'}); }
-    }
-    return f;
+      try { bmp.close && bmp.close(); } catch(_){}
+      const b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+      return b && b.size < f.size ? new File([b], (f.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', {type: 'image/jpeg'}) : f;
+    } catch(_) { return f; }
   }
+  // 1124: 여러 장 동시에 (n개씩) — 순서대로 결과 반환
+  async function pool(items, n, fn){ const out = new Array(items.length); let i = 0;
+    await Promise.all(Array.from({length: Math.min(n, items.length)}, async () => { while (i < items.length) { const k = i++; out[k] = await fn(items[k], k); } }));
+    return out; }
   // 👀 고객님 방 위쪽 한 줄: 지금 보는 중 / 몇 시 확인 / 아직 안 들어오심
   function seenLine(s){
     if (!s) return '<div class="kit-seen"></div>';
@@ -340,5 +342,5 @@
   function pinBar(p, canX){ if (!p || !p.id) return '';
     const e = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     return `<div class="kit-pin" data-kitjump="${p.id}"><span>📌</span><div><b>${e(p.name)}</b> ${e(p.body || (p.photo ? '사진' : ''))}</div>${canX ? `<button type="button" data-kitunpin="1" aria-label="고정 해제">✕</button>` : ''}</div>`; }
-  window.EPKit = {thumb, timg, T, RX, reacts, pinBar, snip, quote, replyBar, shrink, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
+  window.EPKit = {thumb, timg, T, RX, reacts, pinBar, snip, quote, replyBar, shrink, pool, seenLine, seenUpto, SEEN_TAG, needPush, pushOn, pushSync, group, grid, kind, isDoc, docMime, docCard, drop, badge, needBadgeOk, badgeOk, viewer, save, bar, attach, sync, text, day, READ, firstUnread, jump};
 })();
