@@ -246,7 +246,7 @@ async function tick(){
 C.act = Date.now();
 function poll(){ clearTimeout(C.t); C.act = Date.now();
   const go = async () => { const before = (C.msgs || []).length; await tick(); if ((C.msgs || []).length !== before) C.act = Date.now();
-    if (H.cur() === 'chat') C.t = setTimeout(go, Date.now() - C.act < 60000 ? 3000 : 10000); };
+    if (H.cur() === 'chat') C.t = setTimeout(go, !C.cur ? 15000 : Date.now() - C.act < 60000 ? 3000 : 10000); };   // 목록만 볼 땐 15초마다
   C.t = setTimeout(go, 3000); }
 document.addEventListener('input', e => { if (e.target && e.target.id === 'chT') C.act = Date.now(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) C.act = Date.now(); });
