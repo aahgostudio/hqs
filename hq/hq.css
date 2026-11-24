@@ -816,7 +816,7 @@ button.ago-g2{background:none;border:0;padding:0;width:100%;text-align:left;font
   .ago .pc-only{display:block}.ago-sec .pc-only{display:inline}
   .ago-hero{display:flex;align-items:center;gap:24px;padding:20px 24px}
   .ago-hero .ago-sum{margin:0 0 0 auto;grid-template-columns:repeat(4,112px)}
-  .ago-side{display:block}.ago-g{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+  .ago-side{display:block;order:1}.ago-main{order:0}.ago-g{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
   .ago-main .ago-sec:first-child{margin-top:4px}
   .ago-app{align-items:center}
   .ago-viz{display:block;width:290px;flex:none;background:#FAFAFB;border-radius:12px;padding:10px 12px;align-self:stretch}
