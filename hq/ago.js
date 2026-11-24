@@ -15,6 +15,7 @@ const set = k => H.S.settings ? H.S.settings[k] : null;
 const saveSet = async (k, v) => { await H.q(sb.from('settings').upsert({key: k, value: v})); H.S.settings[k] = v; };
 const n = v => v == null ? '-' : Number(v).toLocaleString('ko-KR');
 const pct = (a, b) => b ? Math.round(a / b * 100) : null;
+const agoLogo = w => `<svg viewBox="150 300 700 520" width="${w}" aria-label="아고스튜디오"><path d="M265 520 C265 410 305 352 365 352 C425 352 462 405 466 470 L534 470 C538 405 575 352 635 352 C695 352 735 410 735 520 Z" fill="#2FA36B"/><path d="M215 652 L215 560 C215 505 250 470 310 470 L690 470 C750 470 785 505 785 560 L785 652 Z" fill="#2FA36B"/><circle cx="365" cy="440" r="58" fill="#D4FF3A"/><rect x="352" y="398" width="26" height="84" rx="13" fill="#141414"/><circle cx="390" cy="414" r="11" fill="#fff"/><circle cx="635" cy="440" r="58" fill="#D4FF3A"/><rect x="622" y="398" width="26" height="84" rx="13" fill="#141414"/><circle cx="660" cy="414" r="11" fill="#fff"/><path d="M330 652 L330 590 C330 556 352 540 386 540 L614 540 C648 540 670 556 670 590 L670 652 Z" fill="#3CB97C"/><path d="M440 548 C440 518 462 504 500 504 C538 504 560 518 560 548 Z" fill="#3CB97C"/><rect x="462" y="522" width="28" height="14" rx="7" fill="#141414"/><rect x="510" y="522" width="28" height="14" rx="7" fill="#141414"/><path d="M362 652 L374 626 L386 652 Z M398 652 L410 626 L422 652 Z M434 652 L446 626 L458 652 Z M470 652 L482 626 L494 652 Z M506 652 L518 626 L530 652 Z M542 652 L554 626 L566 652 Z M578 652 L590 626 L602 652 Z M614 652 L626 626 L638 652 Z" fill="#F2F0E9"/><rect x="180" y="672" width="640" height="36" rx="18" fill="#D4FF3A"/><rect x="330" y="746" width="340" height="36" rx="18" fill="#5C7A28"/></svg>`;   // 1124: 아고 공식 로고 (드라이브 '아고_정면캐릭터.svg')
 const sealSvg = w => `<svg viewBox="0 0 100 100" width="${w}"><circle cx="50" cy="50" r="44" fill="#6C4DFF"/><circle cx="38" cy="46" r="6" fill="#fff"/><circle cx="62" cy="46" r="6" fill="#fff"/><path d="M41 60 Q50 67 59 60" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`;
 
 // 이내만 숫자 가져오기 (실패해도 화면은 뜸)
@@ -79,7 +80,7 @@ function homePage(){
 
   return `
   <section class="ago-hero">
-    <div class="ago-ht"><div class="ago-h1"><span class="ago-croc">🐊</span>아고스튜디오</div>
+    <div class="ago-ht"><div class="ago-h1"><span class="ago-croc ago-logo">${agoLogo(34)}</span>아고스튜디오</div>
     <div class="ago-slo">Aah, then Go. 아~ 하는 순간, 바로 만든다.</div></div>
     <div class="ago-sum">
       <div><b>${appsLive}</b><span>운영 중</span></div><div><b>1</b><span>개발 중</span></div>
