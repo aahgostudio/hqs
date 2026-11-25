@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="일정판"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="../diary.css?v=1125a">
+<link rel="stylesheet" href="../diary.css?v=1125b">
 <style>
 body{background:var(--bg)}
 .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg)}
@@ -202,7 +202,7 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 .okline{font-size:13px;background:var(--okb);color:#065F46;border-radius:10px;padding:8px 11px}
 .ics{font-size:12px;word-break:break-all;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-family:ui-monospace,Menlo,monospace}
 </style>
-<script src="../thumb.js?v=1125a"></script>
+<script src="../thumb.js?v=1125b"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -228,14 +228,14 @@ button[aria-pressed=true] .bdot{box-shadow:0 0 0 1.5px var(--navy,#16347A)}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="../demo.js"></script>
-<script src="../status.js?v=1125a"></script>
+<script src="../status.js?v=1125b"></script>
 <script src="../profile.js"></script>
 <script src="../greet.js"></script>
-<script>window.EP_VER='1125a'</script>
-<script src="../chatkit.js?v=1125a"></script>
-<script src="../chat.js?v=1125a"></script>
-<script src="../mymoney.js?v=1125a"></script>
-<script src="../diary.js?v=1125a"></script>
+<script>window.EP_VER='1125b'</script>
+<script src="../chatkit.js?v=1125b"></script>
+<script src="../chat.js?v=1125b"></script>
+<script src="../mymoney.js?v=1125b"></script>
+<script src="../diary.js?v=1125b"></script>
 <script>
 (function(){
 const C = window.EP_CONFIG;
@@ -817,6 +817,7 @@ document.addEventListener('submit', async e => {
       custJob: rid => D && (D.jobs||[]).find(j => j.cust_room == rid),
       onWorkDone: async id => { await rpc('staff_work_done',{p_token:TOKEN,p_job:id}); const j = D.jobs.find(x=>x.id==id); if (j) j.work_done = new Date().toISOString(); toast('작업 끝! 고생 많으셨어요 🙏'); }}); }
   if (window.EPDiary) EPDiary.init({token:TOKEN, rpc, photoUrl, toast, onChange:()=>{ if (D) tabbar(); }});
+  if (window.EPDiary && qs.has('dy')) setTimeout(() => { try { EPDiary.open(); } catch(_){} }, 800);   // 1125: 대표님 한마디 알림 → 바로 다이어리
   EPStatus.init({manual:()=>D&&D.boss, onChange:()=>{ if (D && !['paint','ev','shoot'].includes(tab)) render(); }, demo:DEMO});
   try { await load(); if (EVT()) scope = 'mine';
     if (qs.has('new') && EVT()) { evEdit = {date: ymd(today), kind: isRES() ? '계약' : '미팅', show_boss: true, gcal: false}; tab = 'ev'; }   // 매물노트 [＋ 계약·잔금·안내 넣기] → 바로 입력칸

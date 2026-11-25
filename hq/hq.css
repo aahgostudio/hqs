@@ -852,3 +852,51 @@ button.ago-g2{background:none;border:0;padding:0;width:100%;text-align:left;font
 .imp-ba .now{font-weight:800;color:#16347A}.imp-ba .up{color:#16A34A;font-weight:800;font-size:12px;text-align:right}
 @media (max-width:900px){.imp-hero{grid-template-columns:1fr 1fr}.imp-hero .big{grid-column:1/-1}.imp-g,.imp-g3{grid-template-columns:1fr}}
 @media print{body[data-tab=impact] header.top,body[data-tab=impact] .imp-r,body[data-tab=impact] #fab,body[data-tab=impact] .lk{display:none!important}body[data-tab=impact]{background:#fff}.imp-hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+/* 1125: 현장 다이어리 (대표님) — 왼쪽 미리보기 + 오른쪽 고치기 */
+.sheet.dyb{max-width:1000px;padding:0}
+.dyb-hd{display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid #EEF0F4;position:sticky;top:0;background:#fff;z-index:2}
+.dyb-hd .ic{font-size:22px}.dyb-hd h3{margin:0!important;font-size:18px}.dyb-hd small{color:#8A8F9C;font-size:12.5px}
+.dyb-x{margin-left:auto;width:34px;height:34px;border-radius:50%;border:0;background:#F3F4F7;font-size:19px;color:#555;cursor:pointer;flex:none}
+.dyb-g{display:grid;grid-template-columns:380px 1fr}
+.dyb-pv{background:#FAF7F2;padding:18px 20px 22px}
+.dyb-pv .lab{font-size:10.5px;letter-spacing:1.6px;color:#A39A8C;font-weight:800;margin-bottom:10px}
+.dyb-cd{background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 2px 14px rgba(43,42,51,.09)}
+.dyb-cd .cv{height:180px;display:grid;grid-template-columns:1fr 1fr;gap:2px;position:relative;background:#F0ECE4}
+.dyb-cd .cv.one{display:block;background-size:cover;background-position:center}
+.dyb-cd .cv>div{background-size:cover;background-position:center}
+.dyb-cd .cv.none{grid-template-columns:1fr;place-items:center;background:linear-gradient(135deg,#EEF2FB,#FBF1E6)}
+.dyb-cd .cv.none span{font-weight:800;color:#16347A;padding:0 20px;text-align:center}
+.dyb-cd .tg{position:absolute;bottom:8px;font-size:10px;font-weight:800;color:#fff;padding:1px 8px;border-radius:99px;background:rgba(0,0,0,.45)}
+.dyb-cd .tg.l{left:8px}.dyb-cd .tg.r{right:8px;background:#F68B1F}
+.dyb-cd .bd{padding:13px 15px 15px}.dyb-cd h4{margin:0;font-size:15px;letter-spacing:-.3px}
+.dyb-cd .cr{display:flex;align-items:center;margin-top:8px}
+.dyb-cd .av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:9.5px;font-weight:800;border:2px solid #fff;margin-left:-7px;background:#DCE5F7;color:#16347A}
+.dyb-cd .av:first-child{margin-left:0}.dyb-cd .av.c1{background:#FFE5CC;color:#B45309}.dyb-cd .av.c2{background:#F3E1F7;color:#9D3DB0}
+.dyb-cd .cr span{font-size:11.5px;color:#8A8578;margin-left:7px}
+.dyb-cd .st{margin-left:auto;font-style:normal;font-weight:800;font-size:11px;color:#C2410C;border:1.5px solid #C2410C;border-radius:6px;padding:1px 6px;transform:rotate(-6deg)}
+.dyb-cd .note{position:relative;margin:14px 2px 2px;background:#FFF8DC;border-radius:4px 14px 14px 14px;padding:14px 12px 10px;font-size:15px;line-height:1.4;color:#4A4030;transform:rotate(-.6deg)}
+.dyb-cd .note:before{content:'';position:absolute;left:14px;top:-7px;width:54px;height:14px;background:#F9C9A8CC;transform:rotate(-4deg)}
+.dyb-cd .note i{display:block;font-style:normal;font-size:10px;color:#B8A774;font-weight:700;letter-spacing:1px;margin-bottom:2px}
+.dyb-cd .note .auto{color:#B8A774;font-size:13px}
+.dyb-cd .rxs{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.dyb-cd .rx{font-size:13px;border-radius:99px;padding:4px 10px;background:#F6F3EE;color:#5A554A}.dyb-cd .rx.on{background:#EAF0FF;color:#16347A;box-shadow:inset 0 0 0 1px #C9D6F5}
+.dyb-cd .cmn{margin-left:auto;font-size:12px;color:#8A8578}
+.dyb-pv .tip{margin-top:12px;font-size:11.5px;color:#8A8578;text-align:center}
+.dyb-ed{padding:18px 24px 22px;min-width:0;background:#fff}
+.dyb-ed .ds{margin-bottom:18px}.dyb-ed h5{margin:0 0 9px;font-size:13.5px}.dyb-ed h5 small{font-weight:400;color:#8A8F9C;font-size:11.5px;margin-left:4px}
+.dyb-ed .ph{display:flex;gap:8px;flex-wrap:wrap}
+.dyb-ed .ph button{width:74px;height:56px;border-radius:10px;border:0;background-size:cover;background-position:center;cursor:pointer;position:relative;padding:0}
+.dyb-ed .ph button.on{box-shadow:0 0 0 3px #16347A}.dyb-ed .ph button.on:after{content:'대문';position:absolute;left:4px;top:4px;font-size:9px;font-weight:800;background:#16347A;color:#fff;border-radius:5px;padding:0 4px}
+.dyb-ed .ph .add{width:74px;height:56px;border:1.5px dashed #C8CDD8;border-radius:10px;display:grid;place-items:center;color:#8A8F9C;font-size:11px;background:#FAFBFC;cursor:pointer;box-shadow:none}
+.dyb-ed textarea{width:100%;border:1.5px solid #DDE1E8;border-radius:12px;padding:10px 12px;font-size:14px;resize:vertical}
+.dyb-ed .dchips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.dyb-ed .chip{font-size:12px;border-radius:99px;padding:5px 10px;background:#F3F4F7;color:#4B5160;border:0;cursor:pointer}.dyb-ed .chip.ai{background:#FFF8DC;color:#7A6A3A}
+.dyb-ed .dchips .btn{margin-left:auto}
+.dyb-ed .rbtn{display:flex;gap:8px;flex-wrap:wrap}
+.dyb-ed .rbtn button{width:52px;height:44px;border-radius:12px;background:#F3F4F7;border:0;font-size:21px;cursor:pointer}
+.dyb-ed .rbtn button.on{background:#EAF0FF;box-shadow:inset 0 0 0 2px #16347A}
+.dyb-ed .dcm{background:#F6F7F9;border-radius:12px;padding:8px 11px;margin-bottom:6px;font-size:13px}.dyb-ed .dcm.bs{background:#F1FAF4}
+.dyb-ed .dcm .h{display:flex;align-items:center}.dyb-ed .dcm b{font-size:11.5px;color:#8A8F9C;font-weight:600}
+.dyb-ed .dcm button{margin-left:auto;border:0;background:none;color:#9AA0AC;font-size:11px;cursor:pointer}
+.dyb-ed .din{display:flex;gap:8px;margin-top:8px}.dyb-ed .din input{flex:1;border:1.5px solid #DDE1E8;border-radius:12px;padding:10px 12px;font-size:14px}
+@media (max-width:760px){.dyb-g{grid-template-columns:1fr}.dyb-ed{padding:16px}}

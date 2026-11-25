@@ -712,33 +712,59 @@ H.ACT.photosSheet = el => { const j = J(el.dataset.j); const ph = H.photosOf(j.i
     <div class="sacts"><button class="btn ghost" data-a="close">닫기</button></div>`, true); };
 H.ACT.phHide = async el => { const p = H.S.photos.find(x=>x.id==el.dataset.id); await H.q(sb.from('job_photos').update({hidden: !p.hidden}).eq('id', p.id)); p.hidden = !p.hidden; H.ACT.photosSheet(el); };
 
-/* ---------- 1108: 내 현장 다이어리 — 대표님: 한마디·대문 고치기, 이야기 달기 ---------- */
+/* ---------- 1108 → 1125: 내 현장 다이어리 — 대표님: 왼쪽 미리보기 + 오른쪽 고치기 (대문·한마디·반응·이야기) ---------- */
+const DY_RX = ['👏','💪','🔥','❤️','😂'];
+const DY_TIPS = ['고생 많았어요! 오늘도 반짝반짝 ✨', '꼼꼼함이 사진에서 보여요 👍', '호흡 척척, 최고의 팀이에요'];
+const dyShort = n => { n = String(n||'').trim(); return n.length >= 3 ? n.slice(-2) : n; };
 H.ACT.dyBoss = async el => { const id = +el.dataset.j, j = J(id); if (!j) return;
   let row = {}, cm = [], rx = [];
   try { [row, cm, rx] = await Promise.all([
       H.q(sb.from('jobs').select('diary_note,diary_cover').eq('id', id).single()),
       H.q(sb.from('diary_comment').select('id,body,boss,staff_id,created_at,hidden').eq('job_id', id).order('created_at')),
-      H.q(sb.from('diary_react').select('emoji').eq('job_id', id))]);
+      H.q(sb.from('diary_react').select('emoji,who').eq('job_id', id))]);
   } catch(_){ return H.toast('다이어리 SQL을 먼저 넣어주세요 (update_diary.sql)'); }
-  const n = {}; (rx||[]).forEach(r => n[r.emoji] = (n[r.emoji]||0) + 1);
-  const cv = row.diary_cover;
-  H.open(`<h3>📔 ${esc(j.title)} · 다이어리</h3>
-    <p class="note" style="margin:-6px 0 10px">직원 일정판 [다이어리]에 이렇게 보여요. 고객 이름·전화·금액은 안 보여요.</p>
-    <div class="fld"><label>대문 사진 <small style="color:var(--sub)">(블로그 썸네일 · 없으면 첫 사진 = 전, 마지막 사진 = 후)</small></label>
-      ${cv ? `<img src="${H.photoUrl(cv)}" alt="" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;display:block;margin-bottom:6px">` : ''}
-      <div class="acts" style="margin:0"><label class="btn sm ghost" style="cursor:pointer">${cv ? '바꾸기' : '올리기'}<input type="file" accept="image/*" hidden data-c="dyCover" data-j="${id}"></label>${cv ? `<button class="btn sm ghost" data-a="dyCoverDel" data-j="${id}">빼기</button>` : ''}</div></div>
-    <div class="fld"><label>오늘의 한마디 <small style="color:var(--sub)">(비워두면 현장에 맞는 문구가 자동으로 들어가요)</small></label>
-      <textarea id="dyNote" rows="3" maxlength="200" placeholder="예) 욕실 수전 물때까지 반짝! 두 분 호흡 최고였어요">${esc(row.diary_note||'')}</textarea>
-      <div class="acts" style="margin:6px 0 0"><button class="btn sm" data-a="dyNoteSave" data-j="${id}">한마디 저장</button></div></div>
-    <div class="fld"><label>반응 · 이야기</label>
-      <div style="font-size:14px;margin-bottom:6px">${['👏','💪','🔥','❤️','😂'].filter(e => n[e]).map(e => `${e} ${n[e]}`).join(' · ') || '<span style="color:var(--sub);font-size:12.5px">아직 반응이 없어요</span>'}</div>
-      ${(cm||[]).filter(c => !c.hidden).map(c => `<div style="background:${c.boss?'#F1FAF4':'#F6F7F9'};border-radius:10px;padding:7px 10px;margin-bottom:5px;font-size:13px"><b style="font-size:11.5px;color:var(--sub)">${c.boss ? '권성환 대표' : esc(H.P(c.staff_id).name)} · ${H.hm(c.created_at)}</b> <button class="btn sm ghost" style="padding:0 6px;font-size:10.5px;float:right" data-a="dyCmHide" data-id="${c.id}" data-j="${id}">숨기기</button><br>${esc(c.body)}</div>`).join('') || '<p class="empty" style="margin:4px 0">아직 이야기가 없어요</p>'}
-      <div style="display:flex;gap:6px;margin-top:6px"><input id="dyCm" maxlength="300" placeholder="대표님 한마디 (직원들한테 보여요)" style="flex:1"><button class="btn sm" data-a="dyCmAdd" data-j="${id}">올리기</button></div></div>
-    <div class="sacts"><button class="btn ghost" data-a="close">닫기</button></div>`, true); };
+  const n = {}, mine = new Set(); (rx||[]).forEach(r => { n[r.emoji] = (n[r.emoji]||0) + 1; if (r.who === 'boss') mine.add(r.emoji); });
+  const ph = H.photosOf(id).filter(p => !p.hidden && (p.bucket||'live') === 'live').sort((a,b) => String(a.created_at).localeCompare(String(b.created_at)));
+  const cv = row.diary_cover, crew = (j.assignments||[]).filter(a => a.status === 'approved').map(a => H.P(a.staff_id).name);
+  const cms = (cm||[]).filter(c => !c.hidden), u = p => H.photoUrl(p);
+  const pair = cv ? `<div class="cv one" style="background-image:url('${u(cv)}')"></div>`
+    : ph.length ? `<div class="cv"><div style="background-image:url('${u(ph[0].path)}')"></div><div style="background-image:url('${u(ph[ph.length-1].path)}')"></div><span class="tg l">BEFORE</span><span class="tg r">AFTER</span></div>`
+    : `<div class="cv none"><span>${esc(j.title)}</span></div>`;
+  const d = new Date(j.job_date + 'T00:00:00');
+  H.open(`<div class="dyb-hd"><span class="ic">📔</span><div><h3>${esc(j.title)}</h3><small>${d.getMonth()+1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]}) · 현장 다이어리</small></div><button class="dyb-x" data-a="close" aria-label="닫기">×</button></div>
+    <div class="dyb-g">
+      <div class="dyb-pv"><div class="lab">직원들한테 이렇게 보여요</div>
+        <div class="dyb-cd">${pair}<div class="bd"><h4>${esc(j.title)}</h4>
+          <div class="cr">${crew.slice(0,4).map((nm,i) => `<b class="av c${i%3}">${esc(dyShort(nm))}</b>`).join('')}<span>${crew.length ? crew.length + '명 함께' : '배정 없음'}</span>${j.work_done_at||j.done_at ? '<em class="st">완료!</em>' : ''}</div>
+          <div class="note"><i>오늘의 한마디</i><span id="dyPv">${row.diary_note ? esc(row.diary_note) : '<span class="auto">(비워두면 현장에 맞는 문구가 자동으로 들어가요)</span>'}</span></div>
+          <div class="rxs">${DY_RX.filter(e => n[e]).map(e => `<span class="rx${mine.has(e)?' on':''}">${e} <b>${n[e]}</b></span>`).join('')}<span class="cmn">💬 이야기 ${cms.length}</span></div></div></div>
+        <div class="tip">고객 이름·전화·금액은 안 보여요</div></div>
+      <div class="dyb-ed">
+        <div class="ds"><h5>🖼 대문 사진 <small>현장 사진에서 눌러 고르기 · 안 고르면 첫 사진=전, 마지막=후</small></h5>
+          <div class="ph">${ph.slice(0,12).map(p => `<button style="background-image:url('${u(p.path)}')" class="${cv===p.path?'on':''}" data-a="dyCoverPick" data-j="${id}" data-p="${esc(p.path)}"></button>`).join('')}
+            <label class="add">＋ 올리기<input type="file" accept="image/*" hidden data-c="dyCover" data-j="${id}"></label>${cv ? `<button class="add" data-a="dyCoverDel" data-j="${id}">자동으로</button>` : ''}</div></div>
+        <div class="ds"><h5>✍️ 오늘의 한마디 <small>비워두면 자동 문구</small></h5>
+          <textarea id="dyNote" rows="2" maxlength="200" placeholder="예) 욕실 수전 물때까지 반짝! 두 분 호흡 최고였어요">${esc(row.diary_note||'')}</textarea>
+          <div class="dchips">${DY_TIPS.map(t => `<button class="chip ai" data-a="dyTip" data-t="${esc(t)}">✨ ${esc(t)}</button>`).join('')}<button class="chip" data-a="dyTip" data-t="">자동으로 두기</button><button class="btn sm" data-a="dyNoteSave" data-j="${id}">한마디 저장</button></div></div>
+        <div class="ds"><h5>👏 대표님 반응 <small>누르면 직원 화면에 바로 떠요</small></h5>
+          <div class="rbtn">${DY_RX.map(e => `<button class="${mine.has(e)?'on':''}" data-a="dyRx" data-j="${id}" data-e="${e}">${e}</button>`).join('')}</div></div>
+        <div class="ds"><h5>💬 이야기 <small>${cms.length}개 · 대표님이 남기면 함께한 직원 폰으로 알림이 가요</small></h5>
+          ${cms.map(c => `<div class="dcm${c.boss?' bs':''}"><div class="h"><b>${c.boss ? '권성환 대표' : esc(H.P(c.staff_id).name)} · ${H.hm(c.created_at)}</b><button data-a="dyCmHide" data-id="${c.id}" data-j="${id}">숨기기</button></div><div>${esc(c.body)}</div></div>`).join('') || '<p class="empty" style="margin:4px 0">아직 이야기가 없어요</p>'}
+          <div class="din"><input id="dyCm" maxlength="300" placeholder="대표님 한마디 (직원들한테 보여요)"><button class="btn" data-a="dyCmAdd" data-j="${id}">올리기</button></div></div>
+      </div></div>`, true);
+  const sh = document.getElementById('sheet'); sh.classList.add('dyb');
+  const ta = document.getElementById('dyNote'), pv = document.getElementById('dyPv');
+  ta.addEventListener('input', () => { const v = ta.value.trim(); pv.innerHTML = v ? esc(v) : '<span class="auto">(비워두면 현장에 맞는 문구가 자동으로 들어가요)</span>'; }); };
+H.ACT.dyTip = el => { const ta = document.getElementById('dyNote'); ta.value = el.dataset.t; ta.dispatchEvent(new Event('input')); };
 H.ACT.dyNoteSave = async el => { const v = (document.getElementById('dyNote').value||'').trim();
   await H.q(sb.from('jobs').update({diary_note: v || null}).eq('id', +el.dataset.j)); H.toast('한마디 저장했어요'); };
+H.ACT.dyRx = async el => { const id = +el.dataset.j, e = el.dataset.e;
+  if (el.classList.contains('on')) await H.q(sb.from('diary_react').delete().eq('job_id', id).eq('who', 'boss').eq('emoji', e));
+  else await H.q(sb.from('diary_react').insert({job_id: id, who: 'boss', emoji: e}));
+  H.ACT.dyBoss(el); };
+H.ACT.dyCoverPick = async el => { await H.q(sb.from('jobs').update({diary_cover: el.dataset.p}).eq('id', +el.dataset.j)); H.toast('대문 사진 바꿨어요'); H.ACT.dyBoss(el); };
 H.ACT.dyCmAdd = async el => { const v = (document.getElementById('dyCm').value||'').trim(); if (!v) return;
-  await H.q(sb.from('diary_comment').insert({job_id: +el.dataset.j, boss: true, body: v.slice(0,300)})); H.toast('올렸어요'); H.ACT.dyBoss(el); };
+  await H.q(sb.from('diary_comment').insert({job_id: +el.dataset.j, boss: true, body: v.slice(0,300)})); H.toast('올렸어요 · 함께한 직원에게 알림 갔어요'); H.ACT.dyBoss(el); };
 H.ACT.dyCmHide = async el => { if (!confirm('이 이야기를 숨길까요?')) return; await H.q(sb.from('diary_comment').update({hidden: true}).eq('id', +el.dataset.id)); H.ACT.dyBoss(el); };
 H.ACT.dyCoverDel = async el => { await H.q(sb.from('jobs').update({diary_cover: null}).eq('id', +el.dataset.j)); H.ACT.dyBoss(el); };
 H.CHANGE.dyCover = async el => { const f = el.files && el.files[0]; if (!f) return; const id = +el.dataset.j;
