@@ -189,7 +189,7 @@ H.photosOf = jid => (H.S.photos||[]).filter(p => p.job_id === jid);
 /* ---------- 화면 틀 ---------- */
 H.view = (key, def) => { H.views[key] = def; };
 const ORDER = ['home','pay','team','chat','sched','ops','promo','ago','select','money','staff'];
-H.cur = () => { const h = (location.hash||'').replace('#',''); const k = h.split('/')[0]; return H.views[k] && (!H.views[k].owner || H.S.owner) ? k : 'home'; };
+H.cur = () => { const h = (location.hash||'').replace('#',''); const k = h.split('/')[0]; return H.views[k] && (!H.views[k].owner || H.S.owner) ? k : (H.S.owner && H.storeHome ? H.storeHome() : 'home'); };
 H.go = k => { if (location.hash !== '#'+k) location.hash = k; else H.render(); };
 
 H.untilTxt = u => { if (!u) return ''; const d = new Date(u), p = n => String(n).padStart(2,'0');
@@ -219,15 +219,19 @@ H.render = async () => {
   const S = H.S, k = H.cur(), v = H.views[k];
   document.body.dataset.tab = k;
   document.title = `${S.owner ? 'HQ' : 'HQS'} · ${v.label} · 어닝플레이스`;
-  const tabs = ORDER.filter(x => H.views[x] && (!H.views[x].owner || S.owner))
+  // 1125d 대표: 매장 탭(어닝플레이스·리츠종합클린·리츠부동산·아고스튜디오) + 매장 메뉴 / 관리자: 예전 그대로
+  const ob = S.owner && H.ownerBar ? H.ownerBar(k) : null;
+  const tabs = ob ? ob.html : ORDER.filter(x => H.views[x] && (!H.views[x].owner || S.owner))
     .map(x => `<a href="#${x}" ${x===k?'aria-current="page"':''}>${H.views[x].label}</a>`).join('');
-  const shell = `<header class="top"><div class="topin">
-      <a class="brand" href="#home" title="본사 홈" style="text-decoration:none;color:inherit"><img class="logo" src="../logo.svg" alt=""><div><b>어닝플레이스 ${S.owner ? 'HQ' : 'HQS'}</b><small>${S.owner ? '대표 · 본사 홈' : '본사일정관리팀'}</small></div></a>
-      <nav class="tabs" aria-label="메뉴">${tabs}</nav>
+  const shell = `<header class="top${ob ? ' own' : ''}"><div class="topin">
+      ${ob ? `<a class="brand" href="#hqhome" data-a="storeGo" data-k="ep" title="본사 홈" style="text-decoration:none;color:inherit"><span class="opl">O</span><div><b>오피니</b><small>오피니 빌리지 · 어닝플레이스</small></div></a>`
+        : `<a class="brand" href="#home" title="본사 홈" style="text-decoration:none;color:inherit"><img class="logo" src="../logo.svg" alt=""><div><b>어닝플레이스 ${S.owner ? 'HQ' : 'HQS'}</b><small>${S.owner ? '대표 · 본사 홈' : '본사일정관리팀'}</small></div></a>
+      <nav class="tabs" aria-label="메뉴">${tabs}</nav>`}
       <div class="me">${S.isOwner ? `<button class="mode ${S.owner?'owner':'mgr'}" data-a="modeSwap" title="${S.owner?'눌러서 관리자(HQS) 화면 보기':'눌러서 대표 화면으로 돌아가기'}" style="border:0;cursor:pointer">${S.owner?'대표 모드 ⇄':'관리자 모드 · 미리보기 ⇄'}</button>` : `<span class="mode mgr">관리자 모드</span>`}${H.bossChip()}<span style="color:var(--sub)">${H.esc(S.name||'')}</span><button class="btn ghost sm" data-a="logout">로그아웃</button></div>
-    </div></header><main class="wrap" id="main"><div class="spin"></div></main><button class="fab" data-a="quickAdd" aria-label="올리기">＋</button>`;
+    </div>${ob ? ob.html : ''}</header><main class="wrap" id="main"><div class="spin"></div></main><button class="fab" data-a="quickAdd" aria-label="올리기">＋</button>`;
   if (!document.querySelector('header.top') || H._lastShell !== tabs + S.owner) { $('#app').innerHTML = shell; H._lastShell = tabs + S.owner; }
   else { const bc = document.querySelector('header .bstat'); if (bc) bc.outerHTML = H.bossChip(); }
+  for (const sel of ['.stp.on', '.snav a[aria-current]']) { const on = document.querySelector(sel), w = on && on.parentNode; if (w) w.scrollLeft = on.offsetLeft - w.offsetLeft - (w.clientWidth - on.offsetWidth) / 2; }   // 폰: 고른 매장·메뉴가 보이게
   try {
     if (v.load && H._loaded !== k + (H._dirty||'')) { await v.load(); H._loaded = k + (H._dirty||''); }
     $('#main').innerHTML = v.render();
@@ -388,7 +392,7 @@ H.boot = async () => {
     await Promise.all([H.loadBase(), H.loadBossStatus()]);
     if (H.S.owner && !H.S.mcode) H.toast('매물노트를 연결하면 부동산 현황도 보여요 (홈 › 연결하기)');
     await H.render();
-    H.loadMaemul().then(() => { if (['home','team','staff','ops'].includes(H.cur())) { H._dirty = Date.now(); H.render(); } });
+    H.loadMaemul().then(() => { if (['home','team','staff','ops','realty'].includes(H.cur())) { H._dirty = Date.now(); H.render(); } });
     setInterval(() => { if (document.visibilityState === 'visible' && !$('#scrim').classList.contains('on') && !document.activeElement.closest('#main input,#main select,#main textarea')) H.refresh(); }, 90000);
   } catch(e){ H.fail(e); }
 };

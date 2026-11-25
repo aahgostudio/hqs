@@ -193,7 +193,7 @@ ${(() => { const w = S.depWait || deps.filter(j=>!j.deposit_paid); return w.leng
         : '<div class="note">오늘 지급할 현장이 없어요</div>'}</section>`; })()
       : `<section class="box"><div class="bh"><h3>대표님 상태</h3></div><div class="note">${esc((S.boss||{}).state||'근무중')}${(S.boss||{}).memo?' · '+esc(S.boss.memo):''}</div></section>`}
     </div>
-    <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>리츠부동산</h3>${S.owner&&S.mcode?`<a class="btn sm ghost" href="../maemul/?k=${encodeURIComponent(S.mcode)}">매물노트 열기 →</a>`:''}</div>${resHtml}</section>
+    ${H._hideRes ? '' : `    <section class="box hm-res"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>리츠부동산</h3>${S.owner&&S.mcode?`<a class="btn sm ghost" href="../maemul/?k=${encodeURIComponent(S.mcode)}">매물노트 열기 →</a>`:''}</div>${resHtml}</section>`}
     <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--clean)"></i>리츠종합클린</h3><a class="btn sm ghost" href="#sched">일정판 →</a></div>${cleanHtml}</section>`;
   }
 });
