@@ -141,7 +141,7 @@
     const w = shell(), rs = (home && home.rooms) || [];
     const total = rs.reduce((a, r) => a + (r.unread || 0), 0);
     const row = r => `<button class="epc-row${r._kid ? ' epc-kid' : ''}" data-room="${r.id}"><span class="epc-ic" style="${r.job_done ? 'box-shadow:0 0 0 2.5px #EF4444' : r.job_date && r.job_date <= new Date(Date.now() + 9*36e5).toISOString().slice(0,10) ? 'box-shadow:0 0 0 2.5px #10B981' : ''}">${(ICONS && ICONS[r.id]) || ICON[r.kind] || '💬'}</span>
-      <span class="t"><b>${esc(r.title)}${r.kind !== 'dm' ? ` <small style="color:var(--epc-mute);font-weight:600;font-size:12px">${r.n}</small>` : ''}</b>
+      <span class="t"><b>${esc(r.title)}${r.kind !== 'dm' && r.n != null ? ` <small style="color:var(--epc-mute);font-weight:600;font-size:12px">${r.n}</small>` : ''}</b>
       <p>${r.last ? esc((r.kind === 'dm' ? '' : r.last.name + ': ') + r.last.body) : '아직 대화가 없어요'}</p></span>
       <span class="r">${r.last ? short(r.last.at) : ''}${r.unread ? `<span class="epc-bd">${r.unread > 99 ? '99+' : r.unread}</span>` : ''}</span></button>`;
     const ord = (ICONS && ICONS._order) || [], ix = id => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };   // 대표가 정한 방 순서
