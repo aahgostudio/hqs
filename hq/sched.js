@@ -724,9 +724,10 @@ H.ACT.dyBoss = async el => { const id = +el.dataset.j, j = J(id); if (!j) return
       H.q(sb.from('diary_react').select('emoji,who').eq('job_id', id))]);
   } catch(_){ return H.toast('다이어리 SQL을 먼저 넣어주세요 (update_diary.sql)'); }
   const n = {}, mine = new Set(); (rx||[]).forEach(r => { n[r.emoji] = (n[r.emoji]||0) + 1; if (r.who === 'boss') mine.add(r.emoji); });
-  const ph = H.photosOf(id).filter(p => !p.hidden && (p.bucket||'live') === 'live').sort((a,b) => String(a.created_at).localeCompare(String(b.created_at)));
+  const ph = H.photosOf(id).filter(p => !p.hidden && ['live','chat'].includes(p.bucket||'live') && !/\.(mp4|mov|webm|m4v|heic|heif|pdf)$/i.test(p.path)).sort((a,b) => String(a.created_at).localeCompare(String(b.created_at)))
+    .map(p => ({...p, path: p.bucket === 'chat' ? H.photoUrl(p.path, 'chat') : p.path}));   // 1125: 고객님 방 사진은 전체 주소로 (직원 다이어리도 그대로 읽음)
   const cv = row.diary_cover, crew = (j.assignments||[]).filter(a => a.status === 'approved').map(a => H.P(a.staff_id).name);
-  const cms = (cm||[]).filter(c => !c.hidden), u = p => H.photoUrl(p);
+  const cms = (cm||[]).filter(c => !c.hidden), u = p => /^https?:/.test(p) ? p : H.photoUrl(p);
   const pair = cv ? `<div class="cv one" style="background-image:url('${u(cv)}')"></div>`
     : ph.length ? `<div class="cv"><div style="background-image:url('${u(ph[0].path)}')"></div><div style="background-image:url('${u(ph[ph.length-1].path)}')"></div><span class="tg l">BEFORE</span><span class="tg r">AFTER</span></div>`
     : `<div class="cv none"><span>${esc(j.title)}</span></div>`;
@@ -741,7 +742,7 @@ H.ACT.dyBoss = async el => { const id = +el.dataset.j, j = J(id); if (!j) return
         <div class="tip">고객 이름·전화·금액은 안 보여요</div></div>
       <div class="dyb-ed">
         <div class="ds"><h5>🖼 대문 사진 <small>현장 사진에서 눌러 고르기 · 안 고르면 첫 사진=전, 마지막=후</small></h5>
-          <div class="ph">${ph.slice(0,12).map(p => `<button style="background-image:url('${u(p.path)}')" class="${cv===p.path?'on':''}" data-a="dyCoverPick" data-j="${id}" data-p="${esc(p.path)}"></button>`).join('')}
+          <div class="ph">${(ph.length > 12 ? ph.slice(0,6).concat(ph.slice(-6)) : ph).map(p => `<button style="background-image:url('${u(p.path)}')" class="${cv===p.path?'on':''}" data-a="dyCoverPick" data-j="${id}" data-p="${esc(p.path)}"></button>`).join('')}
             <label class="add">＋ 올리기<input type="file" accept="image/*" hidden data-c="dyCover" data-j="${id}"></label>${cv ? `<button class="add" data-a="dyCoverDel" data-j="${id}">자동으로</button>` : ''}</div></div>
         <div class="ds"><h5>✍️ 오늘의 한마디 <small>비워두면 자동 문구</small></h5>
           <textarea id="dyNote" rows="2" maxlength="200" placeholder="예) 욕실 수전 물때까지 반짝! 두 분 호흡 최고였어요">${esc(row.diary_note||'')}</textarea>
