@@ -59,7 +59,7 @@ H.view('hqhome', {label:'본사 홈', owner:true,
     return `<section class="ophero"><div class="hl"><span class="chip">오피니 빌리지</span><span class="chip">🏙 어닝플레이스 · 랜드마크 단계</span>
         <h1>어닝 빌리지</h1><p>입점하면 '내 오피니'가 생겨요 — 팝업에서 시작해 랜드마크까지<br>일정 · 직원 · 고객 · 정산을 한 곳에서</p>
         <div class="kp"><div><b>${ins.length}</b><small>인샵</small></div><div><b>0 / 5</b><small>협력사 입점</small></div><div><b>${ppl}</b><small>빌리지 사람</small></div><div><b>${S.opJobs ?? '–'}</b><small>이번 달 현장</small></div></div></div>
-        <div class="hr" style="background-image:url(img/village.jpg?v=1126g)"><span>오피니 빌리지 (구상도)</span></div></section>
+        <div class="hr" style="background-image:url(img/village.jpg?v=1126h)"><span>오피니 빌리지 (구상도)</span></div></section>
       <section class="box oprm"><div class="bh"><h3>🗺 오피니 로드맵</h3><span class="note">지금 ${step}단계</span></div>
         <div class="steps">${ROAD.map(([t, s], i) => `<div class="st ${i+1 < step ? 'd' : i+1 === step ? 'n' : ''}"><i>${i+1 < step ? '✓' : i+1}</i><b>${t}</b><small>${s}</small></div>`).join('')}</div></section>
       <div class="oph"><b>🏙 어닝플레이스 인샵 · 협력사</b><small>누르면 그 매장으로 들어가요</small></div>
@@ -82,4 +82,72 @@ H.view('realty', {label:'부동산', owner:true,
     return `<section class="box"><div class="bh"><h3>👥 함께하는 사람 · ${ms.length}명</h3><span class="tag" style="background:${st.color}">${H.storeStage(st)}</span></div>
       <div class="oppl">${ms.map(s => `<span>${H.av(s, 24, '')} ${esc(s.name)} <small class="note">${esc(s.role||'')}</small></span>`).join('') || '<span class="note">아직 없어요</span>'}</div></section>`;
   }});
+
+/* ---------- 1126 로드맵 3단계 · 리츠 1호 매장: [홈] 위 '매장 머리' + 매장 정보(간판·색) ---------- */
+H.CARE = [[2,'근로계약서 · 4대보험','부스부터'],[5,'연차 · 가산수당 · 주52시간','스토어부터'],[10,'취업규칙 작성 · 신고','10명 이상'],[30,'노사협의회 · 고충처리위원','30명 이상'],[50,'장애인 고용 · 안전보건관리자','50명 이상'],[100,'장애인 고용부담금','100명 이상']];
+const NEXT = n => { const i = H.STAGES.findIndex(([m]) => m > n); return i < 0 ? null : H.STAGES[i]; };
+const PREV = n => { let r = H.STAGES[0]; for (const x of H.STAGES) if (n >= x[0]) r = x; return r; };
+const VAR = st => ({'라운지':'lounge','센터':'lounge','타워':'lounge','랜드마크':'lounge'})[st] || 'box';
+const sInfo = k => Object.assign({color:'#3B6FE0', intro:'', tags:[], bname:'', sym:''}, (H.S.settings||{})['opini_store:' + k] || {});
+const COLORS = ['#2FBF9F','#3FB6D8','#3B6FE0','#8E62F0','#E0559E','#E08A2E','#E0B22E'];
+const won = v => (+v||0).toLocaleString('ko-KR');
+// 홈 불러올 때 매장 숫자도 같이 (대표만 · 10분에 한 번)
+const homeLoad = H.views.home.load;
+H.views.home.load = async function(){
+  const r = await homeLoad.apply(this, arguments);
+  if (H.S.owner && (!H.S.opAt || Date.now() - H.S.opAt > 6e5)) {
+    const T = H.today(), [m0] = H.monthRange(T);
+    const [a, b] = await Promise.all([
+      H.sb.from('jobs').select('id', {count:'exact', head:true}).gte('job_date', H.ymd(m0)).lte('job_date', H.ymd(T)).not('status', 'in', '(cancelled,quote)'),
+      H.sb.rpc('boss_impact', {p_from: H.ymd(m0), p_to: H.ymd(T)})]);
+    H.S.opJobsNow = a.error ? null : a.count; H.S.opImp = b.error ? null : b.data; H.S.opAt = Date.now();
+  }
+  return r; };
+H.storeHead = k => {
+  const st = H.STORES.find(s => s.k === k); if (!st) return '';
+  const n = H.storeN(st), stage = H.storeStage(st), nx = NEXT(n), pv = PREV(n), inf = sInfo(k), d = H.S.opImp;
+  const rt = Object.assign({msg:2, cust:2, pay:10}, (H.S.settings||{}).impact_rate || {});
+  const hrs = d ? Math.round((d.auto * rt.msg + d.cust_sent * rt.cust + d.pays * rt.pay) / 60) : null;
+  const pct = nx ? Math.max(4, Math.min(100, Math.round((n - pv[0]) / (nx[0] - pv[0]) * 100))) : 100;
+  const care = (H.S.settings||{}).opini_care || {};
+  const items = H.CARE.filter(([m]) => m <= Math.max(n, 1)), nextItem = H.CARE.find(([m]) => m > n);
+  return `<section class="osh">
+    <div class="ohero" style="--k:${st.color}"><div class="t"><span class="no">인샵 ${st.no}호 · ${stage}</span><h2>${esc(inf.bname || st.name)}</h2><p>${esc(inf.intro || '상가·사무실 청소 · 에그홈케어 · 시설철거')}</p></div>
+      <div class="bld">${H.bld ? H.bld({w:190, h:160, S:8.6, oy:60, v:VAR(stage), c:inf.color}) : ''}</div>
+      <div class="gr"><div class="l"><span>함께하는 사람 <b>${n}명</b></span><span>${nx ? `${nx[1]}까지 <b>${nx[0] - n}명</b>` : '<b>최고 단계</b>'}</span></div><div class="bar"><i style="width:${pct}%"></i></div><div class="tk"><span>${pv[1]} ${pv[0]}</span><span>${nx ? nx[1] + ' ' + nx[0] : ''}</span></div></div></div>
+    <div class="okp"><div><b>${H.S.opJobsNow ?? '–'}곳</b><small>이번 달 현장</small></div><div data-a="go" data-v="impact" role="button"><b>${hrs ?? '–'}시간</b><small>아낀 시간 · 효과 기록판 ›</small></div>
+      <div><b>${d ? won(d.cust_sent) : '–'}건</b><small>고객님 방으로 보낸 것</small></div><div><b>${d ? won(d.late_amt) : '–'}</b><small>늦게라도 받아낸 돈</small></div></div>
+    <div class="ocd"><h4>🧭 ${stage} 단계에서 챙길 것 <small>참고용 · 노무사 확인</small></h4>
+      ${items.map(([m, t, s]) => `<div class="ock" data-a="opiCare" data-m="${m}" role="button"><i class="${care[m] ? 'y' : 'n'}">${care[m] ? '✓' : '!'}</i><span>${t} <small>${s}</small></span>${care[m] ? '' : '<em>눌러서 체크</em>'}</div>`).join('')}
+      ${nextItem ? `<div class="ock nx"><i>›</i><span>다음: ${nextItem[1]} <small>${nextItem[0]}명이 되면</small></span></div>` : ''}</div>
+    <div class="ocd orow"><div data-a="opiInfo" data-k="${k}" role="button"><span>🎨</span><b>매장 정보 · 간판</b><small>심볼 · 브랜드 색 · 한 줄 소개</small></div>
+      <div data-a="go" data-v="impact" role="button"><span>📄</span><b>매장 리포트</b><small>IBK·영업 자료로 내보내기</small></div></div>
+  </section>`; };
+H.ACT.go = el => H.go(el.dataset.v);
+H.ACT.opiCare = async el => { const m = el.dataset.m, c = Object.assign({}, (H.S.settings||{}).opini_care || {}); c[m] = !c[m];
+  try { await H.q(H.sb.from('settings').upsert({key:'opini_care', value:c})); H.S.settings.opini_care = c; H.render(); } catch(e){ H.toast('저장 실패 · ' + (e.message||e)); } };
+H.ACT.opiInfo = el => { const k = el.dataset.k, st = H.STORES.find(s => s.k === k), inf = sInfo(k), stage = H.storeStage(st), canName = H.storeN(st) >= 10;
+  H._opi = {k, inf: JSON.parse(JSON.stringify(inf))};
+  H.open(`<h3>🎨 매장 정보</h3><div class="opv" id="opv"></div>
+    <form id="opif" class="grid" onsubmit="return false">
+    <div class="field full"><label>매장 이름</label><div class="olock"><span>${esc(st.name)}</span><span>🔒 회사 이름</span></div></div>
+    <div class="field full"><label>간판 심볼</label><div class="osym"><span class="lg" id="osym">${inf.sym ? `<img src="${esc(H.photoUrl(inf.sym))}" alt="">` : '<i></i>'}</span><p><b>우리 심볼</b><br><span class="note">정사각 로고 이미지 · 빌리지 간판에 들어가요</span></p><label class="btn sm ghost" style="cursor:pointer">바꾸기<input type="file" accept="image/*" data-opisym hidden></label></div></div>
+    <div class="field full"><label>브랜드 색 · 유리 라인 · 차양</label><div class="osw">${COLORS.map(c => `<button type="button" data-a="opiColor" data-c="${c}" style="background:${c}" class="${c === inf.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}</div></div>
+    <div class="field full"><label>한 줄 소개</label><input name="intro" maxlength="40" value="${esc(inf.intro)}" placeholder="예: 부산 상가·사무실 청소, 사진으로 끝까지 보여드려요"></div>
+    <div class="field full"><label>건물 이름 <small style="font-weight:500">라운지(10명)부터 · 12자 · 단계 이름(타워·센터 등)은 못 써요</small></label><input name="bname" maxlength="12" value="${esc(inf.bname)}" ${canName ? '' : 'disabled'} placeholder="비우면 회사 이름 그대로"></div>
+    </form><div class="sacts"><button class="btn ghost" data-a="close">닫기</button><button class="btn" data-a="opiSave">저장</button></div>`);
+  opv(); };
+const opv = () => { const o = H._opi, el = document.getElementById('opv'); if (!o || !el) return; const st = H.STORES.find(s => s.k === o.k);
+  el.innerHTML = `<span class="nm">${esc(st.name)} · ${H.storeStage(st)}</span>` + (H.bld ? H.bld({w:340, h:190, S:11, oy:68, v:VAR(H.storeStage(st)), c:o.inf.color}) : ''); };
+H.ACT.opiColor = el => { if (!H._opi) return; H._opi.inf.color = el.dataset.c; document.querySelectorAll('.osw button').forEach(b => b.classList.toggle('on', b === el)); opv(); };
+document.addEventListener('change', async e => { const i = e.target.closest && e.target.closest('[data-opisym]'); if (!i || !H._opi) return;
+  const f = i.files && i.files[0]; if (!f) return; const path = `opini/${H._opi.k}-sym-${Date.now()}.${(f.name.split('.').pop() || 'jpg').toLowerCase()}`;
+  H.toast('심볼 올리는 중…'); const {error} = await H.sb.storage.from('live').upload(path, f, {contentType: f.type || 'image/jpeg', cacheControl: '31536000'});
+  if (error) return H.toast('올리기 실패 · ' + error.message); H._opi.inf.sym = path; const lg = document.getElementById('osym'); if (lg) lg.innerHTML = `<img src="${esc(H.photoUrl(path))}" alt="">`; H.toast('심볼 바꿨어요 · 저장을 눌러주세요'); });
+H.ACT.opiSave = async () => { const o = H._opi, f = document.getElementById('opif'); if (!o || !f) return;
+  const bn = (f.bname.value || '').trim(); if (/타워|센터|랜드마크|라운지|스토어|빌리지|팝업|부스|샵/.test(bn)) return H.toast('건물 이름에 단계 이름(타워·센터 등)은 못 써요');
+  const v = Object.assign({}, o.inf, {intro: f.intro.value.trim(), bname: bn});
+  try { await H.q(H.sb.from('settings').upsert({key:'opini_store:' + o.k, value:v})); H.S.settings['opini_store:' + o.k] = v; H.close(); H.toast('저장했어요'); H.render(); } catch(e){ H.toast('저장 실패 · ' + (e.message||e)); } };
+const homeRender2 = H.views.home.render;
+H.views.home.render = function(){ const html = homeRender2.call(this); return H.S.owner && H.storeHead ? H.storeHead('ritz') + html : html; };
 })(window.HQ);
