@@ -347,7 +347,10 @@ H.ACT.chLater = () => { C.showLater = !C.showLater; paint(true); };
 H.ACT.chDone = () => { C.showDone = !C.showDone; paint(true); };
 H.ACT.chSend = async () => {
   const t = document.getElementById('chT'); const v = (t && t.value || '').trim(); if (!v || !C.cur) return;
-  t.value = ''; K.sync(t); if (matchMedia('(pointer:fine)').matches) t.focus(); else t.blur(); C.mark = null;   // 폰: 보내면 키보드 내림
+  t.value = ''; K.sync(t); t.focus(); C.mark = null;   // 1126 폰도 키보드 유지 (카톡처럼)
+  if (!matchMedia('(pointer:fine)').matches) {   // 아이폰 한글: 조합 중이던 마지막 글자가 다시 남는 것 지우기 (보낸 직후 0.5초만)
+    const at = Date.now(), clr = () => { if (Date.now() - at < 500 && t.value && v.endsWith(t.value)) { t.value = ''; K.sync(t); } };
+    t.addEventListener('compositionend', () => setTimeout(clr, 0), {once: true}); t.addEventListener('input', clr, {once: true}); setTimeout(clr, 80); setTimeout(clr, 250); }
   // 보내자마자 내 말풍선을 맨 아래에 먼저 보여주고 최신 대화로 내림 (서버 응답 기다리지 않음)
   const tmpId = 'tmp' + Date.now(); C.msgs.push({id: tmpId, mine: true, name: '', body: v, at: new Date().toISOString()}); paint(); toBottom();
   const rp = C.reply; C.reply = null; syncReply();
