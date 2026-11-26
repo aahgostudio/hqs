@@ -140,6 +140,7 @@ H.ACT.moneySheet = el => { const j = H.J(el.dataset.j); const opts = H.setting('
       <div class="sec">추가금 (줄마다 사유)</div>
       <div class="full" id="xbox">${(j.extras||[]).map(x=>xRow(x, opts)).join('')}</div>
       <div class="full"><button type="button" class="btn sm ghost" data-a="xAdd">+ 추가금 줄 추가</button> <span class="note">항목을 고르면 기준가가 들어가요. 현장 추가는 고객 동의 체크 후 저장</span></div>
+      ${j.contract_mode || H.isPartner(j) ? `<div class="field full prt-hx"><label>🤝 도급 추가금 중 본사로 온 돈 <small style="font-weight:500">비우면 절반으로 계산</small></label><input type="number" step="1000" name="prt_hq_extra" value="${j.prt_hq_extra ?? ''}" placeholder="예: 20000"><span class="note">현장마다 나누는 금액이 다르면 여기 적어주세요 · 경영 → 클린 · 도급 정산에 그대로 들어가요</span></div>` : ''}
       <div class="sec">고객에게 돌려준 돈 (페이백 · 클레임) <small style="font-weight:500">매출에서 빠져요</small></div>
       <div class="full" id="rbox">${(j.refunds||[]).map(rRow).join('')}</div>
       <div class="full"><button type="button" class="btn sm ghost" data-a="rAdd">+ 페이백 · 클레임 줄 추가</button></div>
@@ -168,9 +169,10 @@ H.FORM.money = async (v, f) => { const id = +v.get('id'); const j = H.J(id);
   const up = {total_amount:H.nnum(v.get('total_amount')), contract_mode:H.nn(v.get('contract_mode')), deposit_amount:H.nnum(v.get('deposit_amount')), deposit_how:H.nn(v.get('deposit_how')), deposit_proof:H.nn(v.get('deposit_proof')),
     deposit_paid:v.get('deposit_paid')==='on', deposit_issued:v.get('deposit_issued')==='on', balance_amount:H.nnum(v.get('balance_amount')), balance_how:H.nn(v.get('balance_how')), balance_proof:H.nn(v.get('balance_proof')),
     balance_issued:v.get('balance_issued')==='on', collector_id:H.nn(v.get('collector_id')), extras};
+  if (f.querySelector('[name=prt_hq_extra]')) up.prt_hq_extra = H.nnum(v.get('prt_hq_extra'));   // 1126 도급 추가금 본사 몫 (비우면 절반)
   if (refunds.length || (j.refunds||[]).length) up.refunds = refunds;
   const col = v.get('collected')==='on'; if (col && !j.collected_at) { up.collected_at = new Date().toISOString(); up.collected_how = up.balance_how || '계좌'; } if (!col && j.collected_at) up.collected_at = null;
-  try { await H.q(sb.from('jobs').update(up).eq('id', id)); } catch(e){ if (/refunds/.test(String(e && e.message || e))) return H.toast('페이백 SQL(update_refunds.sql)을 먼저 넣어주세요'); throw e; }
+  try { await H.q(sb.from('jobs').update(up).eq('id', id)); } catch(e){ if (/refunds/.test(String(e && e.message || e))) return H.toast('페이백 SQL(update_refunds.sql)을 먼저 넣어주세요'); if (/prt_hq_extra/.test(String(e && e.message || e))) return H.toast('도급 본사 몫 SQL(update_prt_extra.sql)을 먼저 넣어주세요'); throw e; }
   H.close(); H.toast('저장했어요'); H.refresh(); };
 
 /* ---------- 부동산 계약 (중개보수) ---------- */

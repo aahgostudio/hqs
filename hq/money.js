@@ -72,7 +72,7 @@ H.view('money', {label:'경영', owner:true,
             <td>${lS ? `<div class="flow snd">💸 보낼 돈 ${won(lS)}</div>` : ''}${lR ? `<div class="flow rcv">📥 받을 돈 ${won(lR)}</div>` : ''}${!lS && !lR ? '<span class="note">-</span>' : ''}</td>
             <td>${p.open ? `<button class="btn sm" data-a="prtDone" data-s="${p.s.id}">${lS && !lR ? '송금 완료' : !lS && lR ? '받음 체크' : '정산 완료'}</button>` : '<span class="pill p-ok">정산 끝</span>'}</td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">이 달 도급 현장이 없어요</td></tr>'}
         </tbody></table></div>
-        <p class="note">본사 몫 = 예약금 + 고객 추가금 50% · 도급 몫 = 나머지 · 방식은 현장마다 [금액·증빙]에서 고른 대로 · 이름을 누르면 현장별 · 도급 대금 세금계산서는 세무사 확인</p></section>
+        <p class="note">본사 몫 = 예약금 + 고객 추가금 50% (현장마다 [금액·증빙]에서 직접 적으면 그 금액) · 도급 몫 = 나머지 · 방식은 현장마다 [금액·증빙]에서 고른 대로 · 이름을 누르면 현장별 · 도급 대금 세금계산서는 세무사 확인</p></section>
 ` : ''}
     ${sec==='res' ? `
     <section class="box"><div class="bh"><h3><i class="dot" style="background:var(--res)"></i>부동산 · 직원별 배분 · 수익 <button class="btn sm" data-a="resMonthly" style="margin-left:6px">🏠 월 정산 (10일 지급)</button></h3><span class="sub">배분율은 사람마다 기본값, 계약마다 바꿀 수 있어요</span></div>
@@ -151,9 +151,10 @@ H.calcMonth = () => {
   const pb = {};
   jobs.filter(j => H.isPartner(j)).forEach(j => { const a = (j.assignments||[]).find(x => x.status === 'approved' && H.isPrt(x.staff_id)); if (!a) return;
     const tot = +j.total_amount || 0, ext = H.extrasSum(j), dep = +j.deposit_amount || 0, mode = j.contract_mode || '';
-    const hq = dep + Math.round(ext / 2), mine = Math.max(0, tot + ext - hq);
+    const hx = j.prt_hq_extra != null && j.prt_hq_extra !== '' ? Math.min(+j.prt_hq_extra, ext) : Math.round(ext / 2);   // 1126 추가금 본사 몫: 직접 적은 금액, 없으면 절반
+    const hq = dep + hx, mine = Math.max(0, tot + ext - hq);
     const p = pb[a.staff_id] = pb[a.staff_id] || {s: H.P(a.staff_id), items: [], n: 0, tot: 0, ext: 0, hq: 0, mine: 0, send: 0, recv: 0, open: 0};
-    const it = {j, a, mode, tot, ext, hq, mine, send: mode === 'A' ? 0 : mine, recv: mode === 'A' ? Math.round(ext / 2) : 0, done: !!a.paid};
+    const it = {j, a, mode, tot, ext, hq, mine, send: mode === 'A' ? 0 : mine, recv: mode === 'A' ? hx : 0, done: !!a.paid};
     p.items.push(it); p.n++; ['tot','ext','hq','mine','send','recv'].forEach(k => p[k] += it[k]); if (!it.done && (it.send || it.recv)) p.open++; });
   R.prt = Object.values(pb).sort((a,b) => (b.send + b.recv) - (a.send + a.recv));
   // 운영비 · 매입

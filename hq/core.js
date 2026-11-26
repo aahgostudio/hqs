@@ -68,7 +68,7 @@ H.prtOnly = j => !!j.contract_mode && !H.collab(j);
 H.refundSum = j => (j.refunds||[]).reduce((n,r) => n + (+r.amount||0), 0);
 H.jobRevenue = j => {
   if (j.status === 'cancelled' || j.status === 'quote') return 0;
-  if (j.contract_mode === 'A') return (+j.deposit_amount || 0) - H.refundSum(j);
+  if (j.contract_mode === 'A') return (+j.deposit_amount || 0) + (+j.prt_hq_extra || 0) - H.refundSum(j);   // 1126 도급이 보내준 추가금 본사 몫도 매출
   return (+j.total_amount || 0) + H.extrasSum(j) - H.refundSum(j);   // 1108: 페이백·클레임은 매출에서 뺌
 };
 // 외부지원(일용직): 그 현장에만 붙는 임시 인원 — jobs.helpers [{id,name,phone,src,pay,extra,memo,paid}] (v29)
