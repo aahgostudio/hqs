@@ -361,13 +361,16 @@
 
   async function send(){
     const t = document.getElementById('epc-t'); const v = (t.value || '').trim(); if (!v || busy) return;
-    busy = true; const phone = !matchMedia('(pointer:fine)').matches; if (phone) t.blur();   // 폰: 쓰던 글자(한글 조합) 확정 → 아래에서 바로 다시 포커스 (1126 카톡처럼 키보드 유지)
+    busy = true; const phone = !matchMedia('(pointer:fine)').matches;   // 1126 폰도 키보드 안 내림 (카톡처럼)
     try {
       if (editing) { const m = editing;
         if (!opt.demo) await rpc('chat_edit', {p_token: opt.token, p_id: m.id, p_body: v, p_delete: false});
         m.body = v; m.edited = true; editing = null; t.value = ''; K().sync(t); drawRoom(true);
       } else {
-        t.value = ''; K().sync(t); mark = null; if (phone) t.focus();
+        t.value = ''; K().sync(t); mark = null;
+        if (phone) {   // 아이폰 한글: 조합 중이던 마지막 글자가 입력칸에 다시 남는 것 지우기 (보낸 직후 0.5초만)
+          const at = Date.now(), clr = () => { if (Date.now() - at < 500 && t.value && v.endsWith(t.value)) { t.value = ''; K().sync(t); } };
+          t.addEventListener('compositionend', () => setTimeout(clr, 0), {once: true}); t.addEventListener('input', clr, {once: true}); setTimeout(clr, 80); setTimeout(clr, 250); }
         if (opt.demo) { msgs.push({id: Date.now(), who:'me', name: home.me.name, mine:true, body:v, at:new Date().toISOString(), reply: replying}); replying = null; unreadMap[msgs[msgs.length-1].id] = (room.room.members||[]).length; drawRoom(); }
         else { const rp = replying; replying = null;
           const tmp = {id: 'tmp' + Date.now(), tmp: true, who: home.me.id, name: home.me.name, mine: true, body: v, at: new Date().toISOString(), reply: rp}; msgs.push(tmp); drawRoom(); K().jump(shell().querySelector('.epc-msgs'));
