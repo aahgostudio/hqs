@@ -361,13 +361,13 @@
 
   async function send(){
     const t = document.getElementById('epc-t'); const v = (t.value || '').trim(); if (!v || busy) return;
-    busy = true; if (!matchMedia('(pointer:fine)').matches) t.blur();   // 폰: 보내면 키보드 내림
+    busy = true; const phone = !matchMedia('(pointer:fine)').matches; if (phone) t.blur();   // 폰: 쓰던 글자(한글 조합) 확정 → 아래에서 바로 다시 포커스 (1126 카톡처럼 키보드 유지)
     try {
       if (editing) { const m = editing;
         if (!opt.demo) await rpc('chat_edit', {p_token: opt.token, p_id: m.id, p_body: v, p_delete: false});
         m.body = v; m.edited = true; editing = null; t.value = ''; K().sync(t); drawRoom(true);
       } else {
-        t.value = ''; K().sync(t); mark = null;
+        t.value = ''; K().sync(t); mark = null; if (phone) t.focus();
         if (opt.demo) { msgs.push({id: Date.now(), who:'me', name: home.me.name, mine:true, body:v, at:new Date().toISOString(), reply: replying}); replying = null; unreadMap[msgs[msgs.length-1].id] = (room.room.members||[]).length; drawRoom(); }
         else { const rp = replying; replying = null;
           const tmp = {id: 'tmp' + Date.now(), tmp: true, who: home.me.id, name: home.me.name, mine: true, body: v, at: new Date().toISOString(), reply: rp}; msgs.push(tmp); drawRoom(); K().jump(shell().querySelector('.epc-msgs'));
