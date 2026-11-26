@@ -6,30 +6,32 @@ const V = H.V; V.money = {month: new Date(H.today().getFullYear(), H.today().get
 H.view('money', {label:'경영', owner:true,
   async load(){
     const [m0, m1] = H.monthRange(V.money.month); const f = ymd(m0), t = ymd(m1);
-    const [jobs, deals, shares, rules, ex, pu, staff] = await Promise.all([
+    const [jobs, deals, shares, rules, ex, pu, staff, depRcv] = await Promise.all([
       H.q(sb.from('jobs').select('*, assignments(*)').gte('job_date', f).lte('job_date', t).order('job_date')),
       H.q(sb.from('deals').select('*').gte('deal_date', f).lte('deal_date', t).order('deal_date')),
       H.q(sb.from('deal_shares').select('*')),
       H.q(sb.from('pay_rules').select('*')),
       H.q(sb.from('expenses').select('*').gte('ex_date', f).lte('ex_date', t)),
       H.q(sb.from('purchases').select('*').gte('pu_date', f).lte('pu_date', t)),
-      H.q(sb.from('staff').select('*').order('created_at'))
+      H.q(sb.from('staff').select('*').order('created_at')),
+      H.q(sb.from('jobs').select('id,deposit_amount,deposit_paid_at,job_date,title,status').eq('deposit_paid', true).neq('status', 'cancelled')
+        .gte('deposit_paid_at', f + 'T00:00:00+09:00').lte('deposit_paid_at', t + 'T23:59:59+09:00')).catch(() => [])   // 1127 받은 예약금은 받은 달 수익
     ]);
     if (H.loadPays) await H.loadPays(f, t).catch(() => {});
     if (H.loadAccts) await H.loadAccts((staff||[]).filter(x => x.status !== 'left' && !x.hidden).map(x => x.id)).catch(() => {});
-    Object.assign(H.S, {mJobs: jobs, mDeals: deals, mShares: shares, payRules: rules, mEx: ex, mPu: pu, staffAll: staff, staff: (staff||[]).filter(x => !x.hidden)});
+    Object.assign(H.S, {mDepRcv: depRcv || [], mJobs: jobs, mDeals: deals, mShares: shares, payRules: rules, mEx: ex, mPu: pu, staffAll: staff, staff: (staff||[]).filter(x => !x.hidden)});
   },
   render(){ const R = H.calcMonth(); const m = V.money.month; const sec = V.money.sec || 'sum';
     return `<div class="bh" style="margin:0"><div style="display:flex;gap:6px;align-items:center"><button class="btn ghost sm" data-a="monNav" data-n="-1">${H.I('left')}</button><b>${m.getFullYear()}년 ${m.getMonth()+1}월</b><button class="btn ghost sm" data-a="monNav" data-n="1">${H.I('right')}</button></div><span class="note">세금·공제는 기본 계산이에요 · 신고 전 세무사 확인</span></div>
     <section class="box money"><div class="bh"><h3>${m.getMonth()+1}월 전체 수익</h3><span style="display:flex;gap:6px"><a class="btn sm" href="#impact">📈 리츠 효과 기록판</a><button class="btn sm ghost" data-a="monXlsx">엑셀 받기 (세무사용)</button></span></div>
       <div class="mrow">
-        <div><span>확정 매출 <small style="opacity:.75">끝난 현장 ${R.doneN}건</small></span><b>${won(R.revDone)}</b><small> 클린 ${won(R.cleanRevDone)} · 부동산 ${won(R.resRevDone)}${R.planN ? ` · 예정 ${R.planN}건 +${won(R.rev - R.revDone)}` : ''}</small></div>
+        <div><span>확정 매출 <small style="opacity:.75">받은 예약금 ${R.depRcvN}건 + 끝난 현장 ${R.doneN}건</small></span><b>${won(R.revDone)}</b><small> 클린 ${won(R.cleanRevDone)} · 부동산 ${won(R.resRevDone)}${R.planN ? ` · 예정 ${R.planN}건 +${won(R.rev - R.revDone)}` : ''}</small></div>
         <div><span>− 클린 인건비</span><b style="font-size:20px">${won(R.laborDone)}</b></div>
         <div><span>− 부동산 배분</span><b style="font-size:20px">${won(R.shareTot)}</b></div>
         <div><span>− 외주 · 매입</span><b style="font-size:20px">${won(R.puTot)}</b></div>
         <div><span>− 운영비</span><b style="font-size:20px">${won(R.exTot)}</b></div>
         <div><span>미수금</span><b style="font-size:20px;color:#FCA5A5">${won(R.unpaid)}</b></div>
-        <div class="net"><span>순수익 <small style="opacity:.75">확정 · 현장 끝난 날 기준</small></span><b>${won(R.netDone)}</b>${R.bossN ? `<small style="display:block;opacity:.85;margin-top:2px">그중 대표님 현장 몫 ${won(R.bossDone)} (${R.bossN}현장) · 빼면 ${won(R.netDone - R.bossDone)}</small>` : ''}${R.planN ? `<small style="display:block;opacity:.8;margin-top:2px">이 달 일정 다 끝나면 예상 ${won(R.net)}</small>` : ''}</div>
+        <div class="net"><span>순수익 <small style="opacity:.75">확정 · 예약금은 받은 날 · 현장은 끝난 날 기준 (정산 탭과 같은 기준)</small></span><b>${won(R.netDone)}</b>${R.bossN ? `<small style="display:block;opacity:.85;margin-top:2px">그중 대표님 현장 몫 ${won(R.bossDone)} (${R.bossN}현장) · 빼면 ${won(R.netDone - R.bossDone)}</small>` : ''}${R.planN ? `<small style="display:block;opacity:.8;margin-top:2px">이 달 일정 다 끝나면 예상 ${won(R.net)}</small>` : ''}</div>
       </div></section>
     <nav class="mtabs">${[['sum','요약'],['clean','클린 정산'],['res','부동산 정산'],['cost','운영비 · 매입']].map(([k,l])=>`<button data-a="monSec" data-k="${k}" aria-pressed="${sec===k}">${l}</button>`).join('')}</nav>
     ${sec==='sum' ? `<div class="g2">
@@ -114,7 +116,10 @@ H.calcMonth = () => {
   const today = ymd(H.today());
   R.cleanJobs = jobs.map(j => ({j, rev:H.jobRevenue(j), ext:j.contract_mode==='A'?0:H.extrasSum(j), lab:H.jobLabor(j), pu:puByJob[j.id]||0,
     unpaid: j.job_date < today && ((j.balance_amount && !j.collected_at && j.contract_mode !== 'A') || (+j.deposit_amount && !j.deposit_paid)) }));
-  R.cleanRev = R.cleanJobs.reduce((n,x)=>n+x.rev,0);
+  // 1127 대표님 결정: 예약금은 '받은 날' 그달 수익 · 현장(잔금·추가금)은 '끝난 날' 기준
+  R.cleanJobs.forEach(x => { x.site = x.rev - (+x.j.deposit_amount || 0); });
+  R.depRcv = (S.mDepRcv||[]).reduce((n,j)=>n+(+j.deposit_amount||0),0); R.depRcvN = (S.mDepRcv||[]).length;
+  R.cleanRev = R.depRcv + R.cleanJobs.reduce((n,x)=>n+x.site,0);
   R.labor = R.cleanJobs.reduce((n,x)=>n+x.lab,0);
   R.clean = jobs.reduce((r,j) => { const s = H.jobProofSplit(j); r.issued += s.issued; r.not += s.not; r.need += s.need; return r; }, {issued:0, not:0, need:0});
   const ext = {}; jobs.forEach(j => (j.extras||[]).filter(x=>x.agreed!==false).forEach(x => { const k = x.name || '기타'; ext[k] = ext[k] || {n:0, s:0}; ext[k].n++; ext[k].s += +x.amount||0; }));
@@ -170,7 +175,7 @@ H.calcMonth = () => {
   // 1104Y: 확정 = 작업 끝난 현장 · 받은 부동산 수수료만 — 아직 안 한 현장은 '예정'으로만
   const done = x => x.j.status === 'done' || !!x.j.work_done_at;
   R.doneN = R.cleanJobs.filter(done).length; R.planN = R.cleanJobs.length - R.doneN;
-  R.cleanRevDone = R.cleanJobs.filter(done).reduce((n,x)=>n+x.rev,0);
+  R.cleanRevDone = R.depRcv + R.cleanJobs.filter(done).reduce((n,x)=>n+x.site,0);
   R.laborDone = R.cleanJobs.filter(done).reduce((n,x)=>n+x.lab,0);
   R.resRevDone = deals.reduce((n,d)=>n+(d.sides||[]).filter(x=>x.paid!==false).reduce((a,x)=>a+(+x.amount||0),0),0);
   R.revDone = R.cleanRevDone + R.resRevDone;
