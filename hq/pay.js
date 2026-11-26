@@ -83,10 +83,11 @@ function dayTable(b){
 function meCard(wait){
   const W = ['일','월','화','수','목','금','토'], neg = n => n < 0 ? `<b class="ng">${won(n)}</b>` : `<b>${won(n)}</b>`;
   const tab = P.meTab || 'day', d = P.d;
-  let dep, depN, site, star, sub, extra = '', vat = 0;
+  let dep, depN, site, star, sub, extra = '', vat = 0, siteN = 0, starN = 0;
   if (tab === 'day') {
     dep = (P.deps||[]).reduce((n,j) => n + (+j.deposit_amount||0), 0); depN = (P.deps||[]).length;
     site = P.jobs.reduce((n,j) => n + dayNet(j), 0); vat = P.jobs.reduce((n,j) => n + vatOf(j), 0); star = P.jobs.filter(j => j.boss_on).reduce((n,j) => n + dayNet(j), 0);
+    { const ok = P.jobs.filter(j => !['cancelled','quote'].includes(j.status)); siteN = ok.length; starN = ok.filter(j => j.boss_on).length; }   // 1126 현장 · ★ 몇 곳
     sub = `${md(d)} (${W[new Date(d + 'T00:00:00').getDay()]})`;
     // 1109: 오늘도 접었다 펴기 — 그날 받은 예약금 · 그날 현장
     const op = P.todayOpen, tag = j => { if (H.prtOnly(j)) return prtTag(j); if (H.collab(j)) return ' (콜라보)'; const bl = j.balance_amount != null ? +j.balance_amount : Math.max(0, (+j.total_amount||0) - (+j.deposit_amount||0)); return !bl ? ' <i class="mi">잔금 0원</i>' : !j.collected_at ? ' <i class="mi">잔금 미수</i>' : ''; };
@@ -94,14 +95,14 @@ function meCard(wait){
       + P.jobs.filter(j => !['cancelled','quote'].includes(j.status)).map(j => { const n = dayNet(j), v = vatOf(j); return `<div><span>${j.boss_on ? '★ ' : ''}${esc(String(j.title||'').slice(0, 20))}${tag(j)}${v ? `<small class="vi">🧾 부가세 ${won(v)} 포함</small>` : ''}</span><b class="${n<0?'neg':''}">${n > 0 ? '+' : ''}${won(n)}</b></div>`; }).join('');
     extra = `<div class="pm-nl"><div class="dh" data-a="pyTodayOpen" role="button"><span>${op ? '▾' : '▸'} 오늘 내역<small>${depN ? ` 예약금 ${depN}건` : ''}${P.jobs.length ? ` · 현장 ${P.jobs.length}곳` : ''}</small></span><b class="${dep+site<0?'neg':''}">${won(dep + site)}</b></div>${op ? (rows || '<p class="note">오늘 기록이 없어요</p>') : ''}</div>`;
   } else {
-    const b = bossRow(); dep = b.clean.dep; depN = b.clean.depN; site = b.clean.site; star = b.clean.star; vat = b.clean.jobs.reduce((n,j) => n + vatOf(j), 0);
+    const b = bossRow(); dep = b.clean.dep; depN = b.clean.depN; site = b.clean.site; star = b.clean.star; vat = b.clean.jobs.reduce((n,j) => n + vatOf(j), 0); siteN = b.clean.jobs.length; starN = b.clean.jobs.filter(j => j.boss_on).length;
     sub = `${P.mLabel}월 · ${P.mOff ? '그 달 전체' : '오늘까지'}`; extra = dayTable(b);
   }
   return `<div class="mec"><div class="mh"><span>내 수익 <small style="font-size:10.5px;opacity:.7">· 돈 받은 날 기준</small></span><small class="${wait.length ? 'w' : ''}">${wait.length ? '잔금 수금 대기 ' + wait.length : '잔금 수금 완료 ✓'}</small></div>
     <div class="mt"><button data-a="pyMeTab" data-t="day" aria-pressed="${tab==='day'}">오늘</button><button data-a="pyMeTab" data-t="mon" aria-pressed="${tab==='mon'}">이번 달</button></div>
     <div class="mv">${neg(dep + site)}<small>${sub}</small></div>
     ${vatBox(vat, dep + site)}
-    <div class="m3"><div><b>${won(dep)}</b>예약금 ${depN}건</div><div>${neg(site)}현장</div><div>${neg(star)}★ 내가 간 곳</div></div>
+    <div class="m3"><div><b>${won(dep)}</b>예약금 ${depN}건</div><div>${neg(site)}현장 ${siteN}곳</div><div>${neg(star)}★ 내가 간 곳 ${starN}곳</div></div>
     ${extra}</div>`;
 }
 H.ACT.pyDayOpen = el => { (P.dOpen||(P.dOpen={}))[el.dataset.k] = !P.dOpen[el.dataset.k]; H.render(); };

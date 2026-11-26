@@ -59,7 +59,7 @@ H.view('hqhome', {label:'본사 홈', owner:true,
     return `<section class="ophero"><div class="hl"><span class="chip">오피니 빌리지</span><span class="chip">🏙 어닝플레이스 · 랜드마크 단계</span>
         <h1>어닝 빌리지</h1><p>입점하면 '내 오피니'가 생겨요 — 팝업에서 시작해 랜드마크까지<br>일정 · 직원 · 고객 · 정산을 한 곳에서</p>
         <div class="kp"><div><b>${ins.length}</b><small>인샵</small></div><div><b>0 / 5</b><small>협력사 입점</small></div><div><b>${ppl}</b><small>빌리지 사람</small></div><div><b>${S.opJobs ?? '–'}</b><small>이번 달 현장</small></div></div></div>
-        <div class="hr" style="background-image:url(img/village.jpg?v=1126f)"><span>오피니 빌리지 (구상도)</span></div></section>
+        <div class="hr" style="background-image:url(img/village.jpg?v=1126g)"><span>오피니 빌리지 (구상도)</span></div></section>
       <section class="box oprm"><div class="bh"><h3>🗺 오피니 로드맵</h3><span class="note">지금 ${step}단계</span></div>
         <div class="steps">${ROAD.map(([t, s], i) => `<div class="st ${i+1 < step ? 'd' : i+1 === step ? 'n' : ''}"><i>${i+1 < step ? '✓' : i+1}</i><b>${t}</b><small>${s}</small></div>`).join('')}</div></section>
       <div class="oph"><b>🏙 어닝플레이스 인샵 · 협력사</b><small>누르면 그 매장으로 들어가요</small></div>
